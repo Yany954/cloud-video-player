@@ -97,7 +97,8 @@ Explicitly out of scope: watch party.
   ```
 - Testing: Vitest for domain and use cases; Playwright E2E for web; mobile E2E tool TBD with framework.
 - Secrets: never commit keys; `.env` files in `.gitignore`.
-- AWS cost safety: budget alarm exists; warn me before creating any resource that costs money beyond free tier (e.g., MediaConvert jobs).
+- AWS cost safety: account is on the paid (pay-as-you-go) plan, no free credits; only always-free limits apply. Monthly budget `cvp-monthly` ($10, alerts at 85%/100% actual and 100% forecast), Free Tier alerts and Cost Anomaly Detection (daily summary, >$5) email me. Budgets only alert, they never stop resources. Warn me before creating any resource that costs money beyond free tier (e.g., MediaConvert jobs), and before any console step with billing side effects.
+- AWS access: region `us-east-1`. Daily work through IAM Identity Center (user with AdministratorAccess, MFA always-on); CLI profile `cvp-dev` via SSO. Never use root or long-lived access keys.
 
 ## Design resources
 - Skills: taste-skill (+ image-to-code-skill), web-design-guidelines, playwright-cli. Reference DESIGN.md from awesome-design-md.
