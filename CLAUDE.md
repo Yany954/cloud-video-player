@@ -5,14 +5,14 @@ A secure mobile app (iOS + Android) plus a web admin to store and stream heavy, 
 
 ## Platforms
 - **Mobile app**: React Native + Expo (DECIDED). Main experience: watch AND upload. Needs Picture-in-Picture, background audio with lock-screen controls, AirPlay/Chromecast, background/resumable uploads. Use Expo development builds (not Expo Go) since these need native config.
-- **Web (admin + landing)**: upload and manage content, landing page. React + shadcn/ui. Responsive, WCAG 2.2 AA.
+- **Web (app + admin + landing)**: every signed-in user can upload and watch; admins also moderate and manage. Landing page. React + shadcn/ui. Responsive, WCAG 2.2 AA.
 
 ## Core features (MVP)
 1. **Upload & storage**: resumable multipart upload of large files straight to S3 via presigned URLs. Preserve original quality.
 2. **Any format, no work for the user**: accept MP4, MOV, MKV, AVI. Backend normalizes once after upload: remux when the codec is compatible (lossless, fast), transcode only when it is not. Output: MP4/HLS playable by native players (AVPlayer / ExoPlayer). Never transcode on the phone.
 3. **Categories & continuous player**: videos grouped by event/artist/topic. "Play" on a category autoplays the whole playlist in order.
-4. **Auth & roles**: AWS Cognito. `admin` (uploads/manages) and `user` (watches). Email + Google sign-in (no GitHub).
-5. **Storage usage widget**: track `bytesUsed` per user/library in DynamoDB, updated on upload complete. Never compute it by listing S3.
+4. **Auth & roles**: AWS Cognito. `user` uploads (web AND mobile, MVP must prove both) and watches; uploads stay `pending` until moderated. `admin` does everything a user does plus moderation, user management and categories. Email + Google sign-in (no GitHub).
+5. **Storage usage widget & quota**: track `bytesUsed` per user/library in DynamoDB, updated on upload complete. Never compute it by listing S3. Per-user quota: 50 GB (checked before an upload starts and re-checked with the real size on complete).
 6. **Privacy & security**: videos never public; CloudFront signed URLs. Follow data protection laws and security best practices.
 
 ## Differentiating features (build AFTER the core works, one at a time)
