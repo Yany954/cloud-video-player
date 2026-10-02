@@ -1,5 +1,11 @@
 import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
-import { AccountRecovery, FeaturePlan, Mfa, UserPool } from 'aws-cdk-lib/aws-cognito';
+import {
+  AccountRecovery,
+  FeaturePlan,
+  Mfa,
+  UserPool,
+  type UserPoolClient,
+} from 'aws-cdk-lib/aws-cognito';
 import type { Construct } from 'constructs';
 
 export interface AuthStackProps extends StackProps {
@@ -8,6 +14,7 @@ export interface AuthStackProps extends StackProps {
 
 export class AuthStack extends Stack {
   readonly userPool: UserPool;
+  readonly appClient: UserPoolClient;
 
   constructor(scope: Construct, id: string, props: AuthStackProps) {
     super(scope, id, props);
@@ -59,6 +66,23 @@ export class AuthStack extends Stack {
       precedence: 10,
     });
 
+    // Public client shared by web and mobile: apps can't keep a secret, so none is generated.
+    this.appClient = this.userPool.addClient('AppClient', {
+      userPoolClientName: `${props.prefix}-app`,
+      generateSecret: false,
+      authFlows: {
+        userSrp: true,
+        // Needs AWS credentials, so only usable from dev scripts, never from the apps.
+        adminUserPassword: true,
+      },
+      accessTokenValidity: Duration.hours(1),
+      idTokenValidity: Duration.hours(1),
+      refreshTokenValidity: Duration.days(30),
+      preventUserExistenceErrors: true,
+      enableTokenRevocation: true,
+    });
+
     new CfnOutput(this, 'UserPoolId', { value: this.userPool.userPoolId });
+    new CfnOutput(this, 'AppClientId', { value: this.appClient.userPoolClientId });
   }
 }
