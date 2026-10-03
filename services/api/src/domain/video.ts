@@ -16,6 +16,12 @@ export interface MediaInfo {
   height: number;
 }
 
+/** Who took the last moderation decision, and when. */
+export interface Review {
+  reviewedBy: string;
+  reviewedAt: string;
+}
+
 const MAX_TITLE_LENGTH = 200;
 
 export interface Video {
@@ -36,6 +42,8 @@ export interface Video {
   readonly media: MediaInfo | null;
   /** Set when `uploadStatus` is `failed`. */
   readonly failureReason: ProcessingFailureReason | null;
+  /** Null until an admin decides on the video. */
+  readonly review: Review | null;
   readonly createdAt: string;
 }
 
@@ -73,6 +81,7 @@ export function startUpload(input: StartUploadInput): Video {
     uploadSessionId: null,
     media: null,
     failureReason: null,
+    review: null,
     createdAt: input.now.toISOString(),
   };
 }

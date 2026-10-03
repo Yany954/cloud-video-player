@@ -37,6 +37,7 @@ describe('startUpload', () => {
       uploadSessionId: null,
       media: null,
       failureReason: null,
+      review: null,
       createdAt: '2026-10-03T10:00:00.000Z',
     });
   });
