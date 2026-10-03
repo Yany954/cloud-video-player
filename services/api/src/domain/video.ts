@@ -31,6 +31,8 @@ export interface Video {
   readonly fileName: string;
   readonly format: VideoFormat;
   readonly categoryId: string | null;
+  /** True while the video sits in a private category: only that category's members see it. */
+  readonly private: boolean;
   /** What the client said before uploading; `sizeBytes` is the measured size once uploaded. */
   readonly declaredSizeBytes: number;
   readonly sizeBytes: number | null;
@@ -74,6 +76,7 @@ export function startUpload(input: StartUploadInput): Video {
     fileName: input.fileName,
     format,
     categoryId: input.categoryId ?? null,
+    private: false,
     declaredSizeBytes: input.sizeBytes,
     sizeBytes: null,
     uploadStatus: 'uploading',

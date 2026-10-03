@@ -1,4 +1,5 @@
 import { DomainError } from './errors';
+import { isMember, type Category } from './category';
 import { isOwnedBy, type Video } from './video';
 
 export type ReviewDecision = 'approve' | 'reject';
@@ -37,19 +38,30 @@ export function awaitsReview(video: Video): boolean {
   );
 }
 
-/** Visible to every signed-in user. */
+/** Visible to every signed-in user: approved, and not kept inside a private category. */
 export function isInLibrary(video: Video): boolean {
+  return isApproved(video) && !video.private;
+}
+
+function isApproved(video: Video): boolean {
   return video.uploadStatus === 'ready' && video.moderationStatus === 'approved';
 }
 
 /**
  * The owner always sees their own video. An admin sees any playable video, to review it.
- * Everyone else sees only what is in the library.
+ * Everyone else sees only approved videos: those in the library, plus those of a private
+ * category they are a member of. `category` is the video's category, when the caller has it.
  */
-export function canView(video: Video, viewer: Viewer): boolean {
+export function canView(video: Video, viewer: Viewer, category: Category | null = null): boolean {
   if (isOwnedBy(video, viewer.userId)) return true;
   if (viewer.isAdmin) return video.uploadStatus === 'ready';
-  return isInLibrary(video);
+  if (!video.private) return isInLibrary(video);
+  return (
+    isApproved(video) &&
+    category !== null &&
+    category.id === video.categoryId &&
+    isMember(category, viewer.userId)
+  );
 }
 
 /** Owners delete their own videos; an admin can delete anyone's. */

@@ -61,12 +61,13 @@ export function fromVideoItem(item: object): Video {
     fileName: video.fileName,
     format: video.format,
     categoryId: video.categoryId,
+    private: video.private ?? false,
     declaredSizeBytes: video.declaredSizeBytes,
     sizeBytes: video.sizeBytes,
     uploadStatus: video.uploadStatus,
     moderationStatus: video.moderationStatus,
     uploadSessionId: video.uploadSessionId,
-    // Items written before processing or moderation existed don't have these attributes.
+    // Items written before processing, moderation or categories existed lack some attributes.
     media: video.media ?? null,
     failureReason: video.failureReason ?? null,
     review: video.review ?? null,

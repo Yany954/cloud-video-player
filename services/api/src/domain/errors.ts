@@ -2,6 +2,8 @@ export type DomainErrorCode =
   | 'UNSUPPORTED_FORMAT'
   | 'INVALID_SIZE'
   | 'INVALID_TITLE'
+  | 'INVALID_NAME'
+  | 'INVALID_ORDER'
   | 'QUOTA_EXCEEDED'
   | 'INVALID_STATE'
   | 'UPLOAD_INCOMPLETE';

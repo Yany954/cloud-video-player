@@ -30,6 +30,7 @@ describe('startUpload', () => {
       fileName: 'Rosalia Madrid.MOV',
       format: 'mov',
       categoryId: null,
+      private: false,
       declaredSizeBytes: 1_000,
       sizeBytes: null,
       uploadStatus: 'uploading',

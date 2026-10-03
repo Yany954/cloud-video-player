@@ -17,6 +17,8 @@ export class BadRequestError extends Error {}
 const DOMAIN_ERROR_STATUS: Record<DomainErrorCode, number> = {
   INVALID_SIZE: 400,
   INVALID_TITLE: 400,
+  INVALID_NAME: 400,
+  INVALID_ORDER: 400,
   INVALID_STATE: 409,
   UPLOAD_INCOMPLETE: 409,
   QUOTA_EXCEEDED: 413,

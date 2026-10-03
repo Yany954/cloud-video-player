@@ -7,6 +7,7 @@ import {
   isInLibrary,
   reviewVideo,
 } from './moderation';
+import { assignToCategory, createCategory } from './category';
 import { completeUpload, markFailed, markReady, startProcessing, startUpload } from './video';
 import type { Video } from './video';
 
@@ -136,5 +137,38 @@ describe('assertDeletable', () => {
     for (const video of [uploading(), ready(), markFailed(processing(), 'TOO_LARGE')]) {
       expect(() => assertDeletable(video)).not.toThrow();
     }
+  });
+});
+
+describe('videos in a private category', () => {
+  const event = {
+    ...createCategory({ id: 'cat-1', ownerId: 'owner', name: 'Concert', now }),
+    collaboratorIds: ['collaborator'],
+  };
+  const privateApproved = () => assignToCategory(approved(), event);
+  const collaborator = { userId: 'collaborator', isAdmin: false };
+
+  it('stay out of the library even when approved', () => {
+    expect(isInLibrary(privateApproved())).toBe(false);
+  });
+
+  it('are visible to members of the category once approved', () => {
+    expect(canView(privateApproved(), collaborator, event)).toBe(true);
+    expect(canView(assignToCategory(ready(), event), collaborator, event)).toBe(false);
+  });
+
+  it('are hidden from everyone else, and when the category is not the video’s own', () => {
+    expect(canView(privateApproved(), stranger, event)).toBe(false);
+    expect(canView(privateApproved(), collaborator)).toBe(false);
+    expect(canView(privateApproved(), collaborator, { ...event, id: 'other' })).toBe(false);
+  });
+
+  it('are still visible to their owner and to admins', () => {
+    expect(canView(privateApproved(), owner)).toBe(true);
+    expect(canView(privateApproved(), admin)).toBe(true);
+  });
+
+  it('return to the library when taken out of the category', () => {
+    expect(isInLibrary(assignToCategory(privateApproved(), null))).toBe(true);
   });
 });

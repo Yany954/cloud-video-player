@@ -41,23 +41,36 @@ The user's words: categorise a video as "Concert Twenty One Pilots October 2026"
 collaborator (their boyfriend) so he can upload what he filmed that day to the same event.
 Explain the design and agree on it before coding.
 
-Decided by the user: **any user creates events for their own videos**, to organise them (this
-replaces "admins manage categories" in `CLAUDE.md`).
+Decided by the user:
 
-1. `Category` (event) entity: `CATEGORY#{id}` / `META`, owned by the user who created it;
-   listed through `GSI2`.
-2. Pick an event when uploading, and change it later (the domain already accepts
-   `categoryId`, the upload request does not yet).
-3. Playlist: the videos of an event in `position` order (`GSI2`), and a player that goes from
-   one video to the next without clicking.
-4. **Autoplay-next switch** in the player (the user asked for a slider/toggle to choose whether
-   the next video starts by itself). Remember the choice per user.
-5. Continuous play must keep working **in Picture-in-Picture and with the phone locked**
-   (mobile: background audio, lock-screen controls and PiP from `CLAUDE.md`; the next video
-   has to start without the app in the foreground). Web: keep one `<video>` element and swap
-   its source so PiP survives the change of video.
-6. Collaborators: people invited to add their recordings to an event. This is the
-   "collaborative collections" differentiator in `CLAUDE.md`, and it feeds multi-angle sync.
+- **Any user creates events** for their own videos (this replaces "admins manage categories"
+  in `CLAUDE.md`). In code the entity is `Category`; the interface calls it an "event".
+- An event is **private** (only its owner and collaborators see it and its videos) or
+  **shared** (every signed-in user). New events start private.
+- **Collaborators** are invited to add their own recordings to an event.
+- **Manual reordering**: an up arrow moves a video one place earlier, and a temporary
+  "reorder" view lets the user drag videos up or down, then save.
+- **Autoplay-next switch** in the player, on or off.
+- Continuous play must keep working **in Picture-in-Picture and with the phone locked**.
+
+Design in the domain (`domain/category.ts`, done):
+
+- Which videos belong to an event is recorded on each video (`categoryId`). The event keeps
+  only the playing `order`; videos it does not mention yet go last, oldest first.
+- A video in a private event carries `private: true`: it stays out of the library, and others
+  see it only if it is approved and they are members of that event. Moderation still applies.
+- Only the owner renames, reorders, changes visibility or deletes an event. Members add only
+  their own videos.
+
+Slices, in order:
+
+1. **Events**: create, rename, private/shared, delete; put a video in an event (when
+   uploading and later); event page; reorder. Domain done; next are use cases, adapters
+   (`GSI2PK = CATEGORY#{id}` for an event's videos), endpoints, web.
+2. **Continuous play**: "Play all", next video starts by itself in the same `<video>` element
+   (so web PiP survives), autoplay switch remembered per browser.
+3. **Collaborators**: invite a user by email; they add their recordings.
+4. Mobile (Phase 5): background audio, lock-screen controls and PiP for the same playlist.
 
 ### 3d. User management and profile (asked by the user)
 
