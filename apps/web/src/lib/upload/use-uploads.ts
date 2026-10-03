@@ -12,6 +12,8 @@ export interface UploadItem {
   fileName: string;
   sizeBytes: number;
   uploadedBytes: number;
+  /** Bytes in fully received parts. Pausing discards the rest (uploadedBytes - savedBytes). */
+  savedBytes: number;
   status: 'uploading' | 'paused' | 'done' | 'error';
   error?: string;
   /** False when retrying can't help, e.g. an unsupported format. */
@@ -67,8 +69,8 @@ export function useUploads(userId: string, onUploaded: () => void) {
             job.videoId = videoId;
             resumeStore.set(job.key, videoId);
           },
-          onProgress: ({ uploadedBytes }) =>
-            dispatch({ type: 'update', id, changes: { uploadedBytes } }),
+          onProgress: ({ uploadedBytes, savedBytes }) =>
+            dispatch({ type: 'update', id, changes: { uploadedBytes, savedBytes } }),
         });
 
       const resuming = job.videoId !== undefined;
@@ -88,7 +90,7 @@ export function useUploads(userId: string, onUploaded: () => void) {
             dispatch({
               type: 'update',
               id,
-              changes: { status: 'done', uploadedBytes: job.file.size },
+              changes: { status: 'done', uploadedBytes: job.file.size, savedBytes: job.file.size },
             });
             onUploaded();
           },
@@ -115,6 +117,7 @@ export function useUploads(userId: string, onUploaded: () => void) {
           fileName: file.name,
           sizeBytes: file.size,
           uploadedBytes: 0,
+          savedBytes: 0,
           status: 'uploading',
           canResume: true,
         };

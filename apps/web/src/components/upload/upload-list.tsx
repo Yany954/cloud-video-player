@@ -1,6 +1,17 @@
 'use client';
 
 import { CircleAlert, CircleCheck, Pause, Play, X } from 'lucide-react';
+import { useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { formatBytes } from '@/lib/format';
 import type { UploadItem } from '@/lib/upload/use-uploads';
@@ -14,7 +25,12 @@ interface UploadListProps {
   onDismiss(id: string): void;
 }
 
-export function UploadList({ items, ...actions }: UploadListProps) {
+export function UploadList({ items, onPause, ...rest }: UploadListProps) {
+  // Pausing asks first, because the parts being sent at that moment are not kept.
+  const [pauseRequestId, setPauseRequestId] = useState<string | null>(null);
+  const pausing = items.find((item) => item.id === pauseRequestId && item.status === 'uploading');
+  const actions = { ...rest, onPause: setPauseRequestId };
+
   if (items.length === 0) return null;
 
   const finished = items.filter((item) => item.status === 'done').map((item) => item.fileName);
@@ -30,12 +46,49 @@ export function UploadList({ items, ...actions }: UploadListProps) {
           <UploadRow key={item.id} item={item} {...actions} />
         ))}
       </ul>
+      <AlertDialog
+        open={pausing !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setPauseRequestId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pause this upload?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pausing && <PauseWarning item={pausing} />}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep uploading</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pausing) onPause(pausing.id);
+              }}
+            >
+              Pause
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* Screen readers hear outcomes without a stream of percentage updates. */}
       <p aria-live="polite" className="sr-only">
         {finished.length > 0 && `Uploaded: ${finished.join(', ')}. `}
         {failed.length > 0 && `Failed: ${failed.join(', ')}.`}
       </p>
     </section>
+  );
+}
+
+function PauseWarning({ item }: { item: UploadItem }) {
+  const unsaved = Math.max(item.uploadedBytes - item.savedBytes, 0);
+  if (unsaved === 0) return <>Everything sent so far is saved. You can resume at any time.</>;
+  return (
+    <>
+      A video is sent in parts, and a part is only saved once it has arrived completely. The parts
+      being sent right now ({formatBytes(unsaved)}) will be sent again when you resume. The{' '}
+      {formatBytes(item.savedBytes)} already saved are kept.
+    </>
   );
 }
 

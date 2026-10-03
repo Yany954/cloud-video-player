@@ -20,7 +20,10 @@ export interface PutPartArgs<TSource> {
 export type PutPart<TSource> = (args: PutPartArgs<TSource>) => Promise<void>;
 
 export interface UploadProgress {
+  /** Everything sent so far, including parts still on their way. */
   uploadedBytes: number;
+  /** Bytes in parts the server has fully received. Only these survive a pause. */
+  savedBytes: number;
   totalBytes: number;
 }
 
@@ -90,7 +93,11 @@ export async function uploadVideo<TSource>(
     const report = () => {
       let sending = 0;
       for (const bytes of inFlight.values()) sending += bytes;
-      options.onProgress?.({ uploadedBytes: completedBytes + sending, totalBytes: sizeBytes });
+      options.onProgress?.({
+        uploadedBytes: completedBytes + sending,
+        savedBytes: completedBytes,
+        totalBytes: sizeBytes,
+      });
     };
     report();
 
@@ -137,7 +144,7 @@ export async function uploadVideo<TSource>(
 
   signal?.throwIfAborted();
   const video = await api.complete(videoId);
-  options.onProgress?.({ uploadedBytes: sizeBytes, totalBytes: sizeBytes });
+  options.onProgress?.({ uploadedBytes: sizeBytes, savedBytes: sizeBytes, totalBytes: sizeBytes });
   return video;
 }
 

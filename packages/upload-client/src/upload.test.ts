@@ -90,7 +90,31 @@ describe('uploadVideo', () => {
 
     const bytes = seen.map((progress) => progress.uploadedBytes);
     expect(bytes).toEqual([...bytes].sort((a, b) => a - b));
-    expect(seen.at(-1)).toEqual({ uploadedBytes: 25, totalBytes: 25 });
+    expect(seen.at(-1)).toEqual({ uploadedBytes: 25, savedBytes: 25, totalBytes: 25 });
+  });
+
+  it('separates bytes still on their way from bytes the server has saved', async () => {
+    const server = fakeServer({ sizeBytes: 30 });
+    const seen: UploadProgress[] = [];
+    const putPart: PutPart<string> = async (args) => {
+      args.onProgress(4); // part is 40% sent, not saved yet
+      await server.putPart(args);
+    };
+
+    await uploadVideo({
+      ...base,
+      ...server,
+      putPart,
+      sizeBytes: 30,
+      concurrency: 1,
+      onProgress: (p) => seen.push(p),
+    });
+
+    expect(seen).toContainEqual({ uploadedBytes: 4, savedBytes: 0, totalBytes: 30 });
+    expect(seen).toContainEqual({ uploadedBytes: 14, savedBytes: 10, totalBytes: 30 });
+    for (const progress of seen) {
+      expect(progress.savedBytes).toBeLessThanOrEqual(progress.uploadedBytes);
+    }
   });
 
   it('never sends more than 3 parts at the same time', async () => {
@@ -132,7 +156,7 @@ describe('uploadVideo', () => {
     expect(server.calls.initiate).toBe(0);
     expect(sent.sort()).toEqual([2, 4, 5]);
     // The progress bar starts where the last session stopped (2 parts = 20 bytes).
-    expect(seen[0]).toEqual({ uploadedBytes: 20, totalBytes: 45 });
+    expect(seen[0]).toEqual({ uploadedBytes: 20, savedBytes: 20, totalBytes: 45 });
   });
 
   it('keeps asking for more URLs when the server hands them out in batches', async () => {
