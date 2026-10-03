@@ -25,7 +25,7 @@ describe('S3ObjectStorage', () => {
       credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
     });
 
-    const [first, second] = await new S3ObjectStorage(s3, 'bucket').signPartUrls(
+    const [first, second] = await new S3ObjectStorage(s3, 'bucket', 'media-bucket').signPartUrls(
       video,
       'session-1',
       [1, 2],

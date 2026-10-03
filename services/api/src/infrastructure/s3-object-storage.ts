@@ -30,6 +30,7 @@ export class S3ObjectStorage implements ObjectStorage {
   constructor(
     private readonly s3: S3Client,
     private readonly bucket: string,
+    private readonly mediaBucket: string,
   ) {}
 
   async startMultipartUpload(video: Video): Promise<string> {
@@ -117,6 +118,15 @@ export class S3ObjectStorage implements ObjectStorage {
 
   async deleteOriginal(video: Video): Promise<void> {
     await this.s3.send(new DeleteObjectCommand(this.target(video)));
+  }
+
+  // DeleteObject succeeds for a key that does not exist, so this is safe to repeat.
+  async deletePlayable(video: Video): Promise<void> {
+    await Promise.all(
+      Object.values(mediaKeys(video.id)).map((Key) =>
+        this.s3.send(new DeleteObjectCommand({ Bucket: this.mediaBucket, Key })),
+      ),
+    );
   }
 
   private target(video: Video) {

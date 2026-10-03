@@ -31,6 +31,7 @@ new ApiStack(app, `${prefix}-api`, {
   appClient: auth.appClient,
   table: data.table,
   uploadsBucket: storage.uploadsBucket,
+  mediaBucket: storage.mediaBucket,
   processingQueue: processing.queue,
   playbackDomain: storage.mediaDistribution.distributionDomainName,
   playbackKeyPairId: storage.playbackKeyPairId,

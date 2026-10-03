@@ -51,3 +51,15 @@ export function canView(video: Video, viewer: Viewer): boolean {
   if (viewer.isAdmin) return video.uploadStatus === 'ready';
   return isInLibrary(video);
 }
+
+/** Owners delete their own videos; an admin can delete anyone's. */
+export function canDelete(video: Video, viewer: Viewer): boolean {
+  return isOwnedBy(video, viewer.userId) || viewer.isAdmin;
+}
+
+/** Processing has to finish first, or the job would write files for a video that is gone. */
+export function assertDeletable(video: Video): void {
+  if (video.uploadStatus === 'processing') {
+    throw new DomainError('INVALID_STATE', 'Video is being processed, try again in a moment');
+  }
+}

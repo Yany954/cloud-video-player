@@ -35,6 +35,7 @@ describe('ApiStack', () => {
       appClient: auth.appClient,
       table: data.table,
       uploadsBucket: storage.uploadsBucket,
+      mediaBucket: storage.mediaBucket,
       processingQueue: processing.queue,
       playbackDomain: storage.mediaDistribution.distributionDomainName,
       playbackKeyPairId: storage.playbackKeyPairId,
@@ -65,6 +66,7 @@ describe('ApiStack', () => {
 
     expect(routes.map((route) => route.Properties.RouteKey).sort()).toEqual([
       'DELETE /uploads/{videoId}',
+      'DELETE /videos/{videoId}',
       'GET /admin/review',
       'GET /health',
       'GET /library',
@@ -94,12 +96,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(11);
+    expect(functions).toHaveLength(12);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(11);
+    expect(logGroups).toHaveLength(12);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -180,7 +182,31 @@ describe('ApiStack', () => {
       ]);
     });
 
-    it('never grants wildcard actions, and limits S3 to the uploads/ prefix', () => {
+    it('lets "delete video" remove one record, give bytes back and delete files only', () => {
+      expect(actionsOf('DeleteVideo')).toEqual([
+        'dynamodb:DeleteItem',
+        'dynamodb:GetItem',
+        'dynamodb:UpdateItem',
+        's3:AbortMultipartUpload',
+        's3:DeleteObject',
+        's3:DeleteObject',
+      ]);
+    });
+
+    it('lets only "delete video" touch the media bucket, and only to delete under media/', () => {
+      const policies = template.findResources('AWS::IAM::Policy');
+      const media = Object.entries(policies).flatMap(([id, policy]) =>
+        (policy.Properties.PolicyDocument.Statement as Statement[])
+          .filter((statement) => JSON.stringify(statement.Resource).includes('/media/*'))
+          .map((statement) => ({ id, actions: [statement.Action].flat() })),
+      );
+
+      expect(media).toHaveLength(1);
+      expect(media[0]!.id).toMatch(/^DeleteVideoServiceRoleDefaultPolicy/);
+      expect(media[0]!.actions).toEqual(['s3:DeleteObject']);
+    });
+
+    it('never grants wildcard actions, and limits S3 to the uploads/ and media/ prefixes', () => {
       const statements = Object.values(template.findResources('AWS::IAM::Policy')).flatMap(
         (policy) => policy.Properties.PolicyDocument.Statement as Statement[],
       );
@@ -188,7 +214,7 @@ describe('ApiStack', () => {
       for (const statement of statements) {
         for (const action of [statement.Action].flat()) expect(action).not.toContain('*');
         if ([statement.Action].flat().some((action) => action.startsWith('s3:'))) {
-          expect(JSON.stringify(statement.Resource)).toContain('/uploads/*');
+          expect(JSON.stringify(statement.Resource)).toMatch(/\/(uploads|media)\/\*/);
         }
       }
     });

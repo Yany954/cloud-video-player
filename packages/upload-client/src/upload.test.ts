@@ -66,6 +66,9 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
     async reviewVideo() {
       throw new Error('not used by the upload engine');
     },
+    async deleteVideo() {
+      throw new Error('not used by the upload engine');
+    },
   };
 
   const putPart: PutPart<string> = async ({ partNumber, start, end, onProgress }) => {

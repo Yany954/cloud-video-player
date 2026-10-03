@@ -111,3 +111,34 @@ describe('DynamoVideoRepository moderation lists', () => {
     });
   });
 });
+
+describe('DynamoVideoRepository.deleteCounted', () => {
+  it('removes the video and gives its bytes back in one transaction', async () => {
+    const { send, repository } = setup();
+
+    await repository.deleteCounted(completed);
+
+    const [video, account] = (send.mock.calls[0]![0] as TransactWriteCommand).input.TransactItems!;
+    expect(video!.Delete).toMatchObject({
+      Key: { PK: 'VIDEO#video-1', SK: 'META' },
+      ConditionExpression: 'uploadStatus = :status',
+      ExpressionAttributeValues: { ':status': 'uploaded' },
+    });
+    expect(account!.Update).toMatchObject({
+      Key: { PK: 'USER#user-1', SK: 'PROFILE' },
+      UpdateExpression: 'ADD bytesUsed :negative',
+      ConditionExpression: 'bytesUsed >= :size',
+      ExpressionAttributeValues: { ':negative': -300, ':size': 300 },
+    });
+  });
+
+  it('reports INVALID_STATE when the video changed or was already deleted', async () => {
+    const { repository } = setup(
+      vi.fn().mockRejectedValue(cancelled('ConditionalCheckFailed', 'None')),
+    );
+
+    await expect(repository.deleteCounted(completed)).rejects.toMatchObject({
+      code: 'INVALID_STATE',
+    });
+  });
+});

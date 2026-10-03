@@ -17,6 +17,7 @@ export interface ApiStackProps extends StackProps {
   webOrigins: string[];
   table: ITableV2;
   uploadsBucket: IBucket;
+  mediaBucket: IBucket;
   processingQueue: IQueue;
   /** CloudFront domain that serves processed videos. */
   playbackDomain: string;
@@ -33,6 +34,8 @@ interface RouteProps {
   /** Least privilege: only the actions this one handler performs. */
   tableActions?: string[];
   uploadActions?: string[];
+  /** May remove a video's playable version and poster from the media bucket. */
+  deletesMedia?: boolean;
   /** May put jobs on the processing queue. */
   startsProcessing?: boolean;
   /** May read the private key that signs playback URLs. */
@@ -95,6 +98,15 @@ export class ApiStack extends Stack {
       file: 'get-playback.ts',
       tableActions: ['dynamodb:GetItem'],
       signsPlaybackUrls: true,
+    });
+    this.route('DeleteVideo', {
+      method: HttpMethod.DELETE,
+      path: '/videos/{videoId}',
+      file: 'delete-video.ts',
+      // Removing the record and giving the bytes back is one transaction of these two writes.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:DeleteItem', 'dynamodb:UpdateItem'],
+      uploadActions: ['s3:DeleteObject', 's3:AbortMultipartUpload'],
+      deletesMedia: true,
     });
     this.route('ListLibrary', {
       method: HttpMethod.GET,
@@ -167,7 +179,7 @@ export class ApiStack extends Stack {
   }
 
   private route(name: string, route: RouteProps) {
-    const { table, uploadsBucket, processingQueue } = this.props;
+    const { table, uploadsBucket, mediaBucket, processingQueue } = this.props;
 
     const fn = nodeLambda(this, name, {
       entry: `interfaces/http/${route.file}`,
@@ -175,6 +187,7 @@ export class ApiStack extends Stack {
       environment: {
         TABLE_NAME: table.tableName,
         UPLOADS_BUCKET: uploadsBucket.bucketName,
+        MEDIA_BUCKET: mediaBucket.bucketName,
         PROCESSING_QUEUE_URL: processingQueue.queueUrl,
         PLAYBACK_DOMAIN: this.props.playbackDomain,
         PLAYBACK_KEY_PAIR_ID: this.props.playbackKeyPairId,
@@ -188,6 +201,14 @@ export class ApiStack extends Stack {
         new PolicyStatement({
           actions: route.uploadActions,
           resources: [uploadsBucket.arnForObjects('uploads/*')],
+        }),
+      );
+    }
+    if (route.deletesMedia) {
+      fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['s3:DeleteObject'],
+          resources: [mediaBucket.arnForObjects('media/*')],
         }),
       );
     }

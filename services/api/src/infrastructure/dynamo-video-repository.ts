@@ -152,6 +152,48 @@ export class DynamoVideoRepository implements VideoRepository {
   async delete(id: string): Promise<void> {
     await this.doc.send(new DeleteCommand({ TableName: this.tableName, Key: videoKey(id) }));
   }
+
+  async deleteCounted(video: Video): Promise<void> {
+    try {
+      // Both writes succeed or neither does.
+      await this.doc.send(
+        new TransactWriteCommand({
+          TransactItems: [
+            {
+              Delete: {
+                TableName: this.tableName,
+                Key: videoKey(video.id),
+                // Unchanged since it was read: a repeated request can't give bytes back twice.
+                ConditionExpression: 'uploadStatus = :status',
+                ExpressionAttributeValues: { ':status': video.uploadStatus },
+              },
+            },
+            {
+              Update: {
+                TableName: this.tableName,
+                Key: userKey(video.ownerId),
+                UpdateExpression: 'ADD bytesUsed :negative',
+                // Usage can never go below zero.
+                ConditionExpression: 'bytesUsed >= :size',
+                ExpressionAttributeValues: {
+                  ':negative': -(video.sizeBytes ?? 0),
+                  ':size': video.sizeBytes ?? 0,
+                },
+              },
+            },
+          ],
+        }),
+      );
+    } catch (error) {
+      if (
+        error instanceof TransactionCanceledException &&
+        error.CancellationReasons?.[0]?.Code === 'ConditionalCheckFailed'
+      ) {
+        throw new DomainError('INVALID_STATE', 'Video changed or was already deleted');
+      }
+      throw error;
+    }
+  }
 }
 
 function quotaExceeded() {

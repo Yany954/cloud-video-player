@@ -63,6 +63,7 @@ describe('GetPlayback', () => {
       height: 1080,
       title: 'concert',
       moderationStatus: 'pending',
+      canDelete: true,
       expiresAt: '2026-10-03T18:00:00.000Z',
     });
   });
@@ -84,6 +85,7 @@ describe('GetPlayback', () => {
     const playback = await getPlayback.execute({ viewer: ben, videoId: 'video-1' });
 
     expect(playback.video).toContain('video-1/video.mp4');
+    expect(playback.canDelete).toBe(false);
   });
 
   it('lets an admin play a video that is waiting for review', async () => {

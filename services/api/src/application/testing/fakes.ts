@@ -61,6 +61,19 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountReposito
     this.videos.delete(id);
   }
 
+  async deleteCounted(video: Video) {
+    const stored = this.videos.get(video.id);
+    if (!stored || stored.uploadStatus !== video.uploadStatus) {
+      throw new DomainError('INVALID_STATE', 'Video changed');
+    }
+    const usage = await this.getUsage(video.ownerId);
+    this.usage.set(video.ownerId, {
+      ...usage,
+      bytesUsed: usage.bytesUsed - (video.sizeBytes ?? 0),
+    });
+    this.videos.delete(video.id);
+  }
+
   async getUsage(userId: string) {
     return this.usage.get(userId) ?? { bytesUsed: 0, quotaBytes: DEFAULT_QUOTA_BYTES };
   }
@@ -70,6 +83,8 @@ export class InMemoryObjectStorage implements ObjectStorage {
   readonly sessions = new Map<string, Map<number, UploadedPart>>();
   /** videoId -> size of the joined original. */
   readonly originals = new Map<string, number>();
+  /** videoIds that have a playable version. */
+  readonly playables = new Set<string>();
   private nextSession = 1;
 
   /** Simulates the client PUTting one part to its presigned URL. */
@@ -109,6 +124,10 @@ export class InMemoryObjectStorage implements ObjectStorage {
 
   async deleteOriginal(video: Video) {
     this.originals.delete(video.id);
+  }
+
+  async deletePlayable(video: Video) {
+    this.playables.delete(video.id);
   }
 
   private session(sessionId: string) {

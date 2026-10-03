@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { awaitsReview, canView, isInLibrary, reviewVideo } from './moderation';
+import {
+  assertDeletable,
+  awaitsReview,
+  canDelete,
+  canView,
+  isInLibrary,
+  reviewVideo,
+} from './moderation';
 import { completeUpload, markFailed, markReady, startProcessing, startUpload } from './video';
 import type { Video } from './video';
 
@@ -98,5 +105,36 @@ describe('canView', () => {
     expect(canView(ready(), stranger)).toBe(false);
     expect(canView(rejected(), stranger)).toBe(false);
     expect(canView({ ...approved(), moderationStatus: 'flagged' }, stranger)).toBe(false);
+  });
+});
+
+describe('canDelete', () => {
+  it('lets owners delete their own video in any state', () => {
+    for (const video of [uploading(), ready(), approved(), rejected()]) {
+      expect(canDelete(video, owner)).toBe(true);
+    }
+  });
+
+  it("lets an admin delete anyone's video", () => {
+    expect(canDelete(approved(), admin)).toBe(true);
+    expect(canDelete(uploading(), admin)).toBe(true);
+  });
+
+  it("never lets another user delete it, even when it's in the library", () => {
+    expect(canDelete(approved(), stranger)).toBe(false);
+  });
+});
+
+describe('assertDeletable', () => {
+  it('refuses a video that is being processed', () => {
+    expect(() => assertDeletable(processing())).toThrow(
+      expect.objectContaining({ code: 'INVALID_STATE' }),
+    );
+  });
+
+  it('accepts every other state', () => {
+    for (const video of [uploading(), ready(), markFailed(processing(), 'TOO_LARGE')]) {
+      expect(() => assertDeletable(video)).not.toThrow();
+    }
   });
 });

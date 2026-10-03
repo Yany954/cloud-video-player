@@ -7,6 +7,7 @@ import { CompleteUpload } from '../../application/upload/complete-upload';
 import { GetPartUrls } from '../../application/upload/get-part-urls';
 import { GetStorageUsage } from '../../application/upload/get-storage-usage';
 import { InitiateUpload } from '../../application/upload/initiate-upload';
+import { DeleteVideo } from '../../application/video/delete-video';
 import { GetPlayback } from '../../application/video/get-playback';
 import { ListLibrary } from '../../application/video/list-library';
 import { ListMyVideos } from '../../application/video/list-my-videos';
@@ -20,7 +21,7 @@ import { SqsProcessingQueue } from '../../infrastructure/sqs-processing-queue';
 // Composition root: the one place where use cases are wired to their AWS adapters.
 const accounts = new DynamoStorageAccountRepository(documentClient, env('TABLE_NAME'));
 const videos = new DynamoVideoRepository(documentClient, env('TABLE_NAME'), accounts);
-const storage = new S3ObjectStorage(s3Client, env('UPLOADS_BUCKET'));
+const storage = new S3ObjectStorage(s3Client, env('UPLOADS_BUCKET'), env('MEDIA_BUCKET'));
 const queue = new SqsProcessingQueue(sqsClient, env('PROCESSING_QUEUE_URL'));
 
 export const initiateUpload = new InitiateUpload(
@@ -35,6 +36,7 @@ export const completeUpload = new CompleteUpload(videos, accounts, storage, queu
 export const abortUpload = new AbortUpload(videos, storage);
 export const getStorageUsage = new GetStorageUsage(accounts);
 export const listMyVideos = new ListMyVideos(videos);
+export const deleteVideo = new DeleteVideo(videos, storage);
 export const listLibrary = new ListLibrary(videos);
 export const listReviewQueue = new ListReviewQueue(videos);
 export const reviewVideo = new ReviewVideo(videos, () => new Date());

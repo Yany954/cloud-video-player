@@ -25,6 +25,8 @@ export interface UploadApi {
   listReviewQueue(): Promise<ListVideosResponse>;
   /** Admins only. */
   reviewVideo(videoId: string, decision: ReviewDecision): Promise<VideoResponse>;
+  /** Permanent. Owners delete their own videos; admins can delete any. */
+  deleteVideo(videoId: string): Promise<void>;
 }
 
 /** The API answered with an error. `code` is the server's error code, e.g. QUOTA_EXCEEDED. */
@@ -88,5 +90,6 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
     listReviewQueue: () => request('GET', '/admin/review'),
     reviewVideo: (videoId, decision) =>
       request('POST', `/admin/videos/${id(videoId)}/review`, { decision }),
+    deleteVideo: (videoId) => request('DELETE', `/videos/${id(videoId)}`),
   };
 }

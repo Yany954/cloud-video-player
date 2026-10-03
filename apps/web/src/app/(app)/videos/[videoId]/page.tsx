@@ -4,8 +4,9 @@ import type { ModerationStatus, PlaybackResponse } from '@cvp/shared';
 import { ApiError } from '@cvp/upload-client';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { DeleteVideoButton } from '@/components/video/delete-video-button';
 import { ReviewActions } from '@/components/moderation/review-actions';
 import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -57,6 +58,8 @@ function Watch() {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [cannotPlay, setCannotPlay] = useState(false);
   const [reviewError, setReviewError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     let active = true;
@@ -121,6 +124,22 @@ function Watch() {
               {state.playback.height}
             </p>
           </div>
+          {state.playback.canDelete && (
+            <div className="grid gap-2">
+              <div>
+                <DeleteVideoButton
+                  video={{ id: videoId, title: state.playback.title }}
+                  onDeleted={() => router.replace(back.href)}
+                  onError={setDeleteError}
+                />
+              </div>
+              {deleteError && (
+                <p role="alert" className="text-destructive text-sm">
+                  {deleteError}
+                </p>
+              )}
+            </div>
+          )}
           {isAdmin && (
             <section
               aria-labelledby="review-heading"

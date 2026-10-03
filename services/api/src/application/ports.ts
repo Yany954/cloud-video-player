@@ -22,6 +22,12 @@ export interface VideoRepository {
   /** Overwrites an existing video with its new state. */
   save(video: Video): Promise<void>;
   delete(id: string): Promise<void>;
+  /**
+   * One atomic write: removes a video whose bytes were counted and gives them back to its
+   * owner. Throws DomainError INVALID_STATE (and writes nothing) if the video changed or was
+   * already deleted, so the same bytes are never given back twice.
+   */
+  deleteCounted(video: Video): Promise<void>;
 }
 
 export interface StorageAccountRepository {
@@ -50,6 +56,8 @@ export interface ObjectStorage {
   completeMultipartUpload(video: Video, sessionId: string, parts: UploadedPart[]): Promise<number>;
   abortMultipartUpload(video: Video, sessionId: string): Promise<void>;
   deleteOriginal(video: Video): Promise<void>;
+  /** Removes the playable version and its poster. Fine if they were never made. */
+  deletePlayable(video: Video): Promise<void>;
 }
 
 export interface MediaProcessor {

@@ -40,6 +40,8 @@ export interface PlaybackResponse {
   height: number;
   /** Lets an admin see, and change, the decision while watching. */
   moderationStatus: ModerationStatus;
+  /** True for the video's owner and for admins. */
+  canDelete: boolean;
 }
 
 export interface ListVideosResponse {

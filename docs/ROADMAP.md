@@ -1,20 +1,20 @@
 # Roadmap and project state
 
-Last updated: 2026-10-03 (moderation done). This file is the hand-off between work sessions: what is done, what
+Last updated: 2026-10-03 (moderation and delete video done). This file is the hand-off between work sessions: what is done, what
 is next, and the decisions and habits that are not obvious from the code. `CLAUDE.md` holds the
 product goals; this file holds the progress.
 
 ## Where we are
 
-| Phase                   | State                                                      |
-| ----------------------- | ---------------------------------------------------------- |
-| 0. Monorepo             | Done                                                       |
-| 1. Secure AWS account   | Done                                                       |
-| 2. Infrastructure (CDK) | Done                                                       |
-| 3. Backend              | Upload, processing, playback, moderation. **Next: delete** |
-| 4. Web app              | Sign-in, upload, lists, player, review done. Not deployed  |
-| 5. Mobile app (Expo)    | Not started                                                |
-| After the MVP           | README for GitHub, differentiating features                |
+| Phase                   | State                                                     |
+| ----------------------- | --------------------------------------------------------- |
+| 0. Monorepo             | Done                                                      |
+| 1. Secure AWS account   | Done                                                      |
+| 2. Infrastructure (CDK) | Done                                                      |
+| 3. Backend              | Upload to playback, moderation, delete. **Next: events**  |
+| 4. Web app              | Sign-in, upload, lists, player, review done. Not deployed |
+| 5. Mobile app (Expo)    | Not started                                               |
+| After the MVP           | README for GitHub, differentiating features               |
 
 ## What to do next, in order
 
@@ -25,13 +25,10 @@ signed-in user can watch. Automatic checks (Rekognition, roughly $0.10 per minut
 confirm the price and warn before building) are not built; `flagged` is reserved for them and
 for reports.
 
-### 3a-2. Delete video (next; design agreed with the user)
+### 3a-2. Delete video: done
 
-- The owner deletes their own video; an admin can delete any video.
-- Removes the original, the playable copy, the poster and the table row.
-- The size is subtracted from the owner's `bytesUsed` in the same transaction that removes the
-  row. Row first, then the files: a failed file deletion leaves only an orphan file.
-- Permanent (the buckets have no versioning): the web app asks for confirmation.
+`DELETE /videos/{id}`: the owner, or an admin for any video. Removes the row, the original,
+the playable copy and the poster; the bytes go back to the owner in the same transaction.
 
 ### 3a-3. Report a video, block a user
 
@@ -44,14 +41,22 @@ The user's words: categorise a video as "Concert Twenty One Pilots October 2026"
 collaborator (their boyfriend) so he can upload what he filmed that day to the same event.
 Explain the design and agree on it before coding.
 
-1. `Category` entity (`CATEGORY#{id}` / `META`; listed through `GSI2PK = CATEGORIES`). Decide
-   with the user who may create one: `CLAUDE.md` says admins, but the request reads as any
-   user creating an event for their own videos.
-2. Pick a category when uploading, and change it later (the domain already accepts
+Decided by the user: **any user creates events for their own videos**, to organise them (this
+replaces "admins manage categories" in `CLAUDE.md`).
+
+1. `Category` (event) entity: `CATEGORY#{id}` / `META`, owned by the user who created it;
+   listed through `GSI2`.
+2. Pick an event when uploading, and change it later (the domain already accepts
    `categoryId`, the upload request does not yet).
-3. Playlist: approved videos of a category in `position` order (`GSI2`), and a player that
-   autoplays the next one.
-4. Collaborators: people invited to add their recordings to an event. This is the
+3. Playlist: the videos of an event in `position` order (`GSI2`), and a player that goes from
+   one video to the next without clicking.
+4. **Autoplay-next switch** in the player (the user asked for a slider/toggle to choose whether
+   the next video starts by itself). Remember the choice per user.
+5. Continuous play must keep working **in Picture-in-Picture and with the phone locked**
+   (mobile: background audio, lock-screen controls and PiP from `CLAUDE.md`; the next video
+   has to start without the app in the foreground). Web: keep one `<video>` element and swap
+   its source so PiP survives the change of video.
+6. Collaborators: people invited to add their recordings to an event. This is the
    "collaborative collections" differentiator in `CLAUDE.md`, and it feeds multi-angle sync.
 
 ### 3d. User management and profile (asked by the user)
@@ -103,7 +108,7 @@ background uploader. Player with `expo-video`.
 API routes: `GET /health`, `GET /me/storage`, `POST /uploads`, `GET /uploads/{id}/parts`,
 `POST /uploads/{id}/complete`, `DELETE /uploads/{id}`, `GET /videos`,
 `GET /videos/{id}/playback`, `GET /library`, `GET /admin/review`,
-`POST /admin/videos/{id}/review`. The `/admin` routes check the `admin` group in the handler
+`POST /admin/videos/{id}/review`, `DELETE /videos/{id}`. The `/admin` routes check the `admin` group in the handler
 and answer 403 otherwise.
 
 Outside CDK: the playback private key in SSM (`/cvp-dev/playback/private-key`), the budget
@@ -152,6 +157,8 @@ infra                    CDK stacks, tests, scripts (smoke tests, ffmpeg and key
   (pending and flagged) and the library (approved). Rejected videos are in neither. `GSI2`
   stays free for categories.
 - **Admin uploads also start as `pending`**: one rule for everyone.
+- **Deleting removes the table row first, then the files**, and is refused while a video is
+  being processed. The web app offers it only for ready or failed videos.
 - **A decision can be changed later** (take down an approved video, approve a rejected one);
   the video records who decided and when.
 - Web buttons use sentence case ("Take down"), not Title Case.
@@ -192,7 +199,9 @@ pnpm --filter @cvp/infra cdk:deploy --all
 - HEVC, audio conversion, large files and Safari/phone playback are unit-tested only.
 - No captions on the player (WCAG 1.2.2); expected with the transcription feature.
 - `GET /videos`, the library and the review queue return at most 100 videos, with no paging.
-- A rejected video still counts toward its owner's quota until delete video exists.
+- Deleting does not invalidate CloudFront's cache: an edge may keep a deleted video for up to a
+  day, watchable by someone holding a signed link that has not expired yet (6 hours at most).
+  Fix: create an invalidation for `media/{id}/*` on delete (the first 1,000 a month are free).
 - The library does not say who uploaded a video: user names are not stored yet.
 - A failed "enqueue" after a completed upload leaves the video at `uploaded`; there is no
   "reprocess" action yet.

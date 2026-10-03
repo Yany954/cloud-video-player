@@ -1,5 +1,5 @@
 import { DomainError } from '../../domain/errors';
-import { canView, type Viewer } from '../../domain/moderation';
+import { canDelete, canView, type Viewer } from '../../domain/moderation';
 import type { MediaInfo, ModerationStatus } from '../../domain/video';
 import { NotFoundError } from '../errors';
 import type { Clock, PlaybackUrls, PlaybackUrlSigner, VideoRepository } from '../ports';
@@ -10,6 +10,7 @@ export const PLAYBACK_URL_TTL_MS = 6 * 60 * 60 * 1000;
 export interface Playback extends PlaybackUrls, MediaInfo {
   title: string;
   moderationStatus: ModerationStatus;
+  canDelete: boolean;
   expiresAt: string;
 }
 
@@ -33,6 +34,7 @@ export class GetPlayback {
       ...video.media,
       title: video.title,
       moderationStatus: video.moderationStatus,
+      canDelete: canDelete(video, input.viewer),
       expiresAt: expiresAt.toISOString(),
     };
   }
