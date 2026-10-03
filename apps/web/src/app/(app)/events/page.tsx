@@ -1,11 +1,11 @@
 'use client';
 
-import type { EventResponse, EventVisibility, ListEventsResponse } from '@cvp/shared';
+import type { EventResponse, ListEventsResponse } from '@cvp/shared';
 import { CalendarDays, ChevronRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { selectClassName, VisibilityBadge } from '@/components/event/visibility-badge';
+import { VisibilityBadge } from '@/components/event/visibility-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,6 @@ export default function EventsPage() {
   const [events, setEvents] = useState<ListEventsResponse | null>(null);
   const [failed, setFailed] = useState(false);
   const [name, setName] = useState('');
-  const [visibility, setVisibility] = useState<EventVisibility>('private');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -40,7 +39,7 @@ export default function EventsPage() {
     setCreating(true);
     setCreateError('');
     try {
-      const event = await uploadApi.createEvent({ name, visibility });
+      const event = await uploadApi.createEvent({ name });
       router.push(`/events/${event.id}`);
     } catch {
       setCreateError('The event could not be created. Check your connection and try again.');
@@ -53,7 +52,8 @@ export default function EventsPage() {
       <div className="grid gap-1">
         <h1 className="text-2xl font-semibold tracking-tight text-balance">Events</h1>
         <p className="text-muted-foreground text-sm">
-          Group the videos of one day, such as a concert, and play them one after another.
+          Group the videos of one day, such as a concert, and play them one after another. An event
+          is private: only you and the people you invite can see it.
         </p>
       </div>
 
@@ -66,7 +66,7 @@ export default function EventsPage() {
         <h2 id="new-event-title" className="text-base font-semibold tracking-tight">
           New event
         </h2>
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <div className="grid gap-1.5">
             <Label htmlFor="event-name">Name</Label>
             <Input
@@ -81,19 +81,6 @@ export default function EventsPage() {
               placeholder="Concert Twenty One Pilots, October 2026…"
               className="h-9"
             />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="event-visibility">Who can see it</Label>
-            <select
-              id="event-visibility"
-              name="event-visibility"
-              value={visibility}
-              onChange={(change) => setVisibility(change.target.value as EventVisibility)}
-              className={selectClassName}
-            >
-              <option value="private">Only me and people I invite</option>
-              <option value="shared">Everyone in the group</option>
-            </select>
           </div>
           <Button type="submit" size="lg" disabled={creating}>
             <Plus aria-hidden />

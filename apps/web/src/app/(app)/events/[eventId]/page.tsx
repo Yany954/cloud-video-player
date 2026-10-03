@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { VideoList } from '@/components/video/video-list';
 import { uploadApi } from '@/lib/api';
 import { moveUp, sameOrder } from '@/lib/event/order';
+import { isBeingPrepared, videoStatusLabel } from '@/lib/video/status';
 
 const TRY_AGAIN = 'Check your connection and try again.';
 
@@ -174,6 +175,14 @@ export default function EventPage() {
           </form>
         )}
 
+        {renaming === null && (
+          <p className="text-muted-foreground text-sm">
+            {isPrivate
+              ? 'Private: only you and the people you invite can see this event and its videos.'
+              : 'Every user of this app can see this event.'}
+          </p>
+        )}
+
         {event.isOwner && renaming === null && draft === null && (
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRenaming(event.name)}>
@@ -186,44 +195,38 @@ export default function EventPage() {
                 Reorder
               </Button>
             )}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" disabled={busy}>
-                  {isPrivate ? 'Share with everyone' : 'Make private'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    {isPrivate ? 'Share this event with everyone?' : 'Make this event private?'}
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {isPrivate
-                      ? 'Everyone in the group will see this event, and its approved videos will appear in the Library.'
-                      : 'Only you and the people you invite will see this event. Its videos will leave the Library.'}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Keep as it is</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() =>
-                      void run(
-                        () =>
-                          uploadApi.updateEvent(eventId, {
-                            visibility: isPrivate ? 'shared' : 'private',
-                          }),
-                        isPrivate
-                          ? 'The event is now shared with everyone.'
-                          : 'The event is now private.',
-                        'The event could not be changed.',
-                      )
-                    }
-                  >
-                    {isPrivate ? 'Share event' : 'Make private'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {!isPrivate && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" disabled={busy}>
+                    Make private
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Make this event private?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Only you and the people you invite will see this event. Its videos will leave
+                      the Library.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep as it is</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() =>
+                        void run(
+                          () => uploadApi.updateEvent(eventId, { visibility: 'private' }),
+                          'The event is now private.',
+                          'The event could not be changed.',
+                        )
+                      }
+                    >
+                      Make private
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" disabled={busy}>
@@ -433,24 +436,32 @@ function AddVideos({
   const load = useCallback(
     () =>
       uploadApi.listVideos().then(
-        ({ videos }) =>
-          setCandidates(
-            videos.filter(
-              (video) =>
-                // Videos still uploading or being prepared cannot be moved yet.
-                (video.uploadStatus === 'ready' || video.uploadStatus === 'failed') &&
-                video.eventId !== eventId,
-            ),
-          ),
-        () => setCandidates([]),
+        ({ videos }) => setCandidates(videos.filter((video) => video.eventId !== eventId)),
+        () => setCandidates((current) => current ?? []),
       ),
     [eventId],
   );
   useEffect(() => {
     void load();
+    // A video uploaded in another tab, or approved meanwhile, shows up on coming back.
+    const refresh = () => document.visibilityState === 'visible' && void load();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, [load]);
 
-  const chosen = candidates?.find((video) => video.id === selected);
+  // A video being prepared becomes addable without the user doing anything: keep checking.
+  const preparing = candidates?.some(isBeingPrepared) ?? false;
+  useEffect(() => {
+    if (!preparing) return;
+    const timer = setInterval(() => void load(), 4000);
+    return () => clearInterval(timer);
+  }, [preparing, load]);
+
+  const chosen = candidates?.find((video) => video.id === selected && canMove(video));
 
   return (
     <section aria-labelledby="add-videos-title" className="grid gap-3 rounded-3xl border px-5 py-5">
@@ -461,7 +472,7 @@ function AddVideos({
         <div className="bg-muted h-9 animate-pulse rounded-lg motion-reduce:animate-none" />
       ) : candidates.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          All of your finished videos are already here. Upload more from Your videos.
+          All of your videos are already here. Upload more from Your videos.
         </p>
       ) : (
         <form
@@ -487,9 +498,13 @@ function AddVideos({
             >
               <option value="">Choose one of your videos…</option>
               {candidates.map((video) => (
-                <option key={video.id} value={video.id}>
+                <option key={video.id} value={video.id} disabled={!canMove(video)}>
                   {video.title}
-                  {video.eventId ? ' (moves from another event)' : ''}
+                  {!canMove(video)
+                    ? ` (${videoStatusLabel(video).toLowerCase()}, not ready to add yet)`
+                    : video.eventId
+                      ? ' (moves from another event)'
+                      : ''}
                 </option>
               ))}
             </select>
@@ -502,4 +517,9 @@ function AddVideos({
       )}
     </section>
   );
+}
+
+/** A video can change event once it has finished uploading and being prepared. */
+function canMove(video: VideoResponse): boolean {
+  return video.uploadStatus === 'ready' || video.uploadStatus === 'failed';
 }

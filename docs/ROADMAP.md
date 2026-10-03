@@ -45,8 +45,9 @@ Decided by the user:
 
 - **Any user creates events** for their own videos (this replaces "admins manage categories"
   in `CLAUDE.md`). In code the entity is `Category`; the interface calls it an "event".
-- An event is **private** (only its owner and collaborators see it and its videos) or
-  **shared** (every signed-in user). New events start private.
+- **Events are private: only the owner and the people they invite see them.** The user does
+  not want an "everyone" option, so the web app only creates private events and offers no way
+  to share one with all users. The API and domain still support `shared`; leave it unused.
 - **Collaborators** are invited to add their own recordings to an event.
 - **Manual reordering**: an up arrow moves a video one place earlier, and a temporary
   "reorder" view lets the user drag videos up or down, then save.
@@ -70,7 +71,9 @@ Slices, in order:
    uploading in the web app (the API accepts `eventId`; the upload screen does not send it).
 2. **Continuous play**: "Play all", next video starts by itself in the same `<video>` element
    (so web PiP survives), autoplay switch remembered per browser.
-3. **Collaborators**: invite a user by email; they add their recordings.
+3. **Collaborators (the user asked for the invite button; do this before continuous play
+   if they confirm)**: invite an existing user by email (look the email up in Cognito), list
+   and remove collaborators, and list "events I was invited to". They add their recordings.
 4. Mobile (Phase 5): background audio, lock-screen controls and PiP for the same playlist.
 
 ### 3d. User management and profile (asked by the user)
