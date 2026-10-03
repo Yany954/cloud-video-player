@@ -65,18 +65,25 @@ describe('ApiStack', () => {
     const routes = Object.values(template.findResources('AWS::ApiGatewayV2::Route'));
 
     expect(routes.map((route) => route.Properties.RouteKey).sort()).toEqual([
+      'DELETE /events/{eventId}',
       'DELETE /uploads/{videoId}',
       'DELETE /videos/{videoId}',
       'GET /admin/review',
+      'GET /events',
+      'GET /events/{eventId}',
       'GET /health',
       'GET /library',
       'GET /me/storage',
       'GET /uploads/{videoId}/parts',
       'GET /videos',
       'GET /videos/{videoId}/playback',
+      'PATCH /events/{eventId}',
       'POST /admin/videos/{videoId}/review',
+      'POST /events',
       'POST /uploads',
       'POST /uploads/{videoId}/complete',
+      'PUT /events/{eventId}/order',
+      'PUT /videos/{videoId}/event',
     ]);
     for (const route of routes) expect(route.Properties.AuthorizationType).toBe('JWT');
   });
@@ -96,12 +103,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(12);
+    expect(functions).toHaveLength(19);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(12);
+    expect(logGroups).toHaveLength(19);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -132,7 +139,7 @@ describe('ApiStack', () => {
       expect(actionsOf('ReviewVideo')).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem']);
     });
 
-    it('lets only the four signing routes read the private key, and only that parameter', () => {
+    it('lets only the five signing routes read the private key, and only that parameter', () => {
       for (const name of [
         'InitiateUpload',
         'GetPartUrls',
@@ -145,7 +152,7 @@ describe('ApiStack', () => {
       const ssm = Object.values(template.findResources('AWS::IAM::Policy'))
         .flatMap((policy) => policy.Properties.PolicyDocument.Statement as Statement[])
         .filter((statement) => [statement.Action].flat().includes('ssm:GetParameter'));
-      expect(ssm).toHaveLength(4);
+      expect(ssm).toHaveLength(5);
       for (const statement of ssm) {
         expect(JSON.stringify(statement.Resource)).toContain('parameter/test/playback/private-key');
       }
@@ -180,6 +187,29 @@ describe('ApiStack', () => {
         'dynamodb:GetItem',
         's3:AbortMultipartUpload',
       ]);
+    });
+
+    it('gives each event route only the table actions it performs, and no file access', () => {
+      expect(actionsOf('CreateEvent')).toEqual(['dynamodb:PutItem']);
+      expect(actionsOf('ListEvents')).toEqual(['dynamodb:Query']);
+      expect(actionsOf('GetEvent')).toEqual([
+        'dynamodb:GetItem',
+        'dynamodb:Query',
+        'ssm:GetParameter',
+      ]);
+      expect(actionsOf('UpdateEvent')).toEqual([
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+        'dynamodb:Query',
+        'dynamodb:UpdateItem',
+      ]);
+      expect(actionsOf('ReorderEvent')).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem']);
+      expect(actionsOf('DeleteEvent')).toEqual([
+        'dynamodb:DeleteItem',
+        'dynamodb:GetItem',
+        'dynamodb:Query',
+      ]);
+      expect(actionsOf('SetVideoEvent')).toEqual(['dynamodb:GetItem', 'dynamodb:UpdateItem']);
     });
 
     it('lets "delete video" remove one record, give bytes back and delete files only', () => {

@@ -65,8 +65,8 @@ Design in the domain (`domain/category.ts`, done):
 Slices, in order:
 
 1. **Events**: create, rename, private/shared, delete; put a video in an event (when
-   uploading and later); event page; reorder. Domain done; next are use cases, adapters
-   (`GSI2PK = CATEGORY#{id}` for an event's videos), endpoints, web.
+   uploading and later); event page; reorder. Backend done and deployed; **next: web screens**
+   (events list, event page, reorder with the up arrow and a drag view).
 2. **Continuous play**: "Play all", next video starts by itself in the same `<video>` element
    (so web PiP survives), autoplay switch remembered per browser.
 3. **Collaborators**: invite a user by email; they add their recordings.
@@ -121,7 +121,9 @@ background uploader. Player with `expo-video`.
 API routes: `GET /health`, `GET /me/storage`, `POST /uploads`, `GET /uploads/{id}/parts`,
 `POST /uploads/{id}/complete`, `DELETE /uploads/{id}`, `GET /videos`,
 `GET /videos/{id}/playback`, `GET /library`, `GET /admin/review`,
-`POST /admin/videos/{id}/review`, `DELETE /videos/{id}`. The `/admin` routes check the `admin` group in the handler
+`POST /admin/videos/{id}/review`, `DELETE /videos/{id}`, `POST /events`, `GET /events`,
+`GET /events/{id}`, `PATCH /events/{id}`, `PUT /events/{id}/order`, `DELETE /events/{id}`,
+`PUT /videos/{id}/event`. `POST /uploads` takes an optional `eventId`. The `/admin` routes check the `admin` group in the handler
 and answer 403 otherwise.
 
 Outside CDK: the playback private key in SSM (`/cvp-dev/playback/private-key`), the budget
@@ -139,11 +141,11 @@ infra                    CDK stacks, tests, scripts (smoke tests, ffmpeg and key
 
 ### Table key design
 
-| Item     | PK              | SK        | Indexes                                                                                        |
-| -------- | --------------- | --------- | ---------------------------------------------------------------------------------------------- |
-| User     | `USER#{sub}`    | `PROFILE` |                                                                                                |
-| Video    | `VIDEO#{id}`    | `META`    | `GSI1`: `OWNER#{userId}` / `createdAt`. `GSI3`: `MODERATION#queue` or `#library` / `createdAt` |
-| Category | `CATEGORY#{id}` | `META`    | planned                                                                                        |
+| Item     | PK              | SK        | Indexes                                                                                               |
+| -------- | --------------- | --------- | ----------------------------------------------------------------------------------------------------- |
+| User     | `USER#{sub}`    | `PROFILE` |                                                                                                       |
+| Video    | `VIDEO#{id}`    | `META`    | `GSI1`: `OWNER#{userId}` / `createdAt`. `GSI3`: `MODERATION#queue` or `#library` / `createdAt`        |
+| Category | `CATEGORY#{id}` | `META`    | `GSI1`: `OWNER#{userId}#CATEGORIES`. `GSI2`: `CATEGORIES` when shared. Videos: `GSI2` `CATEGORY#{id}` |
 
 ## Decisions that differ from, or add to, CLAUDE.md
 
@@ -215,6 +217,12 @@ pnpm --filter @cvp/infra cdk:deploy --all
 - Deleting does not invalidate CloudFront's cache: an edge may keep a deleted video for up to a
   day, watchable by someone holding a signed link that has not expired yet (6 hours at most).
   Fix: create an invalidation for `media/{id}/*` on delete (the first 1,000 a month are free).
+- An event can be deleted only when empty, and a video moved only when it is ready or failed.
+- Taking a video out of a private event (or sharing the event) puts its approved videos in the
+  library: the web app must say so before doing it.
+- A video moved at the same instant an admin reviews it can lose the move (the review rewrites
+  the whole record). Rare; the owner repeats the move.
+- An event page shows at most 200 videos; event lists at most 100 events.
 - The library does not say who uploaded a video: user names are not stored yet.
 - A failed "enqueue" after a completed upload leaves the video at `uploaded`; there is no
   "reprocess" action yet.

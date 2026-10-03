@@ -6,6 +6,8 @@ export const initiateUploadRequestSchema = z.object({
   fileName: z.string().min(1).max(255),
   sizeBytes: z.number().int().positive(),
   title: z.string().min(1).max(200).optional(),
+  /** Puts the video straight into one of the uploader's events. */
+  eventId: z.string().min(1).optional(),
 });
 export type InitiateUploadRequest = z.infer<typeof initiateUploadRequestSchema>;
 

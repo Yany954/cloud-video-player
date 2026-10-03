@@ -23,6 +23,8 @@ export interface VideoResponse {
   durationSeconds: number | null;
   /** Time-limited link to the poster image; null until the video is "ready". */
   posterUrl: string | null;
+  /** The event the video was put in, if any. */
+  eventId: string | null;
   createdAt: string;
 }
 

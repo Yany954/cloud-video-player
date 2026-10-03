@@ -42,6 +42,7 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
         failureReason: null,
         durationSeconds: null,
         posterUrl: null,
+        eventId: null,
         createdAt: '2026-10-03T10:00:00.000Z',
       };
     },

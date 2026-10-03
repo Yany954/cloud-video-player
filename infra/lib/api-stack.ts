@@ -108,6 +108,57 @@ export class ApiStack extends Stack {
       uploadActions: ['s3:DeleteObject', 's3:AbortMultipartUpload'],
       deletesMedia: true,
     });
+    // Events (called categories in the code): groups of videos that any user creates.
+    this.route('CreateEvent', {
+      method: HttpMethod.POST,
+      path: '/events',
+      file: 'create-event.ts',
+      tableActions: ['dynamodb:PutItem'],
+    });
+    this.route('ListEvents', {
+      method: HttpMethod.GET,
+      path: '/events',
+      file: 'list-events.ts',
+      tableActions: ['dynamodb:Query'],
+    });
+    this.route('GetEvent', {
+      method: HttpMethod.GET,
+      path: '/events/{eventId}',
+      file: 'get-event.ts',
+      tableActions: ['dynamodb:GetItem', 'dynamodb:Query'],
+      signsPlaybackUrls: true,
+    });
+    this.route('UpdateEvent', {
+      method: HttpMethod.PATCH,
+      path: '/events/{eventId}',
+      file: 'update-event.ts',
+      // Changing who sees an event also updates the privacy of each of its videos.
+      tableActions: [
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+        'dynamodb:Query',
+        'dynamodb:UpdateItem',
+      ],
+    });
+    this.route('ReorderEvent', {
+      method: HttpMethod.PUT,
+      path: '/events/{eventId}/order',
+      file: 'reorder-event.ts',
+      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+    });
+    this.route('DeleteEvent', {
+      method: HttpMethod.DELETE,
+      path: '/events/{eventId}',
+      file: 'delete-event.ts',
+      // Queries first: only an empty event can be deleted.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:DeleteItem'],
+    });
+    this.route('SetVideoEvent', {
+      method: HttpMethod.PUT,
+      path: '/videos/{videoId}/event',
+      file: 'set-video-event.ts',
+      tableActions: ['dynamodb:GetItem', 'dynamodb:UpdateItem'],
+    });
     this.route('ListLibrary', {
       method: HttpMethod.GET,
       path: '/library',

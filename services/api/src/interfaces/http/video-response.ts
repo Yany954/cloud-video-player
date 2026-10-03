@@ -13,6 +13,7 @@ export function toVideoResponse(video: Video, posterUrl: string | null = null): 
     failureReason: video.failureReason,
     durationSeconds: video.media?.durationSeconds ?? null,
     posterUrl,
+    eventId: video.categoryId,
     createdAt: video.createdAt,
   };
 }
