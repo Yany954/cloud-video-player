@@ -1,0 +1,47 @@
+import type { StorageUsage } from '../domain/quota';
+import type { Video } from '../domain/video';
+
+// Ports: what the use cases need from the outside world. AWS adapters in infrastructure/
+// implement them; tests use the in-memory fakes in application/testing.
+
+export interface VideoRepository {
+  create(video: Video): Promise<void>;
+  findById(id: string): Promise<Video | null>;
+  /**
+   * One atomic write: stores the uploaded video and adds its size to the owner's usage.
+   * Throws DomainError QUOTA_EXCEEDED (and writes nothing) if that would pass the quota.
+   */
+  saveCompleted(video: Video): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+export interface StorageAccountRepository {
+  /** A user who never uploaded has 0 bytes used and the default quota. */
+  getUsage(userId: string): Promise<StorageUsage>;
+}
+
+export interface UploadedPart {
+  partNumber: number;
+  etag: string;
+  sizeBytes: number;
+}
+
+export interface PartUrl {
+  partNumber: number;
+  url: string;
+}
+
+export interface ObjectStorage {
+  /** Returns the upload session id. */
+  startMultipartUpload(video: Video): Promise<string>;
+  listUploadedParts(video: Video, sessionId: string): Promise<UploadedPart[]>;
+  /** Short-lived URLs the client PUTs each part to, directly. */
+  signPartUrls(video: Video, sessionId: string, partNumbers: number[]): Promise<PartUrl[]>;
+  /** Joins the parts and returns the measured size of the final object. */
+  completeMultipartUpload(video: Video, sessionId: string, parts: UploadedPart[]): Promise<number>;
+  abortMultipartUpload(video: Video, sessionId: string): Promise<void>;
+  deleteOriginal(video: Video): Promise<void>;
+}
+
+export type IdGenerator = () => string;
+export type Clock = () => Date;
