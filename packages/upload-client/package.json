@@ -1,0 +1,21 @@
+{
+  "name": "@cvp/upload-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cvp/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@cvp/tsconfig": "workspace:*",
+    "typescript": "^5.9.2",
+    "vitest": "^5.0.2"
+  }
+}
