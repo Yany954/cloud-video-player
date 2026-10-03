@@ -7,6 +7,14 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1145.0",
+    "@aws-sdk/client-s3": "^3.1146.0",
+    "@aws-sdk/lib-dynamodb": "^3.1146.0",
+    "@aws-sdk/s3-request-presigner": "^3.1146.0",
+    "@cvp/shared": "workspace:*",
+    "zod": "^4.6.5"
+  },
   "devDependencies": {
     "@cvp/tsconfig": "workspace:*",
     "@types/aws-lambda": "^8.10.164",
