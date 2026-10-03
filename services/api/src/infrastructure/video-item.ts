@@ -30,7 +30,8 @@ export function toVideoItem(video: Video): VideoItem {
   };
 }
 
-export function fromVideoItem(item: Record<string, unknown>): Video {
+/** `item` is whatever DynamoDB returned for a key built with `videoKey`. */
+export function fromVideoItem(item: object): Video {
   const video = item as VideoItem;
   return {
     id: video.id,

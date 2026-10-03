@@ -24,9 +24,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState(user ? { status: 'signedIn', user } : { status: 'signedOut' });
   }, []);
 
+  // Restore the session kept in the browser, if there is one.
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let active = true;
+    cognito
+      .getSessionUser()
+      .catch(() => null)
+      .then((user) => {
+        if (active) setState(user ? { status: 'signedIn', user } : { status: 'signedOut' });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
