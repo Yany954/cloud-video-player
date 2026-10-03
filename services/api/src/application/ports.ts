@@ -1,4 +1,5 @@
 import type { StorageUsage } from '../domain/quota';
+import type { NormalizationPlan, ProbeResult } from '../domain/normalization';
 import type { Video } from '../domain/video';
 
 // Ports: what the use cases need from the outside world. AWS adapters in infrastructure/
@@ -14,6 +15,8 @@ export interface VideoRepository {
    * Throws DomainError QUOTA_EXCEEDED (and writes nothing) if that would pass the quota.
    */
   saveCompleted(video: Video): Promise<void>;
+  /** Overwrites an existing video with its new state. */
+  save(video: Video): Promise<void>;
   delete(id: string): Promise<void>;
 }
 
@@ -43,6 +46,13 @@ export interface ObjectStorage {
   completeMultipartUpload(video: Video, sessionId: string, parts: UploadedPart[]): Promise<number>;
   abortMultipartUpload(video: Video, sessionId: string): Promise<void>;
   deleteOriginal(video: Video): Promise<void>;
+}
+
+export interface MediaProcessor {
+  /** Reads the uploaded original and reports what is inside it. */
+  probe(video: Video): Promise<ProbeResult>;
+  /** Writes the playable version and its poster image, following the plan. */
+  normalize(video: Video, plan: Extract<NormalizationPlan, { kind: 'remux' }>): Promise<void>;
 }
 
 export type IdGenerator = () => string;

@@ -105,6 +105,17 @@ export class DynamoVideoRepository implements VideoRepository {
     }
   }
 
+  async save(video: Video): Promise<void> {
+    await this.doc.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: toVideoItem(video),
+        // Never resurrect a video that was deleted while a job was working on it.
+        ConditionExpression: 'attribute_exists(PK)',
+      }),
+    );
+  }
+
   async delete(id: string): Promise<void> {
     await this.doc.send(new DeleteCommand({ TableName: this.tableName, Key: videoKey(id) }));
   }

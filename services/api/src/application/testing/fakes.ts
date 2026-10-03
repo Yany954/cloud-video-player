@@ -37,6 +37,10 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountReposito
     this.videos.set(video.id, video);
   }
 
+  async save(video: Video) {
+    this.videos.set(video.id, video);
+  }
+
   async delete(id: string) {
     this.videos.delete(id);
   }

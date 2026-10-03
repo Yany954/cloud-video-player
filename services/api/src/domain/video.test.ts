@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { activeUploadSession, completeUpload, isOwnedBy, startUpload, type Video } from './video';
+import {
+  activeUploadSession,
+  completeUpload,
+  isOwnedBy,
+  markFailed,
+  markReady,
+  startProcessing,
+  startUpload,
+  type Video,
+} from './video';
 import { contentTypeOf } from './video-format';
 
 const input = {
@@ -26,6 +35,8 @@ describe('startUpload', () => {
       uploadStatus: 'uploading',
       moderationStatus: 'pending',
       uploadSessionId: null,
+      media: null,
+      failureReason: null,
       createdAt: '2026-10-03T10:00:00.000Z',
     });
   });
@@ -97,6 +108,55 @@ describe('activeUploadSession', () => {
 
   it('rejects a video with no session yet', () => {
     expect(() => activeUploadSession(startUpload(input))).toThrow(
+      expect.objectContaining({ code: 'INVALID_STATE' }),
+    );
+  });
+});
+
+describe('processing', () => {
+  const uploaded = () => completeUpload(uploading(), 1_000);
+  const media = { durationSeconds: 61.5, width: 1920, height: 1080 };
+
+  it('goes from uploaded to processing to ready, keeping the measured media facts', () => {
+    const ready = markReady(startProcessing(uploaded()), media);
+
+    expect(ready).toMatchObject({ uploadStatus: 'ready', media, failureReason: null });
+  });
+
+  it('records why a video failed', () => {
+    const failed = markFailed(startProcessing(uploaded()), 'UNSUPPORTED_VIDEO_CODEC');
+
+    expect(failed).toMatchObject({
+      uploadStatus: 'failed',
+      media: null,
+      failureReason: 'UNSUPPORTED_VIDEO_CODEC',
+    });
+  });
+
+  it('can be retried after a failure or a crash mid-processing', () => {
+    const failed = markFailed(startProcessing(uploaded()), 'PROCESSING_ERROR');
+
+    expect(startProcessing(failed)).toMatchObject({
+      uploadStatus: 'processing',
+      failureReason: null,
+    });
+    expect(startProcessing(startProcessing(uploaded())).uploadStatus).toBe('processing');
+  });
+
+  it.each([
+    ['an upload still in progress', () => uploading()],
+    ['an already playable video', () => markReady(startProcessing(uploaded()), media)],
+  ])('refuses to process %s', (_, make) => {
+    expect(() => startProcessing(make())).toThrow(
+      expect.objectContaining({ code: 'INVALID_STATE' }),
+    );
+  });
+
+  it('only finishes a video that is being processed', () => {
+    expect(() => markReady(uploaded(), media)).toThrow(
+      expect.objectContaining({ code: 'INVALID_STATE' }),
+    );
+    expect(() => markFailed(uploaded(), 'TOO_LARGE')).toThrow(
       expect.objectContaining({ code: 'INVALID_STATE' }),
     );
   });

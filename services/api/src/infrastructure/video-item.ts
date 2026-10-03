@@ -50,6 +50,9 @@ export function fromVideoItem(item: object): Video {
     uploadStatus: video.uploadStatus,
     moderationStatus: video.moderationStatus,
     uploadSessionId: video.uploadSessionId,
+    // Items written before processing existed don't have these attributes.
+    media: video.media ?? null,
+    failureReason: video.failureReason ?? null,
     createdAt: video.createdAt,
   };
 }
