@@ -1,16 +1,17 @@
-import { Film } from 'lucide-react';
+'use client';
+
+import { UploadPanel } from '@/components/upload/upload-panel';
+import { useAuth } from '@/lib/auth/auth-context';
 
 export default function LibraryPage() {
+  const { state } = useAuth();
+  // The app shell only renders this page for a signed-in user.
+  if (state.status !== 'signedIn') return null;
+
   return (
     <div className="grid gap-8">
       <h1 className="text-2xl font-semibold tracking-tight">Your library</h1>
-      <div className="grid justify-items-center gap-3 rounded-3xl border border-dashed px-6 py-16 text-center">
-        <Film aria-hidden className="text-muted-foreground size-8" strokeWidth={1.5} />
-        <p className="font-medium">No videos yet</p>
-        <p className="text-muted-foreground max-w-sm text-sm">
-          Uploading from this page is the next thing being built.
-        </p>
-      </div>
+      <UploadPanel userId={state.user.id} />
     </div>
   );
 }

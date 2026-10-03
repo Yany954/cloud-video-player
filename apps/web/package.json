@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@cvp/shared": "workspace:*",
+    "@cvp/upload-client": "workspace:*",
     "aws-amplify": "^6.22.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",

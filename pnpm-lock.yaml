@@ -29,6 +29,9 @@ importers:
       '@cvp/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@cvp/upload-client':
+        specifier: workspace:*
+        version: link:../../packages/upload-client
       aws-amplify:
         specifier: ^6.22.1
         version: 6.22.1
