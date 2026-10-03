@@ -12,11 +12,13 @@ const stringKey = (name: string) => ({ name, type: AttributeType.STRING });
  *   Video     VIDEO#{videoId}       META        (later: CHAPTER#…, COMMENT#…, ANGLE#… in the same partition)
  *   Category  CATEGORY#{categoryId} META
  *
- *   Index  PK                    SK         Access pattern                     Items present
- *   GSI1   OWNER#{userId}        createdAt  "my videos", newest first          every video
- *   GSI2   CATEGORY#{id}         position   category playlist, in order        approved videos only (sparse)
- *          CATEGORIES            name       list categories                    category items
- *   GSI3   MODERATION#flagged    createdAt  admin review queue, oldest first   flagged videos only (sparse)
+ *   Index  PK                         SK         Access pattern                  Items present
+ *   GSI1   OWNER#{userId}             createdAt  "my videos", newest first       every video
+ *          OWNER#{userId}#CATEGORIES  createdAt  "my events", newest first       every category
+ *   GSI2   CATEGORY#{id}              createdAt  the videos of one event         videos put in a category (sparse)
+ *          CATEGORIES                 createdAt  events shared with everyone     shared categories (sparse)
+ *   GSI3   MODERATION#queue           createdAt  admin review queue, oldest 1st  playable, undecided videos (sparse)
+ *          MODERATION#library         createdAt  the library, newest first       approved, non-private videos (sparse)
  */
 export class DataStack extends Stack {
   readonly table: TableV2;

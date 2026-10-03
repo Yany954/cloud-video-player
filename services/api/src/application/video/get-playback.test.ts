@@ -48,7 +48,12 @@ let getPlayback: GetPlayback;
 
 beforeEach(() => {
   db = new InMemoryDatabase();
-  getPlayback = new GetPlayback(db, signer, () => new Date('2026-10-03T12:00:00.000Z'));
+  getPlayback = new GetPlayback(
+    db,
+    signer,
+    () => new Date('2026-10-03T12:00:00.000Z'),
+    db.categories,
+  );
 });
 
 describe('GetPlayback', () => {

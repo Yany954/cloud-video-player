@@ -1,3 +1,4 @@
+import type { Category } from '../domain/category';
 import type { StorageUsage } from '../domain/quota';
 import type { NormalizationPlan, ProbeResult } from '../domain/normalization';
 import type { Video } from '../domain/video';
@@ -10,6 +11,8 @@ export interface VideoRepository {
   findById(id: string): Promise<Video | null>;
   /** The owner's videos in every state, newest first. */
   listByOwner(ownerId: string, limit: number): Promise<Video[]>;
+  /** Every video put in the category, whatever its state. */
+  listByCategory(categoryId: string, limit: number): Promise<Video[]>;
   /** Playable videos waiting for an admin's decision, oldest first. */
   listAwaitingReview(limit: number): Promise<Video[]>;
   /** Approved, playable videos from every owner, newest first. */
@@ -21,6 +24,11 @@ export interface VideoRepository {
   saveCompleted(video: Video): Promise<void>;
   /** Overwrites an existing video with its new state. */
   save(video: Video): Promise<void>;
+  /**
+   * Stores only the video's category and privacy, leaving every other attribute as it is in
+   * the table, so it cannot undo a change another job made meanwhile.
+   */
+  saveCategoryOf(video: Video): Promise<void>;
   delete(id: string): Promise<void>;
   /**
    * One atomic write: removes a video whose bytes were counted and gives them back to its
@@ -28,6 +36,18 @@ export interface VideoRepository {
    * already deleted, so the same bytes are never given back twice.
    */
   deleteCounted(video: Video): Promise<void>;
+}
+
+export interface CategoryRepository {
+  create(category: Category): Promise<void>;
+  findById(id: string): Promise<Category | null>;
+  /** Newest first. */
+  listByOwner(ownerId: string, limit: number): Promise<Category[]>;
+  /** Categories every signed-in user can see, newest first. */
+  listShared(limit: number): Promise<Category[]>;
+  /** Overwrites an existing category with its new state. */
+  save(category: Category): Promise<void>;
+  delete(id: string): Promise<void>;
 }
 
 export interface StorageAccountRepository {

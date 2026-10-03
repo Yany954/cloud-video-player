@@ -13,7 +13,8 @@ export const ownerIndex = {
   partitionKey: (ownerId: string) => `OWNER#${ownerId}`,
 };
 
-// Sparse: only playable videos that are waiting for review, or approved, carry these keys.
+// Sparse: only playable videos that are waiting for review, or approved and not private,
+// carry these keys.
 export const moderationIndex = {
   name: 'GSI3',
   partitionKey: (list: 'queue' | 'library') => `MODERATION#${list}`,
@@ -24,12 +25,40 @@ function moderationKeys(video: Video) {
   return list && { GSI3PK: moderationIndex.partitionKey(list), GSI3SK: video.createdAt };
 }
 
+// Sparse: only videos that were put in a category.
+export const categoryIndex = {
+  name: 'GSI2',
+  partitionKey: (categoryId: string) => `CATEGORY#${categoryId}`,
+};
+
+function categoryKeys(video: Video) {
+  return (
+    video.categoryId !== null && {
+      GSI2PK: categoryIndex.partitionKey(video.categoryId),
+      GSI2SK: video.createdAt,
+    }
+  );
+}
+
+/** The attributes that change when a video moves between categories or changes privacy. */
+export const CATEGORY_ATTRIBUTES = [
+  'categoryId',
+  'private',
+  'GSI2PK',
+  'GSI2SK',
+  'GSI3PK',
+  'GSI3SK',
+] as const;
+
 export type VideoItem = Video &
   ReturnType<typeof videoKey> & {
     type: 'Video';
     /** GSI1: "my videos", newest first. */
     GSI1PK: string;
     GSI1SK: string;
+    /** GSI2: the videos of one category. */
+    GSI2PK?: string;
+    GSI2SK?: string;
     /** GSI3: the review queue and the shared library. */
     GSI3PK?: string;
     GSI3SK?: string;
@@ -43,6 +72,7 @@ export function toVideoItem(video: Video): VideoItem {
     type: 'Video',
     GSI1PK: ownerIndex.partitionKey(video.ownerId),
     GSI1SK: video.createdAt,
+    ...categoryKeys(video),
     ...moderationKeys(video),
     ...(video.uploadStatus === 'uploading' && {
       expiresAt: Math.floor(Date.parse(video.createdAt) / 1000) + ABANDONED_UPLOAD_TTL_SECONDS,

@@ -1,8 +1,10 @@
+import type { Category } from '../../domain/category';
 import { DomainError } from '../../domain/errors';
 import { awaitsReview, isInLibrary } from '../../domain/moderation';
 import { DEFAULT_QUOTA_BYTES, fits, type StorageUsage } from '../../domain/quota';
 import type { Video } from '../../domain/video';
 import type {
+  CategoryRepository,
   ObjectStorage,
   PartUrl,
   ProcessingQueue,
@@ -30,6 +32,51 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountReposito
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, limit);
   }
+
+  async listByCategory(categoryId: string, limit: number) {
+    return [...this.videos.values()]
+      .filter((video) => video.categoryId === categoryId)
+      .slice(0, limit);
+  }
+
+  async saveCategoryOf(video: Video) {
+    const stored = this.videos.get(video.id);
+    if (!stored) throw new Error('No such video');
+    this.videos.set(video.id, { ...stored, categoryId: video.categoryId, private: video.private });
+  }
+
+  /** The categories, as their own repository (the names clash with the video methods). */
+  readonly categories: CategoryRepository & { items: Map<string, Category> } = (() => {
+    const items = new Map<string, Category>();
+    const newestFirst = (a: Category, b: Category) => b.createdAt.localeCompare(a.createdAt);
+    return {
+      items,
+      async create(category) {
+        items.set(category.id, category);
+      },
+      async findById(id) {
+        return items.get(id) ?? null;
+      },
+      async listByOwner(ownerId, limit) {
+        return [...items.values()]
+          .filter((category) => category.ownerId === ownerId)
+          .sort(newestFirst)
+          .slice(0, limit);
+      },
+      async listShared(limit) {
+        return [...items.values()]
+          .filter((category) => category.visibility === 'shared')
+          .sort(newestFirst)
+          .slice(0, limit);
+      },
+      async save(category) {
+        items.set(category.id, category);
+      },
+      async delete(id) {
+        items.delete(id);
+      },
+    };
+  })();
 
   async listAwaitingReview(limit: number) {
     return [...this.videos.values()]

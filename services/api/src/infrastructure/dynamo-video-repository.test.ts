@@ -3,8 +3,10 @@ import type {
   DynamoDBDocumentClient,
   QueryCommand,
   TransactWriteCommand,
+  UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { describe, expect, it, vi } from 'vitest';
+import { assignToCategory, createCategory } from '../domain/category';
 import { completeUpload, startUpload } from '../domain/video';
 import { DynamoVideoRepository } from './dynamo-video-repository';
 
@@ -139,6 +141,50 @@ describe('DynamoVideoRepository.deleteCounted', () => {
 
     await expect(repository.deleteCounted(completed)).rejects.toMatchObject({
       code: 'INVALID_STATE',
+    });
+  });
+});
+
+describe('DynamoVideoRepository.saveCategoryOf', () => {
+  const event = createCategory({
+    id: 'cat-1',
+    ownerId: 'user-1',
+    name: 'Concert',
+    now: new Date(),
+  });
+  const update = (send: ReturnType<typeof vi.fn>) =>
+    (send.mock.calls[0]![0] as UpdateCommand).input;
+
+  it('writes only the category attributes, and drops index keys the video no longer has', async () => {
+    const { send, repository } = setup();
+
+    await repository.saveCategoryOf(assignToCategory(completed, event));
+
+    expect(update(send)).toMatchObject({
+      Key: { PK: 'VIDEO#video-1', SK: 'META' },
+      UpdateExpression:
+        'SET #categoryId = :categoryId, #private = :private, #GSI2PK = :GSI2PK, #GSI2SK = :GSI2SK REMOVE #GSI3PK, #GSI3SK',
+      ExpressionAttributeValues: {
+        ':categoryId': 'cat-1',
+        ':private': true,
+        ':GSI2PK': 'CATEGORY#cat-1',
+        ':GSI2SK': '2026-10-03T10:00:00.000Z',
+      },
+      ConditionExpression: 'attribute_exists(PK)',
+    });
+  });
+
+  it('removes the category keys when the video is taken out', async () => {
+    const { send, repository } = setup();
+
+    await repository.saveCategoryOf(assignToCategory(completed, null));
+
+    expect(update(send).UpdateExpression).toBe(
+      'SET #categoryId = :categoryId, #private = :private REMOVE #GSI2PK, #GSI2SK, #GSI3PK, #GSI3SK',
+    );
+    expect(update(send).ExpressionAttributeValues).toEqual({
+      ':categoryId': null,
+      ':private': false,
     });
   });
 });

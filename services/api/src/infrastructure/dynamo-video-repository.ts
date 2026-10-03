@@ -5,12 +5,15 @@ import {
   PutCommand,
   QueryCommand,
   TransactWriteCommand,
+  UpdateCommand,
   type DynamoDBDocumentClient,
 } from '@aws-sdk/lib-dynamodb';
 import type { StorageAccountRepository, VideoRepository } from '../application/ports';
 import { DomainError } from '../domain/errors';
 import type { Video } from '../domain/video';
 import {
+  CATEGORY_ATTRIBUTES,
+  categoryIndex,
   fromVideoItem,
   moderationIndex,
   ownerIndex,
@@ -56,6 +59,48 @@ export class DynamoVideoRepository implements VideoRepository {
       }),
     );
     return (Items ?? []).map(fromVideoItem);
+  }
+
+  async listByCategory(categoryId: string, limit: number): Promise<Video[]> {
+    const { Items } = await this.doc.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        IndexName: categoryIndex.name,
+        KeyConditionExpression: 'GSI2PK = :category',
+        ExpressionAttributeValues: { ':category': categoryIndex.partitionKey(categoryId) },
+        Limit: limit,
+      }),
+    );
+    return (Items ?? []).map(fromVideoItem);
+  }
+
+  async saveCategoryOf(video: Video): Promise<void> {
+    const item: Record<string, unknown> = { ...toVideoItem(video) };
+    const set: string[] = [];
+    const remove: string[] = [];
+    const names: Record<string, string> = {};
+    const values: Record<string, unknown> = {};
+    // Index keys the video no longer has must be removed, or it would stay listed there.
+    for (const attribute of CATEGORY_ATTRIBUTES) {
+      names[`#${attribute}`] = attribute;
+      if (item[attribute] === undefined) {
+        remove.push(`#${attribute}`);
+      } else {
+        set.push(`#${attribute} = :${attribute}`);
+        values[`:${attribute}`] = item[attribute];
+      }
+    }
+    await this.doc.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: videoKey(video.id),
+        UpdateExpression:
+          `SET ${set.join(', ')}` + (remove.length ? ` REMOVE ${remove.join(', ')}` : ''),
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+        ConditionExpression: 'attribute_exists(PK)',
+      }),
+    );
   }
 
   listAwaitingReview(limit: number): Promise<Video[]> {

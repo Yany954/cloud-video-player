@@ -32,6 +32,7 @@ beforeEach(() => {
     storage,
     () => `video-${nextId++}`,
     () => new Date('2026-10-03T10:00:00.000Z'),
+    db.categories,
   );
   getPartUrls = new GetPartUrls(db, storage);
   complete = new CompleteUpload(db, db, storage, queue);
