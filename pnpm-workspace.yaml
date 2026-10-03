@@ -6,3 +6,7 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
