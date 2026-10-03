@@ -7,6 +7,11 @@ export const userKey = (userId: string) => ({ PK: `USER#${userId}`, SK: 'PROFILE
 // An upload nobody finishes is deleted by DynamoDB one day after S3 aborts its parts (7 days).
 const ABANDONED_UPLOAD_TTL_SECONDS = 8 * 24 * 60 * 60;
 
+export const ownerIndex = {
+  name: 'GSI1',
+  partitionKey: (ownerId: string) => `OWNER#${ownerId}`,
+};
+
 export type VideoItem = Video &
   ReturnType<typeof videoKey> & {
     type: 'Video';
@@ -21,7 +26,7 @@ export function toVideoItem(video: Video): VideoItem {
   return {
     ...videoKey(video.id),
     type: 'Video',
-    GSI1PK: `OWNER#${video.ownerId}`,
+    GSI1PK: ownerIndex.partitionKey(video.ownerId),
     GSI1SK: video.createdAt,
     ...(video.uploadStatus === 'uploading' && {
       expiresAt: Math.floor(Date.parse(video.createdAt) / 1000) + ABANDONED_UPLOAD_TTL_SECONDS,

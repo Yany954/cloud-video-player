@@ -56,6 +56,7 @@ describe('ApiStack', () => {
       'GET /health',
       'GET /me/storage',
       'GET /uploads/{videoId}/parts',
+      'GET /videos',
       'POST /uploads',
       'POST /uploads/{videoId}/complete',
     ]);
@@ -77,12 +78,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(6);
+    expect(functions).toHaveLength(7);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(6);
+    expect(logGroups).toHaveLength(7);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -93,6 +94,10 @@ describe('ApiStack', () => {
 
     it('lets the storage widget only read one item', () => {
       expect(actionsOf('GetStorageUsage')).toEqual(['dynamodb:GetItem']);
+    });
+
+    it('lets "my videos" only query, never write', () => {
+      expect(actionsOf('ListVideos')).toEqual(['dynamodb:Query']);
     });
 
     it('lets "initiate" create records and start uploads, nothing else', () => {

@@ -48,6 +48,9 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
     async getStorageUsage() {
       return { bytesUsed: 0, quotaBytes: 100 };
     },
+    async listVideos() {
+      return { videos: [] };
+    },
   };
 
   const putPart: PutPart<string> = async ({ partNumber, start, end, onProgress }) => {

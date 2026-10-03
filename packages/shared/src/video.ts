@@ -19,3 +19,7 @@ export interface VideoResponse {
   moderationStatus: ModerationStatus;
   createdAt: string;
 }
+
+export interface ListVideosResponse {
+  videos: VideoResponse[];
+}

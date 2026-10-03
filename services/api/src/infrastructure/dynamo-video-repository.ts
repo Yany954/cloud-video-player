@@ -3,13 +3,14 @@ import {
   DeleteCommand,
   GetCommand,
   PutCommand,
+  QueryCommand,
   TransactWriteCommand,
   type DynamoDBDocumentClient,
 } from '@aws-sdk/lib-dynamodb';
 import type { StorageAccountRepository, VideoRepository } from '../application/ports';
 import { DomainError } from '../domain/errors';
 import type { Video } from '../domain/video';
-import { fromVideoItem, toVideoItem, userKey, videoKey } from './video-item';
+import { fromVideoItem, ownerIndex, toVideoItem, userKey, videoKey } from './video-item';
 
 export class DynamoVideoRepository implements VideoRepository {
   constructor(
@@ -33,6 +34,21 @@ export class DynamoVideoRepository implements VideoRepository {
       new GetCommand({ TableName: this.tableName, Key: videoKey(id), ConsistentRead: true }),
     );
     return Item ? fromVideoItem(Item) : null;
+  }
+
+  async listByOwner(ownerId: string, limit: number): Promise<Video[]> {
+    const { Items } = await this.doc.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        IndexName: ownerIndex.name,
+        KeyConditionExpression: 'GSI1PK = :owner',
+        ExpressionAttributeValues: { ':owner': ownerIndex.partitionKey(ownerId) },
+        // The index is sorted by creation time; read it backwards for newest first.
+        ScanIndexForward: false,
+        Limit: limit,
+      }),
+    );
+    return (Items ?? []).map(fromVideoItem);
   }
 
   async saveCompleted(video: Video): Promise<void> {

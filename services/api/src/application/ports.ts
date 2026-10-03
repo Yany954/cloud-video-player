@@ -7,6 +7,8 @@ import type { Video } from '../domain/video';
 export interface VideoRepository {
   create(video: Video): Promise<void>;
   findById(id: string): Promise<Video | null>;
+  /** The owner's videos in every state, newest first. */
+  listByOwner(ownerId: string, limit: number): Promise<Video[]>;
   /**
    * One atomic write: stores the uploaded video and adds its size to the owner's usage.
    * Throws DomainError QUOTA_EXCEEDED (and writes nothing) if that would pass the quota.

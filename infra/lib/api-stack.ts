@@ -76,6 +76,13 @@ export class ApiStack extends Stack {
       file: 'get-storage-usage.ts',
       tableActions: ['dynamodb:GetItem'],
     });
+    this.route('ListVideos', {
+      method: HttpMethod.GET,
+      path: '/videos',
+      file: 'list-videos.ts',
+      // Reads the "my videos" index (GSI1).
+      tableActions: ['dynamodb:Query'],
+    });
     this.route('InitiateUpload', {
       method: HttpMethod.POST,
       path: '/uploads',

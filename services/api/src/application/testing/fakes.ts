@@ -22,6 +22,13 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountReposito
     return this.videos.get(id) ?? null;
   }
 
+  async listByOwner(ownerId: string, limit: number) {
+    return [...this.videos.values()]
+      .filter((video) => video.ownerId === ownerId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit);
+  }
+
   async saveCompleted(video: Video) {
     const usage = await this.getUsage(video.ownerId);
     const sizeBytes = video.sizeBytes ?? 0;

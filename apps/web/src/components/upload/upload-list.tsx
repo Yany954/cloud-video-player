@@ -86,8 +86,8 @@ function PauseWarning({ item }: { item: UploadItem }) {
   return (
     <>
       A video is sent in parts, and a part is only saved once it has arrived completely. The parts
-      being sent right now ({formatBytes(unsaved)}) will be sent again when you resume. The{' '}
-      {formatBytes(item.savedBytes)} already saved are kept.
+      being sent right now ({formatBytes(unsaved)}) will be sent again when you resume.
+      {item.savedBytes > 0 && ` The ${formatBytes(item.savedBytes)} already saved are kept.`}
     </>
   );
 }
