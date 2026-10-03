@@ -37,6 +37,18 @@ describe('createHttpUploadApi', () => {
     expect(fetchMock.mock.calls[0]![1]).toMatchObject({ method: 'DELETE' });
   });
 
+  it('sends an admin decision to the review route', async () => {
+    const { api, fetchMock } = setup(json(200, { id: 'v1', moderationStatus: 'approved' }));
+
+    await api.reviewVideo('v1', 'approve');
+
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://api.test/admin/videos/v1/review');
+    expect(fetchMock.mock.calls[0]![1]).toMatchObject({
+      method: 'POST',
+      body: '{"decision":"approve"}',
+    });
+  });
+
   it("turns the API's error body into an ApiError with its code", async () => {
     const { api } = setup(
       json(413, { error: { code: 'QUOTA_EXCEEDED', message: 'Not enough free storage' } }),

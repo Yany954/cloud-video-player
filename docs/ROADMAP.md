@@ -1,6 +1,6 @@
 # Roadmap and project state
 
-Last updated: 2026-10-03. This file is the hand-off between work sessions: what is done, what
+Last updated: 2026-10-03 (moderation done). This file is the hand-off between work sessions: what is done, what
 is next, and the decisions and habits that are not obvious from the code. `CLAUDE.md` holds the
 product goals; this file holds the progress.
 
@@ -11,38 +11,55 @@ product goals; this file holds the progress.
 | 0. Monorepo             | Done                                                       |
 | 1. Secure AWS account   | Done                                                       |
 | 2. Infrastructure (CDK) | Done                                                       |
-| 3. Backend              | Upload, processing and playback done. **Next: moderation** |
-| 4. Web app              | Sign-in, upload, library and player done. Not deployed     |
+| 3. Backend              | Upload, processing, playback, moderation. **Next: delete** |
+| 4. Web app              | Sign-in, upload, lists, player, review done. Not deployed  |
 | 5. Mobile app (Expo)    | Not started                                                |
 | After the MVP           | README for GitHub, differentiating features                |
 
 ## What to do next, in order
 
-### 3a. Moderation (next)
+### 3a. Moderation: done (manual review)
 
-Goal: people other than the owner can watch a video once it is approved.
+An admin approves or rejects each playable video; approved videos are in a library every
+signed-in user can watch. Automatic checks (Rekognition, roughly $0.10 per minute of video:
+confirm the price and warn before building) are not built; `flagged` is reserved for them and
+for reports.
 
-1. Domain: moderation transitions (`pending -> approved | flagged | rejected`, and admin
-   decisions on flagged videos). Who can view: owner always; everyone else only if `approved`
-   and `ready`.
-2. Use cases: `ReviewVideo` (admin approves or rejects), `ListReviewQueue` (admin),
-   `ListLibrary` (approved videos for everyone), and widen `GetPlayback` to the "who can view"
-   rule.
-3. Adapters: write `GSI3` (`MODERATION#flagged`, sparse) for the review queue and `GSI2` for
-   approved videos. Both indexes already exist on the table and are empty.
-4. Endpoints, admin-only ones checked against the `cognito:groups` claim (`parseGroups`).
-5. Decide the MVP review flow with the user before coding: manual approval by an admin first;
-   automatic checks (Rekognition, or ffmpeg frames + image moderation) cost money and need a
-   cost warning. `CLAUDE.md` also asks for report-a-video and block-a-user.
-6. Web: admin review screen; a shared library section.
+### 3a-2. Delete video (next; design agreed with the user)
 
-### 3b. Categories and continuous playlist
+- The owner deletes their own video; an admin can delete any video.
+- Removes the original, the playable copy, the poster and the table row.
+- The size is subtracted from the owner's `bytesUsed` in the same transaction that removes the
+  row. Row first, then the files: a failed file deletion leaves only an orphan file.
+- Permanent (the buckets have no versioning): the web app asks for confirmation.
 
-1. `Category` entity (`CATEGORY#{id}` / `META`; listed through `GSI2PK = CATEGORIES`).
-2. Admin creates and manages categories; users pick one when uploading (the domain already
-   accepts `categoryId`, the upload request does not yet).
+### 3a-3. Report a video, block a user
+
+Required by the app stores before the mobile release. A report sets `flagged`, which puts the
+video back in the review queue.
+
+### 3b. Events (categories), continuous playlist and collaborators
+
+The user's words: categorise a video as "Concert Twenty One Pilots October 2026", and add a
+collaborator (their boyfriend) so he can upload what he filmed that day to the same event.
+Explain the design and agree on it before coding.
+
+1. `Category` entity (`CATEGORY#{id}` / `META`; listed through `GSI2PK = CATEGORIES`). Decide
+   with the user who may create one: `CLAUDE.md` says admins, but the request reads as any
+   user creating an event for their own videos.
+2. Pick a category when uploading, and change it later (the domain already accepts
+   `categoryId`, the upload request does not yet).
 3. Playlist: approved videos of a category in `position` order (`GSI2`), and a player that
    autoplays the next one.
+4. Collaborators: people invited to add their recordings to an event. This is the
+   "collaborative collections" differentiator in `CLAUDE.md`, and it feeds multi-angle sync.
+
+### 3d. User management and profile (asked by the user)
+
+- Admin "Users" view: list users and invite a new one by email (Cognito `AdminCreateUser`
+  sends the invitation), with role and suspend/remove actions.
+- A profile page for every user: their details, storage use, change password, and later
+  "delete my account and data" (item 20 of the legal checklist).
 
 ### 3c. Fargate re-encoding
 
@@ -85,7 +102,9 @@ background uploader. Player with `expo-video`.
 
 API routes: `GET /health`, `GET /me/storage`, `POST /uploads`, `GET /uploads/{id}/parts`,
 `POST /uploads/{id}/complete`, `DELETE /uploads/{id}`, `GET /videos`,
-`GET /videos/{id}/playback`.
+`GET /videos/{id}/playback`, `GET /library`, `GET /admin/review`,
+`POST /admin/videos/{id}/review`. The `/admin` routes check the `admin` group in the handler
+and answer 403 otherwise.
 
 Outside CDK: the playback private key in SSM (`/cvp-dev/playback/private-key`), the budget
 `cvp-monthly`, Free Tier alerts and Cost Anomaly Detection.
@@ -93,7 +112,7 @@ Outside CDK: the playback private key in SSM (`/cvp-dev/playback/private-key`), 
 ### Repository
 
 ```
-apps/web                 Next.js 16: sign-in, upload, library, player
+apps/web                 Next.js 16: sign-in, upload, lists, player, review
 packages/shared          API contracts (types + Zod schemas)
 packages/upload-client   Upload engine and API client, shared by web and (later) mobile
 services/api/src         domain -> application -> infrastructure -> interfaces
@@ -105,7 +124,7 @@ infra                    CDK stacks, tests, scripts (smoke tests, ffmpeg and key
 | Item     | PK              | SK        | Indexes                                                                                        |
 | -------- | --------------- | --------- | ---------------------------------------------------------------------------------------------- |
 | User     | `USER#{sub}`    | `PROFILE` |                                                                                                |
-| Video    | `VIDEO#{id}`    | `META`    | `GSI1`: `OWNER#{userId}` / `createdAt`. `GSI2`, `GSI3`: not written yet (moderation, playlist) |
+| Video    | `VIDEO#{id}`    | `META`    | `GSI1`: `OWNER#{userId}` / `createdAt`. `GSI3`: `MODERATION#queue` or `#library` / `createdAt` |
 | Category | `CATEGORY#{id}` | `META`    | planned                                                                                        |
 
 ## Decisions that differ from, or add to, CLAUDE.md
@@ -126,7 +145,16 @@ infra                    CDK stacks, tests, scripts (smoke tests, ffmpeg and key
 - **Completing an upload needs no ETags from the client**: the server lists the parts in S3.
 - **Pausing an upload discards the parts in flight** (S3 keeps only complete parts), so the web
   app asks for confirmation and says how much will be sent again.
-- **Playback is owner-only** until moderation exists.
+- **Who can watch a video:** its owner always; an admin any playable video (so admins can
+  see every upload, which the Terms of Service must say); everyone else only approved ones.
+  A video the caller may not see answers 404, never 403.
+- **`GSI3` holds both moderation lists**, written once a video is playable: the review queue
+  (pending and flagged) and the library (approved). Rejected videos are in neither. `GSI2`
+  stays free for categories.
+- **Admin uploads also start as `pending`**: one rule for everyone.
+- **A decision can be changed later** (take down an approved video, approve a rejected one);
+  the video records who decided and when.
+- Web buttons use sentence case ("Take down"), not Title Case.
 - pnpm 10 (not 12: corepack 0.31 cannot run it) and TypeScript 5.9 (not 7: tooling).
 
 ## Working agreements
@@ -163,7 +191,9 @@ pnpm --filter @cvp/infra cdk:deploy --all
 
 - HEVC, audio conversion, large files and Safari/phone playback are unit-tested only.
 - No captions on the player (WCAG 1.2.2); expected with the transcription feature.
-- `GET /videos` returns at most 100 videos, with no paging.
+- `GET /videos`, the library and the review queue return at most 100 videos, with no paging.
+- A rejected video still counts toward its owner's quota until delete video exists.
+- The library does not say who uploaded a video: user names are not stored yet.
 - A failed "enqueue" after a completed upload leaves the video at `uploaded`; there is no
   "reprocess" action yet.
 - Resuming an upload after a page reload was only seen in the browser for an upload that had

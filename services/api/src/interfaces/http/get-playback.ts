@@ -16,5 +16,6 @@ export const handler = route(async (event) => {
     durationSeconds: playback.durationSeconds,
     width: playback.width,
     height: playback.height,
+    moderationStatus: playback.moderationStatus,
   } satisfies PlaybackResponse);
 });

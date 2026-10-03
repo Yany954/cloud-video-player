@@ -57,6 +57,15 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
     async getPlayback() {
       throw new Error('not used by the upload engine');
     },
+    async listLibrary() {
+      return { videos: [] };
+    },
+    async listReviewQueue() {
+      return { videos: [] };
+    },
+    async reviewVideo() {
+      throw new Error('not used by the upload engine');
+    },
   };
 
   const putPart: PutPart<string> = async ({ partNumber, start, end, onProgress }) => {

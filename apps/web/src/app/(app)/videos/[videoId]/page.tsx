@@ -1,12 +1,14 @@
 'use client';
 
-import type { PlaybackResponse } from '@cvp/shared';
+import type { ModerationStatus, PlaybackResponse } from '@cvp/shared';
 import { ApiError } from '@cvp/upload-client';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { ReviewActions } from '@/components/moderation/review-actions';
 import { uploadApi } from '@/lib/api';
+import { useAuth } from '@/lib/auth/auth-context';
 import { formatDuration } from '@/lib/format';
 
 type State =
@@ -22,10 +24,39 @@ function loadErrorMessage(error: unknown): string {
   return 'The video could not be loaded. Check your connection and reload the page.';
 }
 
+// Where the viewer came from, so "back" returns to the same list.
+const BACK_LINKS: Record<string, { href: string; label: string }> = {
+  library: { href: '/library', label: 'Library' },
+  review: { href: '/review', label: 'Review' },
+};
+
+const REVIEW_STATUS_TEXT: Record<ModerationStatus, string> = {
+  pending: 'Waiting for review. Only you and the person who uploaded it can watch it.',
+  flagged: 'Reported and waiting for review.',
+  approved: 'Approved. Everyone in the group can watch it in the library.',
+  rejected: 'Not approved. Only the person who uploaded it can watch it.',
+};
+
 export default function WatchPage() {
+  // Reading the query string suspends while the page is prerendered.
+  return (
+    <Suspense>
+      <Watch />
+    </Suspense>
+  );
+}
+
+function Watch() {
   const { videoId } = useParams<{ videoId: string }>();
+  const back = BACK_LINKS[useSearchParams().get('from') ?? ''] ?? {
+    href: '/',
+    label: 'Your videos',
+  };
+  const auth = useAuth().state;
+  const isAdmin = auth.status === 'signedIn' && auth.user.isAdmin;
   const [state, setState] = useState<State>({ status: 'loading' });
   const [cannotPlay, setCannotPlay] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -41,11 +72,11 @@ export default function WatchPage() {
   return (
     <div className="grid gap-6">
       <Link
-        href="/"
+        href={back.href}
         className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex w-fit items-center gap-1.5 rounded-lg text-sm outline-none focus-visible:ring-3"
       >
         <ArrowLeft aria-hidden className="size-4" />
-        Your library
+        {back.label}
       </Link>
 
       {state.status === 'loading' && (
@@ -90,6 +121,40 @@ export default function WatchPage() {
               {state.playback.height}
             </p>
           </div>
+          {isAdmin && (
+            <section
+              aria-labelledby="review-heading"
+              className="grid gap-3 rounded-3xl border px-5 py-4"
+            >
+              <div className="grid gap-1">
+                <h2 id="review-heading" className="text-base font-semibold tracking-tight">
+                  Review
+                </h2>
+                <p role="status" className="text-muted-foreground text-sm">
+                  {REVIEW_STATUS_TEXT[state.playback.moderationStatus]}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <ReviewActions
+                  video={{ id: videoId, title: state.playback.title }}
+                  status={state.playback.moderationStatus}
+                  onReviewed={(video) => {
+                    setReviewError('');
+                    setState({
+                      status: 'ready',
+                      playback: { ...state.playback, moderationStatus: video.moderationStatus },
+                    });
+                  }}
+                  onError={setReviewError}
+                />
+              </div>
+              {reviewError && (
+                <p role="alert" className="text-destructive text-sm">
+                  {reviewError}
+                </p>
+              )}
+            </section>
+          )}
         </>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { DomainError } from '../../domain/errors';
 import { canView, type Viewer } from '../../domain/moderation';
-import type { MediaInfo } from '../../domain/video';
+import type { MediaInfo, ModerationStatus } from '../../domain/video';
 import { NotFoundError } from '../errors';
 import type { Clock, PlaybackUrls, PlaybackUrlSigner, VideoRepository } from '../ports';
 
@@ -9,6 +9,7 @@ export const PLAYBACK_URL_TTL_MS = 6 * 60 * 60 * 1000;
 
 export interface Playback extends PlaybackUrls, MediaInfo {
   title: string;
+  moderationStatus: ModerationStatus;
   expiresAt: string;
 }
 
@@ -31,6 +32,7 @@ export class GetPlayback {
       ...(await this.signer.sign(video.id, expiresAt)),
       ...video.media,
       title: video.title,
+      moderationStatus: video.moderationStatus,
       expiresAt: expiresAt.toISOString(),
     };
   }

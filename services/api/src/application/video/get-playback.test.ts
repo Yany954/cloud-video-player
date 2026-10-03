@@ -62,6 +62,7 @@ describe('GetPlayback', () => {
       width: 1920,
       height: 1080,
       title: 'concert',
+      moderationStatus: 'pending',
       expiresAt: '2026-10-03T18:00:00.000Z',
     });
   });

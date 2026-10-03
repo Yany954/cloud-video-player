@@ -49,7 +49,15 @@ export function UploadPanel({ userId }: { userId: string }) {
           onCancel={uploads.cancel}
           onDismiss={uploads.dismiss}
         />
-        <VideoList videos={videos} failed={videosFailed} />
+        <VideoList
+          id="my-videos-title"
+          title="My videos"
+          videos={videos}
+          failed={videosFailed}
+          errorText="Your videos could not be loaded. Reload the page to try again."
+          empty={{ title: 'No videos yet', text: 'The videos you upload will be listed here.' }}
+          showStatus
+        />
       </div>
       <StorageWidget usage={usage} />
     </div>

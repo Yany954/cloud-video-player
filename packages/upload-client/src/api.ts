@@ -5,6 +5,7 @@ import type {
   ListVideosResponse,
   PartUrlsResponse,
   PlaybackResponse,
+  ReviewDecision,
   StorageUsageResponse,
   VideoResponse,
 } from '@cvp/shared';
@@ -18,6 +19,12 @@ export interface UploadApi {
   getStorageUsage(): Promise<StorageUsageResponse>;
   listVideos(): Promise<ListVideosResponse>;
   getPlayback(videoId: string): Promise<PlaybackResponse>;
+  /** Approved videos from every user. */
+  listLibrary(): Promise<ListVideosResponse>;
+  /** Admins only: videos waiting for a decision. */
+  listReviewQueue(): Promise<ListVideosResponse>;
+  /** Admins only. */
+  reviewVideo(videoId: string, decision: ReviewDecision): Promise<VideoResponse>;
 }
 
 /** The API answered with an error. `code` is the server's error code, e.g. QUOTA_EXCEEDED. */
@@ -77,5 +84,9 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
     getStorageUsage: () => request('GET', '/me/storage'),
     listVideos: () => request('GET', '/videos'),
     getPlayback: (videoId) => request('GET', `/videos/${id(videoId)}/playback`),
+    listLibrary: () => request('GET', '/library'),
+    listReviewQueue: () => request('GET', '/admin/review'),
+    reviewVideo: (videoId, decision) =>
+      request('POST', `/admin/videos/${id(videoId)}/review`, { decision }),
   };
 }

@@ -38,6 +38,8 @@ export interface PlaybackResponse {
   durationSeconds: number;
   width: number;
   height: number;
+  /** Lets an admin see, and change, the decision while watching. */
+  moderationStatus: ModerationStatus;
 }
 
 export interface ListVideosResponse {
