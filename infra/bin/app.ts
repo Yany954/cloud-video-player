@@ -13,14 +13,16 @@ const prefix = 'cvp-dev';
 const webOrigins = ['http://localhost:3000'];
 
 const auth = new AuthStack(app, `${prefix}-auth`, { env, prefix });
-new DataStack(app, `${prefix}-data`, { env, prefix });
-new StorageStack(app, `${prefix}-storage`, { env, webOrigins });
+const data = new DataStack(app, `${prefix}-data`, { env, prefix });
+const storage = new StorageStack(app, `${prefix}-storage`, { env, webOrigins });
 new ApiStack(app, `${prefix}-api`, {
   env,
   prefix,
   webOrigins,
   userPool: auth.userPool,
   appClient: auth.appClient,
+  table: data.table,
+  uploadsBucket: storage.uploadsBucket,
 });
 
 app.synth();
