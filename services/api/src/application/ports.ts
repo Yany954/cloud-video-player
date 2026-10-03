@@ -52,7 +52,14 @@ export interface MediaProcessor {
   /** Reads the uploaded original and reports what is inside it. */
   probe(video: Video): Promise<ProbeResult>;
   /** Writes the playable version and its poster image, following the plan. */
-  normalize(video: Video, plan: Extract<NormalizationPlan, { kind: 'remux' }>): Promise<void>;
+  normalize(video: Video, plan: RemuxPlan, probe: ProbeResult): Promise<void>;
+}
+
+export type RemuxPlan = Extract<NormalizationPlan, { kind: 'remux' }>;
+
+export interface ProcessingQueue {
+  /** Asks for the video to be made playable, in the background. */
+  enqueue(videoId: string): Promise<void>;
 }
 
 export type IdGenerator = () => string;

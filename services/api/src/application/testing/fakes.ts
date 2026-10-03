@@ -4,6 +4,7 @@ import type { Video } from '../../domain/video';
 import type {
   ObjectStorage,
   PartUrl,
+  ProcessingQueue,
   StorageAccountRepository,
   UploadedPart,
   VideoRepository,
@@ -99,5 +100,13 @@ export class InMemoryObjectStorage implements ObjectStorage {
     const parts = this.sessions.get(sessionId);
     if (!parts) throw new Error(`No such upload session: ${sessionId}`);
     return parts;
+  }
+}
+
+export class InMemoryProcessingQueue implements ProcessingQueue {
+  readonly videoIds: string[] = [];
+
+  async enqueue(videoId: string) {
+    this.videoIds.push(videoId);
   }
 }

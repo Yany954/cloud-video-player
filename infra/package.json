@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "cdk:synth": "cdk synth --profile cvp-dev",
-    "cdk:diff": "cdk diff --profile cvp-dev",
-    "cdk:deploy": "cdk deploy --profile cvp-dev",
+    "fetch:ffmpeg": "bash scripts/fetch-ffmpeg.sh",
+    "cdk:synth": "pnpm fetch:ffmpeg && cdk synth --profile cvp-dev",
+    "cdk:diff": "pnpm fetch:ffmpeg && cdk diff --profile cvp-dev",
+    "cdk:deploy": "pnpm fetch:ffmpeg && cdk deploy --profile cvp-dev",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

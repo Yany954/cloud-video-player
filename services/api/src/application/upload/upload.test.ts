@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_QUOTA_BYTES } from '../../domain/quota';
 import { NotFoundError } from '../errors';
-import { InMemoryDatabase, InMemoryObjectStorage } from '../testing/fakes';
+import { InMemoryDatabase, InMemoryObjectStorage, InMemoryProcessingQueue } from '../testing/fakes';
 import { AbortUpload } from './abort-upload';
 import { CompleteUpload } from './complete-upload';
 import { GetPartUrls } from './get-part-urls';
@@ -14,6 +14,7 @@ const BEN = 'user-ben';
 
 let db: InMemoryDatabase;
 let storage: InMemoryObjectStorage;
+let queue: InMemoryProcessingQueue;
 let initiate: InitiateUpload;
 let getPartUrls: GetPartUrls;
 let complete: CompleteUpload;
@@ -23,6 +24,7 @@ let getUsage: GetStorageUsage;
 beforeEach(() => {
   db = new InMemoryDatabase();
   storage = new InMemoryObjectStorage();
+  queue = new InMemoryProcessingQueue();
   let nextId = 1;
   initiate = new InitiateUpload(
     db,
@@ -32,7 +34,7 @@ beforeEach(() => {
     () => new Date('2026-10-03T10:00:00.000Z'),
   );
   getPartUrls = new GetPartUrls(db, storage);
-  complete = new CompleteUpload(db, db, storage);
+  complete = new CompleteUpload(db, db, storage, queue);
   abort = new AbortUpload(db, storage);
   getUsage = new GetStorageUsage(db);
 });
@@ -140,6 +142,7 @@ describe('CompleteUpload', () => {
     });
     expect(storage.originals.get(videoId)).toBe(40 * MIB);
     expect(await getUsage.execute({ userId: ANA })).toMatchObject({ bytesUsed: 40 * MIB });
+    expect(queue.videoIds).toEqual([videoId]);
   });
 
   it('refuses to complete while parts are missing, changing nothing', async () => {
@@ -167,6 +170,8 @@ describe('CompleteUpload', () => {
     expect(storage.originals.has(videoId)).toBe(false);
     expect(db.videos.has(videoId)).toBe(false);
     expect(await getUsage.execute({ userId: ANA })).toMatchObject({ bytesUsed: 0 });
+    // A rejected upload is never sent to processing.
+    expect(queue.videoIds).toEqual([]);
   });
 
   it('never passes the quota when two uploads finish at the same time', async () => {
@@ -177,7 +182,7 @@ describe('CompleteUpload', () => {
     putAllParts(second.sessionId, [16 * MIB, 14 * MIB]);
     // Both requests read the usage before either one wrote it.
     const staleAccounts = { getUsage: async () => ({ bytesUsed: 0, quotaBytes: 50 * MIB }) };
-    const racing = new CompleteUpload(db, staleAccounts, storage);
+    const racing = new CompleteUpload(db, staleAccounts, storage, queue);
 
     await racing.execute({ userId: ANA, videoId: first.videoId });
     await expect(racing.execute({ userId: ANA, videoId: second.videoId })).rejects.toMatchObject({
@@ -187,6 +192,7 @@ describe('CompleteUpload', () => {
     expect(await getUsage.execute({ userId: ANA })).toMatchObject({ bytesUsed: 30 * MIB });
     expect(storage.originals.has(second.videoId)).toBe(false);
     expect(db.videos.has(second.videoId)).toBe(false);
+    expect(queue.videoIds).toEqual([first.videoId]);
   });
 
   it('cannot complete the same upload twice', async () => {
@@ -218,6 +224,8 @@ describe('AbortUpload', () => {
     expect(storage.sessions.has(sessionId)).toBe(false);
     expect(db.videos.has(videoId)).toBe(false);
     expect(await getUsage.execute({ userId: ANA })).toMatchObject({ bytesUsed: 0 });
+    // A rejected upload is never sent to processing.
+    expect(queue.videoIds).toEqual([]);
   });
 
   it('cannot abort a finished upload', async () => {

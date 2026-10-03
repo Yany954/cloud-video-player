@@ -36,3 +36,6 @@ cdk.context.json.bak
 .claude/settings.local.json
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+
+# ffmpeg binaries for the processing Lambda layer (see infra/scripts/fetch-ffmpeg.sh)
+infra/layers/ffmpeg/bin/

@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { ApiStack } from '../lib/api-stack';
 import { AuthStack } from '../lib/auth-stack';
 import { DataStack } from '../lib/data-stack';
+import { ProcessingStack } from '../lib/processing-stack';
 import { StorageStack } from '../lib/storage-stack';
 
 interface Statement {
@@ -20,6 +21,13 @@ describe('ApiStack', () => {
     const auth = new AuthStack(app, 'TestAuth', { prefix: 'test' });
     const data = new DataStack(app, 'TestData', { prefix: 'test' });
     const storage = new StorageStack(app, 'TestStorage', { webOrigins });
+    const processing = new ProcessingStack(app, 'TestProcessing', {
+      prefix: 'test',
+      table: data.table,
+      uploadsBucket: storage.uploadsBucket,
+      mediaBucket: storage.mediaBucket,
+      allowMissingFfmpeg: true,
+    });
     const api = new ApiStack(app, 'TestApi', {
       prefix: 'test',
       webOrigins,
@@ -27,6 +35,7 @@ describe('ApiStack', () => {
       appClient: auth.appClient,
       table: data.table,
       uploadsBucket: storage.uploadsBucket,
+      processingQueue: processing.queue,
     });
     template = Template.fromStack(api);
   }, 120_000);
@@ -114,6 +123,13 @@ describe('ApiStack', () => {
         's3:ListMultipartUploadParts',
         's3:PutObject',
       ]);
+    });
+
+    it('lets only "complete" put jobs on the processing queue', () => {
+      expect(actionsOf('CompleteUpload')).toContain('sqs:SendMessage');
+      for (const name of ['InitiateUpload', 'GetPartUrls', 'AbortUpload', 'ListVideos']) {
+        expect(actionsOf(name).filter((action) => action.startsWith('sqs:'))).toEqual([]);
+      }
     });
 
     it('lets "abort" only discard an upload and its record', () => {

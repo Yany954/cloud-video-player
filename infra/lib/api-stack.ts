@@ -1,16 +1,14 @@
-import { fileURLToPath } from 'node:url';
-import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
+import { CfnOutput, Duration, Stack, type StackProps } from 'aws-cdk-lib';
 import { CorsHttpMethod, HttpApi, HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpUserPoolAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import type { UserPool, UserPoolClient } from 'aws-cdk-lib/aws-cognito';
 import type { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda';
-import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
+import type { IQueue } from 'aws-cdk-lib/aws-sqs';
 import type { Construct } from 'constructs';
+import { nodeLambda } from './node-lambda';
 
 export interface ApiStackProps extends StackProps {
   prefix: string;
@@ -19,6 +17,7 @@ export interface ApiStackProps extends StackProps {
   webOrigins: string[];
   table: ITableV2;
   uploadsBucket: IBucket;
+  processingQueue: IQueue;
 }
 
 interface RouteProps {
@@ -29,12 +28,10 @@ interface RouteProps {
   /** Least privilege: only the actions this one handler performs. */
   tableActions?: string[];
   uploadActions?: string[];
+  /** May put jobs on the processing queue. */
+  startsProcessing?: boolean;
   timeout?: Duration;
 }
-
-const handlersDir = fileURLToPath(
-  new URL('../../services/api/src/interfaces/http/', import.meta.url),
-);
 
 export class ApiStack extends Stack {
   readonly httpApi: HttpApi;
@@ -116,6 +113,7 @@ export class ApiStack extends Stack {
         's3:AbortMultipartUpload',
         's3:DeleteObject',
       ],
+      startsProcessing: true,
       // Joining thousands of parts can be slow; stay just under API Gateway's 30 s limit.
       timeout: Duration.seconds(29),
     });
@@ -131,31 +129,16 @@ export class ApiStack extends Stack {
   }
 
   private route(name: string, route: RouteProps) {
-    const { table, uploadsBucket } = this.props;
+    const { table, uploadsBucket, processingQueue } = this.props;
 
-    const fn = new NodejsFunction(this, name, {
-      entry: handlersDir + route.file,
-      handler: 'handler',
-      runtime: Runtime.NODEJS_22_X,
-      architecture: Architecture.ARM_64,
-      memorySize: 256,
-      timeout: route.timeout ?? Duration.seconds(10),
-      environment: { TABLE_NAME: table.tableName, UPLOADS_BUCKET: uploadsBucket.bucketName },
-      bundling: {
-        format: OutputFormat.ESM,
-        minify: true,
-        sourceMap: true,
-        mainFields: ['module', 'main'],
-        // Ship the AWS SDK version we test with instead of whatever the runtime has.
-        externalModules: [],
-        // Some dependencies still call require(), which ESM output doesn't define.
-        banner:
-          "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
+    const fn = nodeLambda(this, name, {
+      entry: `interfaces/http/${route.file}`,
+      timeout: route.timeout,
+      environment: {
+        TABLE_NAME: table.tableName,
+        UPLOADS_BUCKET: uploadsBucket.bucketName,
+        PROCESSING_QUEUE_URL: processingQueue.queueUrl,
       },
-      logGroup: new LogGroup(this, `${name}Logs`, {
-        retention: RetentionDays.TWO_WEEKS,
-        removalPolicy: RemovalPolicy.DESTROY,
-      }),
     });
 
     if (route.tableActions) table.grant(fn, ...route.tableActions);
@@ -167,6 +150,7 @@ export class ApiStack extends Stack {
         }),
       );
     }
+    if (route.startsProcessing) processingQueue.grantSendMessages(fn);
 
     this.httpApi.addRoutes({
       path: route.path,

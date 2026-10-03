@@ -49,12 +49,11 @@ describe('ProcessVideo', () => {
   it('normalizes the video and marks it ready with its measured facts', async () => {
     await run();
 
-    expect(processor.normalize).toHaveBeenCalledWith(expect.objectContaining({ id: 'video-1' }), {
-      kind: 'remux',
-      video: 'copy',
-      videoTag: 'hvc1',
-      audio: 'copy',
-    });
+    expect(processor.normalize).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'video-1' }),
+      { kind: 'remux', video: 'copy', videoTag: 'hvc1', audio: 'copy' },
+      goodProbe,
+    );
     expect(stored()).toMatchObject({
       uploadStatus: 'ready',
       media: { durationSeconds: 42.5, width: 1920, height: 1080 },

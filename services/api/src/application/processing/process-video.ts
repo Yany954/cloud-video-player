@@ -30,7 +30,7 @@ export class ProcessVideo {
         await this.videos.save(markFailed(processing, plan.reason));
         return;
       }
-      await this.processor.normalize(processing, plan);
+      await this.processor.normalize(processing, plan, probe);
       await this.videos.save(
         markReady(processing, {
           durationSeconds: probe.durationSeconds,

@@ -2,7 +2,12 @@ import { DomainError } from '../../domain/errors';
 import { assertFits } from '../../domain/quota';
 import { planUpload } from '../../domain/upload-plan';
 import { activeUploadSession, completeUpload, type Video } from '../../domain/video';
-import type { ObjectStorage, StorageAccountRepository, VideoRepository } from '../ports';
+import type {
+  ObjectStorage,
+  ProcessingQueue,
+  StorageAccountRepository,
+  VideoRepository,
+} from '../ports';
 import { findOwnedVideo } from './owned-video';
 
 export interface CompleteUploadInput {
@@ -15,6 +20,7 @@ export class CompleteUpload {
     private readonly videos: VideoRepository,
     private readonly accounts: StorageAccountRepository,
     private readonly storage: ObjectStorage,
+    private readonly queue: ProcessingQueue,
   ) {}
 
   async execute(input: CompleteUploadInput): Promise<Video> {
@@ -53,6 +59,8 @@ export class CompleteUpload {
       }
       throw error;
     }
+    // Only now is the upload fully accepted, so only now is it worth processing.
+    await this.queue.enqueue(completed.id);
     return completed;
   }
 }

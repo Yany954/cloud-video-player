@@ -20,6 +20,12 @@ const PART_URL_TTL_SECONDS = 60 * 60;
 export const originalKey = (video: Video) =>
   `uploads/${video.ownerId}/${video.id}/original.${video.format}`;
 
+/** The playable version and its poster, in the media bucket. */
+export const mediaKeys = (videoId: string) => ({
+  video: `media/${videoId}/video.mp4`,
+  poster: `media/${videoId}/poster.jpg`,
+});
+
 export class S3ObjectStorage implements ObjectStorage {
   constructor(
     private readonly s3: S3Client,
