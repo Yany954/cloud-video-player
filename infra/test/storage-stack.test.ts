@@ -89,4 +89,37 @@ describe('StorageStack', () => {
       }),
     );
   });
+
+  describe('media delivery', () => {
+    it('serves only requests signed with our key, over HTTPS', () => {
+      template.hasResourceProperties('AWS::CloudFront::Distribution', {
+        DistributionConfig: Match.objectLike({
+          DefaultCacheBehavior: Match.objectLike({
+            ViewerProtocolPolicy: 'https-only',
+            AllowedMethods: ['GET', 'HEAD'],
+            TrustedKeyGroups: [Match.anyValue()],
+          }),
+          PriceClass: 'PriceClass_100',
+        }),
+      });
+      template.resourceCountIs('AWS::CloudFront::PublicKey', 1);
+    });
+
+    it('lets CloudFront, and only this distribution, read the private media bucket', () => {
+      template.resourceCountIs('AWS::CloudFront::OriginAccessControl', 1);
+      const policy = JSON.stringify(template.findResources('AWS::S3::BucketPolicy'));
+      expect(policy).toContain('cloudfront.amazonaws.com');
+      expect(policy).toContain('AWS:SourceArn');
+      // Still no public access on the bucket itself.
+      expect(bucket(mediaId).Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets).toBe(
+        true,
+      );
+    });
+
+    it('does not put the uploads bucket behind CloudFront', () => {
+      const distributions = template.findResources('AWS::CloudFront::Distribution');
+      expect(Object.keys(distributions)).toHaveLength(1);
+      expect(JSON.stringify(distributions)).not.toContain(uploadsId);
+    });
+  });
 });

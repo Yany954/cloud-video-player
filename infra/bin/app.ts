@@ -32,6 +32,9 @@ new ApiStack(app, `${prefix}-api`, {
   table: data.table,
   uploadsBucket: storage.uploadsBucket,
   processingQueue: processing.queue,
+  playbackDomain: storage.mediaDistribution.distributionDomainName,
+  playbackKeyPairId: storage.playbackKeyPairId,
+  playbackKeyParameter: `/${prefix}/playback/private-key`,
 });
 
 app.synth();

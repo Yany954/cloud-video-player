@@ -39,6 +39,9 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
         sizeBytes: options.sizeBytes,
         uploadStatus: 'uploaded',
         moderationStatus: 'pending',
+        failureReason: null,
+        durationSeconds: null,
+        posterUrl: null,
         createdAt: '2026-10-03T10:00:00.000Z',
       };
     },
@@ -50,6 +53,9 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
     },
     async listVideos() {
       return { videos: [] };
+    },
+    async getPlayback() {
+      throw new Error('not used by the upload engine');
     },
   };
 

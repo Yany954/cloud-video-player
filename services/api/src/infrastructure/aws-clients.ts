@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { S3Client, type S3ClientConfig } from '@aws-sdk/client-s3';
 import { SQSClient } from '@aws-sdk/client-sqs';
+import { SSMClient } from '@aws-sdk/client-ssm';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
 export const s3ClientConfig = {
@@ -13,3 +14,4 @@ export const s3ClientConfig = {
 export const documentClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 export const s3Client = new S3Client(s3ClientConfig);
 export const sqsClient = new SQSClient({});
+export const ssmClient = new SSMClient({});

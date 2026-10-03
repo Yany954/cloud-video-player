@@ -167,6 +167,12 @@ importers:
       '@aws-sdk/client-sqs':
         specifier: ^3.1146.0
         version: 3.1146.0
+      '@aws-sdk/client-ssm':
+        specifier: ^3.1146.0
+        version: 3.1146.0
+      '@aws-sdk/cloudfront-signer':
+        specifier: ^3.1138.0
+        version: 3.1138.0
       '@aws-sdk/lib-dynamodb':
         specifier: ^3.1146.0
         version: 3.1146.0(@aws-sdk/client-dynamodb@3.1146.0)
@@ -302,6 +308,14 @@ packages:
 
   '@aws-sdk/client-sqs@3.1146.0':
     resolution: {integrity: sha512-JQT0qy87HLkrCJNYaBkzpQuopVFpvafwyrHTRaL55gXCrYRh8y3oJ080squ4X6gmyD2wO7uw4E65ps13KuisJw==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/client-ssm@3.1146.0':
+    resolution: {integrity: sha512-Qx29jzZEVPpxUxzRNs1wwHg2qtOmHcwa3p1Bbufixg7SnyLg3zdLbhbK6oeeRnFDPBdlcjacURI/5JY+aSmu/Q==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/cloudfront-signer@3.1138.0':
+    resolution: {integrity: sha512-LEyxdltaei3XslmaRt6rtqDGXs8xCCB+Cx1PaqQYJOE2fGf53z9CoHnWxZxz0ABksXMKAQ6vnUVTMEO6PU/FtA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.978.1':
@@ -5013,6 +5027,22 @@ snapshots:
       '@smithy/fetch-http-handler': 5.8.0
       '@smithy/node-http-handler': 4.12.1
       '@smithy/types': 4.19.0
+      tslib: 2.8.1
+
+  '@aws-sdk/client-ssm@3.1146.0':
+    dependencies:
+      '@aws-sdk/core': 3.978.1
+      '@aws-sdk/credential-provider-node': 3.972.84
+      '@aws-sdk/types': 3.974.6
+      '@smithy/core': 3.35.1
+      '@smithy/fetch-http-handler': 5.8.0
+      '@smithy/node-http-handler': 4.12.1
+      '@smithy/types': 4.19.0
+      tslib: 2.8.1
+
+  '@aws-sdk/cloudfront-signer@3.1138.0':
+    dependencies:
+      '@smithy/core': 3.35.1
       tslib: 2.8.1
 
   '@aws-sdk/core@3.978.1':

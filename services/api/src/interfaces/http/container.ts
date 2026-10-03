@@ -5,8 +5,10 @@ import { CompleteUpload } from '../../application/upload/complete-upload';
 import { GetPartUrls } from '../../application/upload/get-part-urls';
 import { GetStorageUsage } from '../../application/upload/get-storage-usage';
 import { InitiateUpload } from '../../application/upload/initiate-upload';
+import { GetPlayback } from '../../application/video/get-playback';
 import { ListMyVideos } from '../../application/video/list-my-videos';
-import { documentClient, s3Client, sqsClient } from '../../infrastructure/aws-clients';
+import { documentClient, s3Client, sqsClient, ssmClient } from '../../infrastructure/aws-clients';
+import { CloudFrontPlaybackSigner } from '../../infrastructure/cloudfront-playback-signer';
 import { DynamoStorageAccountRepository } from '../../infrastructure/dynamo-storage-account-repository';
 import { DynamoVideoRepository } from '../../infrastructure/dynamo-video-repository';
 import { S3ObjectStorage } from '../../infrastructure/s3-object-storage';
@@ -30,3 +32,10 @@ export const completeUpload = new CompleteUpload(videos, accounts, storage, queu
 export const abortUpload = new AbortUpload(videos, storage);
 export const getStorageUsage = new GetStorageUsage(accounts);
 export const listMyVideos = new ListMyVideos(videos);
+
+export const playbackSigner = new CloudFrontPlaybackSigner(ssmClient, {
+  domain: env('PLAYBACK_DOMAIN'),
+  keyPairId: env('PLAYBACK_KEY_PAIR_ID'),
+  privateKeyParameter: env('PLAYBACK_KEY_PARAMETER'),
+});
+export const getPlayback = new GetPlayback(videos, playbackSigner, () => new Date());

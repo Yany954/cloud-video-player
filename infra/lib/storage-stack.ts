@@ -1,4 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
+import {
+  AllowedMethods,
+  CachePolicy,
+  Distribution,
+  HttpVersion,
+  KeyGroup,
+  PriceClass,
+  PublicKey,
+  ViewerProtocolPolicy,
+} from 'aws-cdk-lib/aws-cloudfront';
+import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import {
   BlockPublicAccess,
   Bucket,
@@ -23,6 +36,11 @@ const privateBucket: BucketProps = {
   removalPolicy: RemovalPolicy.RETAIN,
 };
 
+// The matching private key lives in SSM (see infra/scripts/create-playback-key.sh).
+const playbackPublicKey = fileURLToPath(
+  new URL('../keys/playback-public-key.pem', import.meta.url),
+);
+
 const abortIncompleteUploads = {
   id: 'abort-incomplete-multipart',
   abortIncompleteMultipartUploadAfter: Duration.days(7),
@@ -31,8 +49,12 @@ const abortIncompleteUploads = {
 export class StorageStack extends Stack {
   /** Originals as uploaded, under uploads/{userId}/{videoId}/. Backup only, never streamed. */
   readonly uploadsBucket: Bucket;
-  /** Normalized MP4/HLS that the players stream (via CloudFront, added later). */
+  /** Processed, playable versions. Private: read only through `mediaDistribution`. */
   readonly mediaBucket: Bucket;
+  /** Streams the media bucket, only to requests carrying a URL signed with our key. */
+  readonly mediaDistribution: Distribution;
+  /** Id of the public key CloudFront checks signatures against. */
+  readonly playbackKeyPairId: string;
 
   constructor(scope: Construct, id: string, props: StorageStackProps) {
     super(scope, id, props);
@@ -75,6 +97,30 @@ export class StorageStack extends Stack {
       ],
     });
 
+    const publicKey = new PublicKey(this, 'PlaybackPublicKey', {
+      encodedKey: readFileSync(playbackPublicKey, 'utf8'),
+    });
+    this.playbackKeyPairId = publicKey.publicKeyId;
+
+    // Lives in this stack because the bucket's policy must name the distribution, and the
+    // distribution must name the bucket: in separate stacks they would depend on each other.
+    this.mediaDistribution = new Distribution(this, 'MediaDistribution', {
+      comment: 'Signed playback of processed videos',
+      defaultBehavior: {
+        // Origin access control: the bucket stays private and accepts only this distribution.
+        origin: S3BucketOrigin.withOriginAccessControl(this.mediaBucket),
+        viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
+        allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
+        cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+        // Without a valid signature CloudFront answers 403, whatever the path.
+        trustedKeyGroups: [new KeyGroup(this, 'PlaybackKeyGroup', { items: [publicKey] })],
+      },
+      // North America and Europe edges only: the cheapest class.
+      priceClass: PriceClass.PRICE_CLASS_100,
+      httpVersion: HttpVersion.HTTP2_AND_3,
+    });
+
+    new CfnOutput(this, 'MediaDomain', { value: this.mediaDistribution.distributionDomainName });
     new CfnOutput(this, 'UploadsBucketName', { value: this.uploadsBucket.bucketName });
     new CfnOutput(this, 'MediaBucketName', { value: this.mediaBucket.bucketName });
   }

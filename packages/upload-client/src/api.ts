@@ -4,6 +4,7 @@ import type {
   InitiateUploadResponse,
   ListVideosResponse,
   PartUrlsResponse,
+  PlaybackResponse,
   StorageUsageResponse,
   VideoResponse,
 } from '@cvp/shared';
@@ -16,6 +17,7 @@ export interface UploadApi {
   abort(videoId: string): Promise<void>;
   getStorageUsage(): Promise<StorageUsageResponse>;
   listVideos(): Promise<ListVideosResponse>;
+  getPlayback(videoId: string): Promise<PlaybackResponse>;
 }
 
 /** The API answered with an error. `code` is the server's error code, e.g. QUOTA_EXCEEDED. */
@@ -74,5 +76,6 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
     abort: (videoId) => request('DELETE', `/uploads/${id(videoId)}`),
     getStorageUsage: () => request('GET', '/me/storage'),
     listVideos: () => request('GET', '/videos'),
+    getPlayback: (videoId) => request('GET', `/videos/${id(videoId)}/playback`),
   };
 }

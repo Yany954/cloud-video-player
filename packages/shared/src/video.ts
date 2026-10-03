@@ -17,7 +17,27 @@ export interface VideoResponse {
   sizeBytes: number | null;
   uploadStatus: UploadStatus;
   moderationStatus: ModerationStatus;
+  /** Why processing failed; null unless uploadStatus is "failed". */
+  failureReason: ProcessingFailureReason | null;
+  /** Known once the video is "ready". */
+  durationSeconds: number | null;
+  /** Time-limited link to the poster image; null until the video is "ready". */
+  posterUrl: string | null;
   createdAt: string;
+}
+
+export type ProcessingFailureReason =
+  'NO_VIDEO_STREAM' | 'UNSUPPORTED_VIDEO_CODEC' | 'TOO_LARGE' | 'PROCESSING_ERROR';
+
+export interface PlaybackResponse {
+  title: string;
+  /** Time-limited links: ask again after `expiresAt`. */
+  videoUrl: string;
+  posterUrl: string;
+  expiresAt: string;
+  durationSeconds: number;
+  width: number;
+  height: number;
 }
 
 export interface ListVideosResponse {

@@ -6,6 +6,7 @@ import { StorageWidget } from '@/components/storage/storage-widget';
 import { VideoList } from '@/components/video/video-list';
 import { uploadApi } from '@/lib/api';
 import { useUploads } from '@/lib/upload/use-uploads';
+import { isBeingPrepared } from '@/lib/video/status';
 import { Dropzone } from './dropzone';
 import { UploadList } from './upload-list';
 
@@ -26,6 +27,14 @@ export function UploadPanel({ userId }: { userId: string }) {
     );
   }, []);
   useEffect(refresh, [refresh]);
+
+  // A video being prepared changes on the server without us doing anything: keep checking.
+  const preparing = videos?.some(isBeingPrepared) ?? false;
+  useEffect(() => {
+    if (!preparing) return;
+    const timer = setInterval(refresh, 4000);
+    return () => clearInterval(timer);
+  }, [preparing, refresh]);
 
   const uploads = useUploads(userId, refresh);
 

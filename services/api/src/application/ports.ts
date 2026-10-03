@@ -62,5 +62,15 @@ export interface ProcessingQueue {
   enqueue(videoId: string): Promise<void>;
 }
 
+export interface PlaybackUrls {
+  video: string;
+  poster: string;
+}
+
+export interface PlaybackUrlSigner {
+  /** Time-limited links to a video's playable file and poster. */
+  sign(videoId: string, expiresAt: Date): Promise<PlaybackUrls>;
+}
+
 export type IdGenerator = () => string;
 export type Clock = () => Date;

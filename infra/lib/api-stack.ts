@@ -18,6 +18,11 @@ export interface ApiStackProps extends StackProps {
   table: ITableV2;
   uploadsBucket: IBucket;
   processingQueue: IQueue;
+  /** CloudFront domain that serves processed videos. */
+  playbackDomain: string;
+  playbackKeyPairId: string;
+  /** Name of the SSM SecureString holding the URL-signing private key. */
+  playbackKeyParameter: string;
 }
 
 interface RouteProps {
@@ -30,6 +35,8 @@ interface RouteProps {
   uploadActions?: string[];
   /** May put jobs on the processing queue. */
   startsProcessing?: boolean;
+  /** May read the private key that signs playback URLs. */
+  signsPlaybackUrls?: boolean;
   timeout?: Duration;
 }
 
@@ -79,6 +86,15 @@ export class ApiStack extends Stack {
       file: 'list-videos.ts',
       // Reads the "my videos" index (GSI1).
       tableActions: ['dynamodb:Query'],
+      // Each ready video comes with a signed link to its poster.
+      signsPlaybackUrls: true,
+    });
+    this.route('GetPlayback', {
+      method: HttpMethod.GET,
+      path: '/videos/{videoId}/playback',
+      file: 'get-playback.ts',
+      tableActions: ['dynamodb:GetItem'],
+      signsPlaybackUrls: true,
     });
     this.route('InitiateUpload', {
       method: HttpMethod.POST,
@@ -138,6 +154,9 @@ export class ApiStack extends Stack {
         TABLE_NAME: table.tableName,
         UPLOADS_BUCKET: uploadsBucket.bucketName,
         PROCESSING_QUEUE_URL: processingQueue.queueUrl,
+        PLAYBACK_DOMAIN: this.props.playbackDomain,
+        PLAYBACK_KEY_PAIR_ID: this.props.playbackKeyPairId,
+        PLAYBACK_KEY_PARAMETER: this.props.playbackKeyParameter,
       },
     });
 
@@ -151,6 +170,21 @@ export class ApiStack extends Stack {
       );
     }
     if (route.startsProcessing) processingQueue.grantSendMessages(fn);
+    if (route.signsPlaybackUrls) {
+      fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ssm:GetParameter'],
+          resources: [
+            this.formatArn({
+              service: 'ssm',
+              resource: 'parameter',
+              // Parameter names start with "/", which the ARN format already provides.
+              resourceName: this.props.playbackKeyParameter.replace(/^\//, ''),
+            }),
+          ],
+        }),
+      );
+    }
 
     this.httpApi.addRoutes({
       path: route.path,

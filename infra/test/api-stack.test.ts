@@ -36,6 +36,9 @@ describe('ApiStack', () => {
       table: data.table,
       uploadsBucket: storage.uploadsBucket,
       processingQueue: processing.queue,
+      playbackDomain: storage.mediaDistribution.distributionDomainName,
+      playbackKeyPairId: storage.playbackKeyPairId,
+      playbackKeyParameter: '/test/playback/private-key',
     });
     template = Template.fromStack(api);
   }, 120_000);
@@ -66,6 +69,7 @@ describe('ApiStack', () => {
       'GET /me/storage',
       'GET /uploads/{videoId}/parts',
       'GET /videos',
+      'GET /videos/{videoId}/playback',
       'POST /uploads',
       'POST /uploads/{videoId}/complete',
     ]);
@@ -87,12 +91,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(7);
+    expect(functions).toHaveLength(8);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(7);
+    expect(logGroups).toHaveLength(8);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -105,8 +109,25 @@ describe('ApiStack', () => {
       expect(actionsOf('GetStorageUsage')).toEqual(['dynamodb:GetItem']);
     });
 
-    it('lets "my videos" only query, never write', () => {
-      expect(actionsOf('ListVideos')).toEqual(['dynamodb:Query']);
+    it('lets "my videos" only query and sign poster links, never write', () => {
+      expect(actionsOf('ListVideos')).toEqual(['dynamodb:Query', 'ssm:GetParameter']);
+    });
+
+    it('lets "playback" only read one video and sign its links', () => {
+      expect(actionsOf('GetPlayback')).toEqual(['dynamodb:GetItem', 'ssm:GetParameter']);
+    });
+
+    it('lets only the two signing routes read the private key, and only that parameter', () => {
+      for (const name of ['InitiateUpload', 'GetPartUrls', 'CompleteUpload', 'AbortUpload']) {
+        expect(actionsOf(name)).not.toContain('ssm:GetParameter');
+      }
+      const ssm = Object.values(template.findResources('AWS::IAM::Policy'))
+        .flatMap((policy) => policy.Properties.PolicyDocument.Statement as Statement[])
+        .filter((statement) => [statement.Action].flat().includes('ssm:GetParameter'));
+      expect(ssm).toHaveLength(2);
+      for (const statement of ssm) {
+        expect(JSON.stringify(statement.Resource)).toContain('parameter/test/playback/private-key');
+      }
     });
 
     it('lets "initiate" create records and start uploads, nothing else', () => {
