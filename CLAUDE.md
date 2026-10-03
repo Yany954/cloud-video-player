@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+> **Progress, next steps and working agreements live in [`docs/ROADMAP.md`](docs/ROADMAP.md). Read it at the start of every session and update it when a step is finished.**
+
 ## Project goal
 A secure mobile app (iOS + Android) plus a web admin to store and stream heavy, high-quality video files (concerts, presentations) without using personal storage like iCloud. Focused on live events and sharing among family and friends.
 
@@ -40,7 +42,7 @@ Explicitly out of scope: watch party.
 |---|---|
 | Auth | Cognito (groups for roles) |
 | Upload | S3 multipart + presigned URLs |
-| Processing | S3 event -> Lambda + ffmpeg: remux/package to HLS with stream copy (no re-encode) when codecs are compatible. Only for incompatible codecs: re-encode in a Fargate/Batch ffmpeg job (no 15-min limit). MediaConvert only if needed later. |
+| Processing | SQS message (sent once an upload is accepted) -> Lambda + ffmpeg: remux to a fast-start MP4 with stream copy (no re-encode) when codecs are compatible; HLS comes with audio mode. Only for incompatible codecs or files over 9 GiB: re-encode in a Fargate/Batch ffmpeg job (no 15-min limit). MediaConvert only if needed later. |
 | Storage policy | Serve the converted good-quality version. Move the original to Glacier as backup. S3 Intelligent-Tiering for served files (DECIDED). |
 | Delivery | CloudFront with signed URLs |
 | API | API Gateway + Lambda (Node/TypeScript) |
@@ -88,14 +90,14 @@ Explicitly out of scope: watch party.
 ## Conventions
 - Language: TypeScript end to end where possible.
 - Clean architecture: `domain/` -> `application/` (use cases) -> `infrastructure/` (AWS adapters) -> `interfaces/` (handlers/UI). Domain has no AWS imports.
-- Monorepo (proposed):
+- Monorepo:
   ```
   apps/mobile/   apps/web/
   services/api/src/{domain,application,infrastructure,interfaces}
   infra/         (CDK stacks)
-  packages/shared/ (shared types)
+  packages/shared/ (shared types)   packages/upload-client/ (upload engine for web + mobile)
   ```
-- Testing: Vitest for domain and use cases; Playwright E2E for web; mobile E2E tool TBD with framework.
+- Testing: Vitest for domain and use cases; Playwright E2E for web; mobile E2E tool TBD with framework. Verify checks by exit code and never with `pnpm -s` (it hides sub-package errors).
 - Secrets: never commit keys; `.env` files in `.gitignore`.
 - AWS cost safety: account is on the paid (pay-as-you-go) plan, no free credits; only always-free limits apply. Monthly budget `cvp-monthly` ($10, alerts at 85%/100% actual and 100% forecast), Free Tier alerts and Cost Anomaly Detection (daily summary, >$5) email me. Budgets only alert, they never stop resources. Warn me before creating any resource that costs money beyond free tier (e.g., MediaConvert jobs), and before any console step with billing side effects.
 - AWS access: region `us-east-1`. Daily work through IAM Identity Center (user with AdministratorAccess, MFA always-on); CLI profile `cvp-dev` via SSO. Never use root or long-lived access keys.
