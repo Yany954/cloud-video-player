@@ -16,7 +16,7 @@ interface VideoListProps {
   errorText: string;
   empty: { title: string; text: string };
   /** Which list the player's "back" link returns to. */
-  from?: 'library' | 'review';
+  from?: string;
   /** Where each video is in its life. Pointless in a list where all share one status. */
   showStatus?: boolean;
   /** Extra controls at the end of each row. */

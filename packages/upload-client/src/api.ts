@@ -1,12 +1,17 @@
 import type {
   ApiErrorResponse,
+  CreateEventRequest,
+  EventDetailResponse,
+  EventResponse,
   InitiateUploadRequest,
   InitiateUploadResponse,
+  ListEventsResponse,
   ListVideosResponse,
   PartUrlsResponse,
   PlaybackResponse,
   ReviewDecision,
   StorageUsageResponse,
+  UpdateEventRequest,
   VideoResponse,
 } from '@cvp/shared';
 
@@ -27,6 +32,17 @@ export interface UploadApi {
   reviewVideo(videoId: string, decision: ReviewDecision): Promise<VideoResponse>;
   /** Permanent. Owners delete their own videos; admins can delete any. */
   deleteVideo(videoId: string): Promise<void>;
+  createEvent(request: CreateEventRequest): Promise<EventResponse>;
+  listEvents(): Promise<ListEventsResponse>;
+  /** The event and the videos the caller may see, in playing order. */
+  getEvent(eventId: string): Promise<EventDetailResponse>;
+  updateEvent(eventId: string, request: UpdateEventRequest): Promise<EventResponse>;
+  /** `videoIds` is the whole new playing order. */
+  reorderEvent(eventId: string, videoIds: string[]): Promise<void>;
+  /** Only an empty event can be deleted. */
+  deleteEvent(eventId: string): Promise<void>;
+  /** Moves one of the caller's videos into an event, or out with `null`. */
+  setVideoEvent(videoId: string, eventId: string | null): Promise<VideoResponse>;
 }
 
 /** The API answered with an error. `code` is the server's error code, e.g. QUOTA_EXCEEDED. */
@@ -91,5 +107,14 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
     reviewVideo: (videoId, decision) =>
       request('POST', `/admin/videos/${id(videoId)}/review`, { decision }),
     deleteVideo: (videoId) => request('DELETE', `/videos/${id(videoId)}`),
+    createEvent: (body) => request('POST', '/events', body),
+    listEvents: () => request('GET', '/events'),
+    getEvent: (eventId) => request('GET', `/events/${id(eventId)}`),
+    updateEvent: (eventId, body) => request('PATCH', `/events/${id(eventId)}`, body),
+    reorderEvent: (eventId, videoIds) =>
+      request('PUT', `/events/${id(eventId)}/order`, { videoIds }),
+    deleteEvent: (eventId) => request('DELETE', `/events/${id(eventId)}`),
+    setVideoEvent: (videoId, eventId) =>
+      request('PUT', `/videos/${id(videoId)}/event`, { eventId }),
   };
 }

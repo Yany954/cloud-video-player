@@ -49,10 +49,11 @@ export default function WatchPage() {
 
 function Watch() {
   const { videoId } = useParams<{ videoId: string }>();
-  const back = BACK_LINKS[useSearchParams().get('from') ?? ''] ?? {
-    href: '/',
-    label: 'Your videos',
-  };
+  const from = useSearchParams().get('from') ?? '';
+  // "event-<id>" returns to that event's page.
+  const back = from.startsWith('event-')
+    ? { href: `/events/${encodeURIComponent(from.slice('event-'.length))}`, label: 'Event' }
+    : (BACK_LINKS[from] ?? { href: '/', label: 'Your videos' });
   const auth = useAuth().state;
   const isAdmin = auth.status === 'signedIn' && auth.user.isAdmin;
   const [state, setState] = useState<State>({ status: 'loading' });

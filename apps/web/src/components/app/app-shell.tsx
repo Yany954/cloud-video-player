@@ -23,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const links = [
     { href: '/', label: 'Your videos' },
+    { href: '/events', label: 'Events' },
     { href: '/library', label: 'Library' },
     // Hidden from everyone else; the server enforces it too.
     ...(state.user.isAdmin ? [{ href: '/review', label: 'Review' }] : []),
@@ -57,7 +58,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav aria-label="Main" className="mx-auto w-full max-w-5xl overflow-x-auto px-4 sm:px-6">
           <ul className="flex gap-1">
             {links.map((link) => {
-              const current = pathname === link.href;
+              const current =
+                pathname === link.href ||
+                (link.href !== '/' && pathname.startsWith(`${link.href}/`));
               return (
                 <li key={link.href}>
                   <Link

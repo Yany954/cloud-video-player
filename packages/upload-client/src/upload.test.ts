@@ -11,6 +11,9 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
   const partCount = Math.ceil(options.sizeBytes / PART);
   const calls = { initiate: 0, getPartUrls: 0, complete: 0, abort: 0 };
 
+  const unused = async (): Promise<never> => {
+    throw new Error('not used by the upload engine');
+  };
   const api: UploadApi = {
     async initiate() {
       calls.initiate++;
@@ -70,6 +73,13 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
     async deleteVideo() {
       throw new Error('not used by the upload engine');
     },
+    createEvent: unused,
+    listEvents: unused,
+    getEvent: unused,
+    updateEvent: unused,
+    reorderEvent: unused,
+    deleteEvent: unused,
+    setVideoEvent: unused,
   };
 
   const putPart: PutPart<string> = async ({ partNumber, start, end, onProgress }) => {

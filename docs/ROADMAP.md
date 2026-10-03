@@ -64,9 +64,10 @@ Design in the domain (`domain/category.ts`, done):
 
 Slices, in order:
 
-1. **Events**: create, rename, private/shared, delete; put a video in an event (when
-   uploading and later); event page; reorder. Backend done and deployed; **next: web screens**
-   (events list, event page, reorder with the up arrow and a drag view).
+1. **Events: done.** Create, rename, private/shared, delete; add and remove videos on the
+   event page; reorder with the up arrow or in a temporary drag view (`@dnd-kit`, with arrow
+   buttons and keyboard dragging as alternatives). Not done yet: choosing an event while
+   uploading in the web app (the API accepts `eventId`; the upload screen does not send it).
 2. **Continuous play**: "Play all", next video starts by itself in the same `<video>` element
    (so web PiP survives), autoplay switch remembered per browser.
 3. **Collaborators**: invite a user by email; they add their recordings.

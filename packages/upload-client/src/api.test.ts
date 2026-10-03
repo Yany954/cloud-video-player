@@ -49,6 +49,27 @@ describe('createHttpUploadApi', () => {
     });
   });
 
+  it('saves a whole new playing order for an event', async () => {
+    const { api, fetchMock } = setup(new Response(null, { status: 204 }));
+
+    await api.reorderEvent('e 1', ['b', 'a']);
+
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://api.test/events/e%201/order');
+    expect(fetchMock.mock.calls[0]![1]).toMatchObject({
+      method: 'PUT',
+      body: '{"videoIds":["b","a"]}',
+    });
+  });
+
+  it('takes a video out of its event with null', async () => {
+    const { api, fetchMock } = setup(json(200, { id: 'v1', eventId: null }));
+
+    await api.setVideoEvent('v1', null);
+
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://api.test/videos/v1/event');
+    expect(fetchMock.mock.calls[0]![1]).toMatchObject({ method: 'PUT', body: '{"eventId":null}' });
+  });
+
   it("turns the API's error body into an ApiError with its code", async () => {
     const { api } = setup(
       json(413, { error: { code: 'QUOTA_EXCEEDED', message: 'Not enough free storage' } }),
