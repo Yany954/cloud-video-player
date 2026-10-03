@@ -65,11 +65,14 @@ describe('ApiStack', () => {
 
     expect(routes.map((route) => route.Properties.RouteKey).sort()).toEqual([
       'DELETE /uploads/{videoId}',
+      'GET /admin/review',
       'GET /health',
+      'GET /library',
       'GET /me/storage',
       'GET /uploads/{videoId}/parts',
       'GET /videos',
       'GET /videos/{videoId}/playback',
+      'POST /admin/videos/{videoId}/review',
       'POST /uploads',
       'POST /uploads/{videoId}/complete',
     ]);
@@ -91,12 +94,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(8);
+    expect(functions).toHaveLength(11);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(8);
+    expect(logGroups).toHaveLength(11);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -117,14 +120,30 @@ describe('ApiStack', () => {
       expect(actionsOf('GetPlayback')).toEqual(['dynamodb:GetItem', 'ssm:GetParameter']);
     });
 
-    it('lets only the two signing routes read the private key, and only that parameter', () => {
-      for (const name of ['InitiateUpload', 'GetPartUrls', 'CompleteUpload', 'AbortUpload']) {
+    it('lets the library and the review queue only query and sign poster links', () => {
+      for (const name of ['ListLibrary', 'ListReviewQueue']) {
+        expect(actionsOf(name)).toEqual(['dynamodb:Query', 'ssm:GetParameter']);
+      }
+    });
+
+    it('lets "review" only read and rewrite one video: no delete, no files, no key', () => {
+      expect(actionsOf('ReviewVideo')).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem']);
+    });
+
+    it('lets only the four signing routes read the private key, and only that parameter', () => {
+      for (const name of [
+        'InitiateUpload',
+        'GetPartUrls',
+        'CompleteUpload',
+        'AbortUpload',
+        'ReviewVideo',
+      ]) {
         expect(actionsOf(name)).not.toContain('ssm:GetParameter');
       }
       const ssm = Object.values(template.findResources('AWS::IAM::Policy'))
         .flatMap((policy) => policy.Properties.PolicyDocument.Statement as Statement[])
         .filter((statement) => [statement.Action].flat().includes('ssm:GetParameter'));
-      expect(ssm).toHaveLength(2);
+      expect(ssm).toHaveLength(4);
       for (const statement of ssm) {
         expect(JSON.stringify(statement.Resource)).toContain('parameter/test/playback/private-key');
       }

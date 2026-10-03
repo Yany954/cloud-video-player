@@ -96,6 +96,28 @@ export class ApiStack extends Stack {
       tableActions: ['dynamodb:GetItem'],
       signsPlaybackUrls: true,
     });
+    this.route('ListLibrary', {
+      method: HttpMethod.GET,
+      path: '/library',
+      file: 'list-library.ts',
+      // Reads the approved videos in the moderation index (GSI3).
+      tableActions: ['dynamodb:Query'],
+      signsPlaybackUrls: true,
+    });
+    // The /admin routes check the caller's `admin` group inside the handler.
+    this.route('ListReviewQueue', {
+      method: HttpMethod.GET,
+      path: '/admin/review',
+      file: 'list-review-queue.ts',
+      tableActions: ['dynamodb:Query'],
+      signsPlaybackUrls: true,
+    });
+    this.route('ReviewVideo', {
+      method: HttpMethod.POST,
+      path: '/admin/videos/{videoId}/review',
+      file: 'review-video.ts',
+      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+    });
     this.route('InitiateUpload', {
       method: HttpMethod.POST,
       path: '/uploads',

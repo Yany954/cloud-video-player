@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { env } from '../env';
+import { ListReviewQueue } from '../../application/moderation/list-review-queue';
+import { ReviewVideo } from '../../application/moderation/review-video';
 import { AbortUpload } from '../../application/upload/abort-upload';
 import { CompleteUpload } from '../../application/upload/complete-upload';
 import { GetPartUrls } from '../../application/upload/get-part-urls';
 import { GetStorageUsage } from '../../application/upload/get-storage-usage';
 import { InitiateUpload } from '../../application/upload/initiate-upload';
 import { GetPlayback } from '../../application/video/get-playback';
+import { ListLibrary } from '../../application/video/list-library';
 import { ListMyVideos } from '../../application/video/list-my-videos';
 import { documentClient, s3Client, sqsClient, ssmClient } from '../../infrastructure/aws-clients';
 import { CloudFrontPlaybackSigner } from '../../infrastructure/cloudfront-playback-signer';
@@ -32,6 +35,9 @@ export const completeUpload = new CompleteUpload(videos, accounts, storage, queu
 export const abortUpload = new AbortUpload(videos, storage);
 export const getStorageUsage = new GetStorageUsage(accounts);
 export const listMyVideos = new ListMyVideos(videos);
+export const listLibrary = new ListLibrary(videos);
+export const listReviewQueue = new ListReviewQueue(videos);
+export const reviewVideo = new ReviewVideo(videos, () => new Date());
 
 export const playbackSigner = new CloudFrontPlaybackSigner(ssmClient, {
   domain: env('PLAYBACK_DOMAIN'),
