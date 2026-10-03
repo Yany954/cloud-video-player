@@ -1,5 +1,9 @@
 import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
-import type { DynamoDBDocumentClient, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import type {
+  DynamoDBDocumentClient,
+  QueryCommand,
+  TransactWriteCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { describe, expect, it, vi } from 'vitest';
 import { completeUpload, startUpload } from '../domain/video';
 import { DynamoVideoRepository } from './dynamo-video-repository';
@@ -76,5 +80,34 @@ describe('DynamoVideoRepository.saveCompleted', () => {
       repository.saveCompleted({ ...completed, sizeBytes: 1_001 }),
     ).rejects.toMatchObject({ code: 'QUOTA_EXCEEDED' });
     expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe('DynamoVideoRepository moderation lists', () => {
+  const query = (send: ReturnType<typeof vi.fn>) => (send.mock.calls[0]![0] as QueryCommand).input;
+
+  it('reads the review queue oldest first', async () => {
+    const { send, repository } = setup();
+
+    await repository.listAwaitingReview(100);
+
+    expect(query(send)).toMatchObject({
+      IndexName: 'GSI3',
+      ExpressionAttributeValues: { ':list': 'MODERATION#queue' },
+      ScanIndexForward: true,
+      Limit: 100,
+    });
+  });
+
+  it('reads the library newest first', async () => {
+    const { send, repository } = setup();
+
+    await repository.listLibrary(100);
+
+    expect(query(send)).toMatchObject({
+      IndexName: 'GSI3',
+      ExpressionAttributeValues: { ':list': 'MODERATION#library' },
+      ScanIndexForward: false,
+    });
   });
 });

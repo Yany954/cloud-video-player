@@ -4,8 +4,10 @@ import type {
   APIGatewayProxyStructuredResultV2,
 } from 'aws-lambda';
 import { z, ZodError, type ZodType } from 'zod';
-import { NotFoundError } from '../../application/errors';
+import { ForbiddenError, NotFoundError } from '../../application/errors';
 import { DomainError, type DomainErrorCode } from '../../domain/errors';
+import type { Viewer } from '../../domain/moderation';
+import { parseGroups } from './claims';
 
 export type HttpEvent = APIGatewayProxyEventV2WithJWTAuthorizer;
 export type HttpResult = APIGatewayProxyStructuredResultV2;
@@ -32,6 +34,12 @@ export function json(statusCode: number, body: unknown): HttpResult {
 /** The caller's Cognito user id. API Gateway has already validated the token. */
 export const userIdOf = (event: HttpEvent) =>
   String(event.requestContext.authorizer.jwt.claims.sub);
+
+/** The caller and whether their token says they belong to the `admin` group. */
+export function viewerOf(event: HttpEvent): Viewer {
+  const groups = parseGroups(event.requestContext.authorizer.jwt.claims['cognito:groups']);
+  return { userId: userIdOf(event), isAdmin: groups.includes('admin') };
+}
 
 export function pathParam(event: HttpEvent, name: string): string {
   const value = event.pathParameters?.[name];
@@ -64,6 +72,7 @@ export function errorResponse(caught: unknown): HttpResult {
   if (caught instanceof DomainError) {
     return error(DOMAIN_ERROR_STATUS[caught.code], caught.code, caught.message);
   }
+  if (caught instanceof ForbiddenError) return error(403, 'FORBIDDEN', caught.message);
   if (caught instanceof NotFoundError) return error(404, 'NOT_FOUND', caught.message);
   if (caught instanceof ZodError) return error(400, 'VALIDATION', z.prettifyError(caught));
   if (caught instanceof BadRequestError) return error(400, 'BAD_REQUEST', caught.message);

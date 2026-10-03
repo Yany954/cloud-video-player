@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { completeUpload, startUpload, type Video } from '../domain/video';
+import { reviewVideo } from '../domain/moderation';
+import {
+  completeUpload,
+  markReady,
+  startProcessing,
+  startUpload,
+  type Video,
+} from '../domain/video';
 import { fromVideoItem, toVideoItem, userKey, videoKey } from './video-item';
 
 const uploading: Video = {
@@ -42,5 +49,38 @@ describe('video item mapping', () => {
 
   it('round-trips a video without leaking table keys into the domain', () => {
     expect(fromVideoItem(toVideoItem(uploading))).toEqual(uploading);
+  });
+});
+
+describe('moderation index', () => {
+  const ready = markReady(startProcessing(completeUpload(uploading, 1_000)), {
+    durationSeconds: 60,
+    width: 1920,
+    height: 1080,
+  });
+  const review = (decision: 'approve' | 'reject') =>
+    reviewVideo(ready, decision, 'admin-1', new Date('2026-10-03T12:00:00.000Z'));
+
+  it('puts a playable, undecided video in the review queue, by upload time', () => {
+    expect(toVideoItem(ready)).toMatchObject({
+      GSI3PK: 'MODERATION#queue',
+      GSI3SK: '2026-10-03T10:00:00.000Z',
+    });
+  });
+
+  it('moves an approved video to the library', () => {
+    expect(toVideoItem(review('approve')).GSI3PK).toBe('MODERATION#library');
+  });
+
+  it.each([
+    ['a rejected video', review('reject')],
+    ['a video that is not playable yet', completeUpload(uploading, 1_000)],
+  ])('keeps %s out of both lists', (_, video) => {
+    expect(toVideoItem(video)).not.toHaveProperty('GSI3PK');
+    expect(toVideoItem(video)).not.toHaveProperty('GSI3SK');
+  });
+
+  it('round-trips the review', () => {
+    expect(fromVideoItem(toVideoItem(review('approve')))).toEqual(review('approve'));
   });
 });

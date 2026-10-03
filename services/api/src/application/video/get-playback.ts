@@ -1,7 +1,8 @@
 import { DomainError } from '../../domain/errors';
+import { canView, type Viewer } from '../../domain/moderation';
 import type { MediaInfo } from '../../domain/video';
+import { NotFoundError } from '../errors';
 import type { Clock, PlaybackUrls, PlaybackUrlSigner, VideoRepository } from '../ports';
-import { findOwnedVideo } from '../upload/owned-video';
 
 // Long enough to watch a full concert with pauses without the link dying mid-way.
 export const PLAYBACK_URL_TTL_MS = 6 * 60 * 60 * 1000;
@@ -18,9 +19,10 @@ export class GetPlayback {
     private readonly now: Clock,
   ) {}
 
-  /** Owner only for now: other viewers arrive with moderation. */
-  async execute(input: { userId: string; videoId: string }): Promise<Playback> {
-    const video = await findOwnedVideo(this.videos, input.videoId, input.userId);
+  /** A video the viewer may not see answers "not found", so its existence stays private. */
+  async execute(input: { viewer: Viewer; videoId: string }): Promise<Playback> {
+    const video = await this.videos.findById(input.videoId);
+    if (!video || !canView(video, input.viewer)) throw new NotFoundError();
     if (video.uploadStatus !== 'ready' || video.media === null) {
       throw new DomainError('INVALID_STATE', `Video is ${video.uploadStatus}, not ready to play`);
     }

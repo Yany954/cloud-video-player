@@ -1,11 +1,11 @@
 import type { PlaybackResponse } from '@cvp/shared';
 import { getPlayback } from './container';
-import { json, pathParam, route, userIdOf } from './http';
+import { json, pathParam, route, viewerOf } from './http';
 
 // GET /videos/{videoId}/playback
 export const handler = route(async (event) => {
   const playback = await getPlayback.execute({
-    userId: userIdOf(event),
+    viewer: viewerOf(event),
     videoId: pathParam(event, 'videoId'),
   });
   return json(200, {

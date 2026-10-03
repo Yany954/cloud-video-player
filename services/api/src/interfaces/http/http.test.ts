@@ -1,8 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { NotFoundError } from '../../application/errors';
+import { ForbiddenError, NotFoundError } from '../../application/errors';
 import { DomainError } from '../../domain/errors';
-import { parseBody, parseQuery, pathParam, route, userIdOf, type HttpEvent } from './http';
+import {
+  parseBody,
+  parseQuery,
+  pathParam,
+  route,
+  userIdOf,
+  viewerOf,
+  type HttpEvent,
+} from './http';
 
 const event = (overrides: Partial<HttpEvent> = {}) =>
   ({
@@ -30,6 +38,13 @@ describe('route error mapping', () => {
 
     expect(result.statusCode).toBe(status);
     expect(body(result)).toEqual({ error: { code, message: 'why' } });
+  });
+
+  it('maps an action the caller is not allowed to do to 403', async () => {
+    const result = await failing(new ForbiddenError());
+
+    expect(result.statusCode).toBe(403);
+    expect(body(result).error.code).toBe('FORBIDDEN');
   });
 
   it('maps a missing or foreign video to 404', async () => {
@@ -91,5 +106,24 @@ describe('request parsing', () => {
     expect(userIdOf(event())).toBe('user-1');
     expect(pathParam(event({ pathParameters: { videoId: 'v1' } }), 'videoId')).toBe('v1');
     expect(() => pathParam(event(), 'videoId')).toThrow('Missing path parameter');
+  });
+});
+
+describe('viewerOf', () => {
+  const withGroups = (groups?: string) =>
+    ({
+      requestContext: {
+        authorizer: { jwt: { claims: { sub: 'user-1', 'cognito:groups': groups } } },
+      },
+    }) as unknown as HttpEvent;
+
+  it('recognises an admin from the groups in the token', () => {
+    expect(viewerOf(withGroups('[admin user]'))).toEqual({ userId: 'user-1', isAdmin: true });
+  });
+
+  it('treats everyone else, and a token with no groups, as a normal user', () => {
+    expect(viewerOf(withGroups('[user]')).isAdmin).toBe(false);
+    expect(viewerOf(withGroups()).isAdmin).toBe(false);
+    expect(viewerOf(withGroups('[administrators]')).isAdmin).toBe(false);
   });
 });

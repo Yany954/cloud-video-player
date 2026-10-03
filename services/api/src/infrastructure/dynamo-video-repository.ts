@@ -10,7 +10,14 @@ import {
 import type { StorageAccountRepository, VideoRepository } from '../application/ports';
 import { DomainError } from '../domain/errors';
 import type { Video } from '../domain/video';
-import { fromVideoItem, ownerIndex, toVideoItem, userKey, videoKey } from './video-item';
+import {
+  fromVideoItem,
+  moderationIndex,
+  ownerIndex,
+  toVideoItem,
+  userKey,
+  videoKey,
+} from './video-item';
 
 export class DynamoVideoRepository implements VideoRepository {
   constructor(
@@ -45,6 +52,32 @@ export class DynamoVideoRepository implements VideoRepository {
         ExpressionAttributeValues: { ':owner': ownerIndex.partitionKey(ownerId) },
         // The index is sorted by creation time; read it backwards for newest first.
         ScanIndexForward: false,
+        Limit: limit,
+      }),
+    );
+    return (Items ?? []).map(fromVideoItem);
+  }
+
+  listAwaitingReview(limit: number): Promise<Video[]> {
+    return this.listModeration('queue', limit, true);
+  }
+
+  listLibrary(limit: number): Promise<Video[]> {
+    return this.listModeration('library', limit, false);
+  }
+
+  private async listModeration(
+    list: 'queue' | 'library',
+    limit: number,
+    oldestFirst: boolean,
+  ): Promise<Video[]> {
+    const { Items } = await this.doc.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        IndexName: moderationIndex.name,
+        KeyConditionExpression: 'GSI3PK = :list',
+        ExpressionAttributeValues: { ':list': moderationIndex.partitionKey(list) },
+        ScanIndexForward: oldestFirst,
         Limit: limit,
       }),
     );

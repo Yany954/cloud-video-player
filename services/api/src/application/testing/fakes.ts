@@ -1,4 +1,5 @@
 import { DomainError } from '../../domain/errors';
+import { awaitsReview, isInLibrary } from '../../domain/moderation';
 import { DEFAULT_QUOTA_BYTES, fits, type StorageUsage } from '../../domain/quota';
 import type { Video } from '../../domain/video';
 import type {
@@ -26,6 +27,20 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountReposito
   async listByOwner(ownerId: string, limit: number) {
     return [...this.videos.values()]
       .filter((video) => video.ownerId === ownerId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit);
+  }
+
+  async listAwaitingReview(limit: number) {
+    return [...this.videos.values()]
+      .filter(awaitsReview)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .slice(0, limit);
+  }
+
+  async listLibrary(limit: number) {
+    return [...this.videos.values()]
+      .filter(isInLibrary)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, limit);
   }
