@@ -1,7 +1,8 @@
 # Roadmap and project state
 
-Last updated: 2026-10-04 (web app deployed; events, invites and open sign-up done).
-is next, and the decisions and habits that are not obvious from the code. `CLAUDE.md` holds the
+Last updated: 2026-10-04 (web app deployed; events, invites and open sign-up done). This file
+is the hand-off between work sessions: what is done, what is next, and the decisions and
+habits that are not obvious from the code. `CLAUDE.md` holds the
 product goals; this file holds the progress.
 
 ## Where we are
