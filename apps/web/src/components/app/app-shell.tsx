@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { Brand } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
+import { rememberReturnTo } from '@/lib/auth/return-to';
 
 /** Signed-in frame. Sends signed-out visitors to /login. */
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -14,7 +15,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (state.status === 'signedOut') router.replace('/login');
+    if (state.status !== 'signedOut') return;
+    const { pathname, search, hash } = window.location;
+    rememberReturnTo(pathname + search + hash);
+    router.replace('/login');
   }, [state.status, router]);
 
   const pathname = usePathname();

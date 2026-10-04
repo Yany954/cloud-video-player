@@ -1,15 +1,20 @@
+import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
 import {
-  DeleteCommand,
+  BatchGetCommand,
   GetCommand,
   PutCommand,
   QueryCommand,
+  TransactWriteCommand,
   type DynamoDBDocumentClient,
 } from '@aws-sdk/lib-dynamodb';
 import type { CategoryRepository } from '../application/ports';
 import type { Category } from '../domain/category';
+import { DomainError } from '../domain/errors';
 import {
   categoryKey,
   fromCategoryItem,
+  MEMBERSHIP_PREFIX,
+  membershipKey,
   ownedCategoriesIndex,
   sharedCategoriesIndex,
   toCategoryItem,
@@ -67,8 +72,104 @@ export class DynamoCategoryRepository implements CategoryRepository {
     );
   }
 
-  async delete(id: string): Promise<void> {
-    await this.doc.send(new DeleteCommand({ TableName: this.tableName, Key: categoryKey(id) }));
+  async listByMember(userId: string, limit: number): Promise<Category[]> {
+    const { Items: memberships } = await this.doc.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'PK = :user AND begins_with(SK, :prefix)',
+        ExpressionAttributeValues: {
+          ':user': membershipKey(userId, '').PK,
+          ':prefix': MEMBERSHIP_PREFIX,
+        },
+        Limit: limit,
+      }),
+    );
+    const keys = (memberships ?? []).map((item) => categoryKey(String(item.categoryId)));
+    if (keys.length === 0) return [];
+
+    // `limit` is at most 100, which is also the most keys one batch read accepts.
+    const { Responses } = await this.doc.send(
+      new BatchGetCommand({ RequestItems: { [this.tableName]: { Keys: keys } } }),
+    );
+    return (
+      (Responses?.[this.tableName] ?? [])
+        .map(fromCategoryItem)
+        // The category is the source of truth: ignore a membership row it does not confirm.
+        .filter((category) => category.collaboratorIds.includes(userId))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    );
+  }
+
+  async join(category: Category, userId: string): Promise<void> {
+    try {
+      await this.doc.send(
+        new TransactWriteCommand({
+          TransactItems: [
+            {
+              Update: {
+                TableName: this.tableName,
+                Key: categoryKey(category.id),
+                // Appends, so two people joining at once are both kept.
+                UpdateExpression: 'SET collaboratorIds = list_append(collaboratorIds, :user)',
+                // The link the person opened must still be the current one.
+                ConditionExpression: 'inviteToken = :token AND NOT contains(collaboratorIds, :id)',
+                ExpressionAttributeValues: {
+                  ':user': [userId],
+                  ':id': userId,
+                  ':token': category.inviteToken,
+                },
+              },
+            },
+            {
+              Put: {
+                TableName: this.tableName,
+                Item: {
+                  ...membershipKey(userId, category.id),
+                  type: 'Membership',
+                  categoryId: category.id,
+                },
+              },
+            },
+          ],
+        }),
+      );
+    } catch (error) {
+      if (error instanceof TransactionCanceledException) {
+        throw new DomainError('INVALID_STATE', 'The invite link changed, open it again');
+      }
+      throw error;
+    }
+  }
+
+  async leave(category: Category, userId: string): Promise<void> {
+    await this.doc.send(
+      new TransactWriteCommand({
+        TransactItems: [
+          {
+            Put: {
+              TableName: this.tableName,
+              Item: toCategoryItem(category),
+              ConditionExpression: 'attribute_exists(PK)',
+            },
+          },
+          { Delete: { TableName: this.tableName, Key: membershipKey(userId, category.id) } },
+        ],
+      }),
+    );
+  }
+
+  async delete(category: Category): Promise<void> {
+    // At most 50 collaborators, well inside the 100 writes one transaction accepts.
+    await this.doc.send(
+      new TransactWriteCommand({
+        TransactItems: [
+          { Delete: { TableName: this.tableName, Key: categoryKey(category.id) } },
+          ...category.collaboratorIds.map((userId) => ({
+            Delete: { TableName: this.tableName, Key: membershipKey(userId, category.id) },
+          })),
+        ],
+      }),
+    );
   }
 
   private async list(

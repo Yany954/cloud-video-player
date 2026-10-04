@@ -38,6 +38,8 @@ interface RouteProps {
   deletesMedia?: boolean;
   /** May put jobs on the processing queue. */
   startsProcessing?: boolean;
+  /** May look up users' email addresses in the user pool. */
+  readsUserEmails?: boolean;
   /** May read the private key that signs playback URLs. */
   signsPlaybackUrls?: boolean;
   timeout?: Duration;
@@ -119,7 +121,8 @@ export class ApiStack extends Stack {
       method: HttpMethod.GET,
       path: '/events',
       file: 'list-events.ts',
-      tableActions: ['dynamodb:Query'],
+      // The events the caller was invited to are read in one batch.
+      tableActions: ['dynamodb:Query', 'dynamodb:BatchGetItem'],
     });
     this.route('GetEvent', {
       method: HttpMethod.GET,
@@ -127,6 +130,33 @@ export class ApiStack extends Stack {
       file: 'get-event.ts',
       tableActions: ['dynamodb:GetItem', 'dynamodb:Query'],
       signsPlaybackUrls: true,
+      // Shows the owner who joined through the invite link.
+      readsUserEmails: true,
+    });
+    this.route('OpenInvite', {
+      method: HttpMethod.PUT,
+      path: '/events/{eventId}/invite',
+      file: 'open-invite.ts',
+      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+    });
+    this.route('CloseInvite', {
+      method: HttpMethod.DELETE,
+      path: '/events/{eventId}/invite',
+      file: 'close-invite.ts',
+      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+    });
+    this.route('JoinEvent', {
+      method: HttpMethod.POST,
+      path: '/events/{eventId}/join',
+      file: 'join-event.ts',
+      // Adds the collaborator and their membership row in one transaction.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:UpdateItem', 'dynamodb:PutItem'],
+    });
+    this.route('RemoveCollaborator', {
+      method: HttpMethod.DELETE,
+      path: '/events/{eventId}/collaborators/{userId}',
+      file: 'remove-collaborator.ts',
+      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:DeleteItem'],
     });
     this.route('UpdateEvent', {
       method: HttpMethod.PATCH,
@@ -239,6 +269,7 @@ export class ApiStack extends Stack {
         TABLE_NAME: table.tableName,
         UPLOADS_BUCKET: uploadsBucket.bucketName,
         MEDIA_BUCKET: mediaBucket.bucketName,
+        USER_POOL_ID: this.props.userPool.userPoolId,
         PROCESSING_QUEUE_URL: processingQueue.queueUrl,
         PLAYBACK_DOMAIN: this.props.playbackDomain,
         PLAYBACK_KEY_PAIR_ID: this.props.playbackKeyPairId,
@@ -260,6 +291,14 @@ export class ApiStack extends Stack {
         new PolicyStatement({
           actions: ['s3:DeleteObject'],
           resources: [mediaBucket.arnForObjects('media/*')],
+        }),
+      );
+    }
+    if (route.readsUserEmails) {
+      fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['cognito-idp:ListUsers'],
+          resources: [this.props.userPool.userPoolArn],
         }),
       );
     }

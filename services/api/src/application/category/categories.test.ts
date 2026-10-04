@@ -8,10 +8,14 @@ import { InitiateUpload } from '../upload/initiate-upload';
 import { GetPlayback } from '../video/get-playback';
 import { ListLibrary } from '../video/list-library';
 import {
+  CloseInvite,
   CreateCategory,
   DeleteCategory,
   GetCategory,
+  JoinCategory,
   ListCategories,
+  OpenInvite,
+  RemoveCollaborator,
   ReorderCategory,
   SetVideoCategory,
   UpdateCategory,
@@ -79,8 +83,9 @@ describe('CreateCategory and ListCategories', () => {
     await create.execute({ userId: 'ben', name: 'Ben private' });
     await create.execute({ userId: 'ben', name: 'Ben shared', visibility: 'shared' });
 
-    const { mine, shared } = await list.execute({ userId: 'ana' });
+    const { mine, invited, shared } = await list.execute({ userId: 'ana' });
 
+    expect(invited).toEqual([]);
     expect(mine.map((category) => category.name).sort()).toEqual(['Concert', 'Family']);
     expect(shared.map((category) => category.name)).toEqual(['Ben shared']);
   });
@@ -306,5 +311,84 @@ describe('InitiateUpload into an event', () => {
       initiate().execute({ ...upload, userId: 'ben', categoryId: 'cat-1' }),
     ).rejects.toThrow(NotFoundError);
     expect(await db.findById('v1')).toBeNull();
+  });
+});
+
+describe('invite link and collaborators', () => {
+  let nextToken = 1;
+  const openInvite = () => new OpenInvite(db.categories, () => `token-${nextToken++}`);
+  const join = (userId: string, token: string) =>
+    new JoinCategory(db.categories).execute({ userId, categoryId: 'cat-1', token });
+
+  beforeEach(() => {
+    nextToken = 1;
+  });
+
+  it('lets only the owner make the link', async () => {
+    await concert();
+
+    expect(await openInvite().execute({ userId: 'ana', categoryId: 'cat-1' })).toBe('token-1');
+    await expect(openInvite().execute({ userId: 'ben', categoryId: 'cat-1' })).rejects.toThrow(
+      NotFoundError,
+    );
+  });
+
+  it('makes whoever opens the link a collaborator, listed under "invited"', async () => {
+    await concert();
+    const token = await openInvite().execute({ userId: 'ana', categoryId: 'cat-1' });
+
+    await join('ben', token);
+
+    expect((await db.categories.findById('cat-1'))?.collaboratorIds).toEqual(['ben']);
+    const bens = await list.execute({ userId: 'ben' });
+    expect(ids(bens.invited)).toEqual(['cat-1']);
+    expect(bens.mine).toEqual([]);
+    await expect(get.execute({ viewer: viewer('ben'), categoryId: 'cat-1' })).resolves.toBeTruthy();
+  });
+
+  it('changes nothing when the link is opened twice, or by the owner', async () => {
+    await concert();
+    const token = await openInvite().execute({ userId: 'ana', categoryId: 'cat-1' });
+
+    await join('ben', token);
+    await join('ben', token);
+    await join('ana', token);
+
+    expect((await db.categories.findById('cat-1'))?.collaboratorIds).toEqual(['ben']);
+  });
+
+  it('refuses a wrong link, an old link and a link that was turned off, all alike', async () => {
+    await concert();
+    const first = await openInvite().execute({ userId: 'ana', categoryId: 'cat-1' });
+    const second = await openInvite().execute({ userId: 'ana', categoryId: 'cat-1' });
+
+    await expect(join('ben', 'guess')).rejects.toThrow(NotFoundError);
+    await expect(join('ben', first)).rejects.toThrow(NotFoundError);
+
+    await new CloseInvite(db.categories).execute({ userId: 'ana', categoryId: 'cat-1' });
+    await expect(join('ben', second)).rejects.toThrow(NotFoundError);
+    await expect(
+      new JoinCategory(db.categories).execute({ userId: 'ben', categoryId: 'nope', token: 'x' }),
+    ).rejects.toThrow(NotFoundError);
+    expect((await db.categories.findById('cat-1'))?.collaboratorIds).toEqual([]);
+  });
+
+  it('lets the owner remove a collaborator, and a collaborator leave', async () => {
+    await concert();
+    const token = await openInvite().execute({ userId: 'ana', categoryId: 'cat-1' });
+    await join('ben', token);
+    await join('carla', token);
+    const remove = new RemoveCollaborator(db.categories);
+
+    await expect(
+      remove.execute({ userId: 'ben', categoryId: 'cat-1', collaboratorId: 'carla' }),
+    ).rejects.toThrow(NotFoundError);
+    await remove.execute({ userId: 'ana', categoryId: 'cat-1', collaboratorId: 'carla' });
+    await remove.execute({ userId: 'ben', categoryId: 'cat-1', collaboratorId: 'ben' });
+
+    expect((await db.categories.findById('cat-1'))?.collaboratorIds).toEqual([]);
+    await expect(get.execute({ viewer: viewer('ben'), categoryId: 'cat-1' })).rejects.toThrow(
+      NotFoundError,
+    );
   });
 });

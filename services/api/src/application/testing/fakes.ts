@@ -69,11 +69,26 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountReposito
           .sort(newestFirst)
           .slice(0, limit);
       },
+      async listByMember(userId, limit) {
+        return [...items.values()]
+          .filter((category) => category.collaboratorIds.includes(userId))
+          .sort(newestFirst)
+          .slice(0, limit);
+      },
       async save(category) {
         items.set(category.id, category);
       },
-      async delete(id) {
-        items.delete(id);
+      async join(category) {
+        if (items.get(category.id)?.inviteToken !== category.inviteToken) {
+          throw new DomainError('INVALID_STATE', 'Invite link changed');
+        }
+        items.set(category.id, category);
+      },
+      async leave(category) {
+        items.set(category.id, category);
+      },
+      async delete(category) {
+        items.delete(category.id);
       },
     };
   })();

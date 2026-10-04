@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowUp, ArrowUpDown, Pencil, Plus, Trash2, X } from 'lucide
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { InvitePanel } from '@/components/event/invite-panel';
 import { ReorderList } from '@/components/event/reorder-list';
 import { selectClassName, VisibilityBadge } from '@/components/event/visibility-badge';
 import {
@@ -112,7 +113,7 @@ export default function EventPage() {
 
   async function saveOrder(ordered: VideoResponse[], done: string) {
     // Show the new order at once; `run` reloads the saved one, or the old one on failure.
-    setDetail({ event, videos: ordered, myVideoIds });
+    setDetail({ ...detail!, videos: ordered });
     const saved = await run(
       () =>
         uploadApi.reorderEvent(
@@ -177,9 +178,11 @@ export default function EventPage() {
 
         {renaming === null && (
           <p className="text-muted-foreground text-sm">
-            {isPrivate
-              ? 'Private: only you and the people you invite can see this event and its videos.'
-              : 'Every user of this app can see this event.'}
+            {!isPrivate
+              ? 'Every user of this app can see this event.'
+              : event.isOwner
+                ? 'Private: only you and the people you invite can see this event and its videos.'
+                : 'Private: only the people invited to this event can see it and its videos.'}
           </p>
         )}
 
@@ -403,6 +406,15 @@ export default function EventPage() {
         )}
       </div>
 
+      {draft === null && (event.isOwner || event.isMember) && (
+        <InvitePanel
+          detail={detail}
+          busy={busy}
+          run={run}
+          onLeft={() => router.replace('/events')}
+        />
+      )}
+
       {event.isMember && draft === null && (
         <AddVideos
           eventId={event.id}
@@ -472,7 +484,7 @@ function AddVideos({
         <div className="bg-muted h-9 animate-pulse rounded-lg motion-reduce:animate-none" />
       ) : candidates.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          All of your videos are already here. Upload more from Your videos.
+          You have no other videos to add. Upload more from Your videos.
         </p>
       ) : (
         <form

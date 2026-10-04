@@ -1,12 +1,16 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { env } from '../env';
 import { ListReviewQueue } from '../../application/moderation/list-review-queue';
 import { ReviewVideo } from '../../application/moderation/review-video';
 import {
+  CloseInvite,
   CreateCategory,
   DeleteCategory,
   GetCategory,
+  JoinCategory,
   ListCategories,
+  OpenInvite,
+  RemoveCollaborator,
   ReorderCategory,
   SetVideoCategory,
   UpdateCategory,
@@ -67,3 +71,8 @@ export const updateCategory = new UpdateCategory(categories, videos);
 export const reorderCategory = new ReorderCategory(categories);
 export const deleteCategory = new DeleteCategory(categories, videos);
 export const setVideoCategory = new SetVideoCategory(categories, videos);
+// 32 random bytes: an invite link cannot be guessed.
+export const openInvite = new OpenInvite(categories, () => randomBytes(32).toString('base64url'));
+export const closeInvite = new CloseInvite(categories);
+export const joinCategory = new JoinCategory(categories);
+export const removeCollaborator = new RemoveCollaborator(categories);

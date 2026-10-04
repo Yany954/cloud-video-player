@@ -45,10 +45,28 @@ export interface CategoryRepository {
   listByOwner(ownerId: string, limit: number): Promise<Category[]>;
   /** Categories every signed-in user can see, newest first. */
   listShared(limit: number): Promise<Category[]>;
+  /** Categories the user joined through an invite link, newest first. */
+  listByMember(userId: string, limit: number): Promise<Category[]>;
   /** Overwrites an existing category with its new state. */
   save(category: Category): Promise<void>;
-  delete(id: string): Promise<void>;
+  /**
+   * One atomic write: records `userId` as a collaborator of the category. Throws DomainError
+   * INVALID_STATE (and writes nothing) if the invite link changed meanwhile.
+   */
+  join(category: Category, userId: string): Promise<void>;
+  /** One atomic write: stores the category without that collaborator, and forgets the membership. */
+  leave(category: Category, userId: string): Promise<void>;
+  /** Removes the category and its collaborators' memberships. */
+  delete(category: Category): Promise<void>;
 }
+
+export interface UserDirectory {
+  /** Email addresses of the given users. Users that no longer exist are left out. */
+  emailsOf(userIds: readonly string[]): Promise<Map<string, string>>;
+}
+
+/** An unguessable secret for invite links. */
+export type TokenGenerator = () => string;
 
 export interface StorageAccountRepository {
   /** A user who never uploaded has 0 bytes used and the default quota. */

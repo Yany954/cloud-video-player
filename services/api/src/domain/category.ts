@@ -9,6 +9,7 @@ export type CategoryVisibility = 'private' | 'shared';
 const MAX_NAME_LENGTH = 120;
 /** Keeps the stored order small; far more than one event's worth of recordings. */
 export const MAX_ORDERED_VIDEOS = 1000;
+export const MAX_COLLABORATORS = 50;
 
 export interface Category {
   readonly id: string;
@@ -17,6 +18,11 @@ export interface Category {
   readonly visibility: CategoryVisibility;
   /** People invited to add their own recordings. The owner is not listed here. */
   readonly collaboratorIds: readonly string[];
+  /**
+   * The secret in the event's invite link. Whoever opens the link while signed in becomes a
+   * collaborator. Null when the owner has not made a link, or has turned it off.
+   */
+  readonly inviteToken: string | null;
   /**
    * Video ids in playing order. Only an order: which videos belong to the category is
    * recorded on each video (`categoryId`), so this list may lag behind without harm.
@@ -41,6 +47,7 @@ export function createCategory(input: CreateCategoryInput): Category {
     name: validName(input.name),
     visibility: input.visibility ?? 'private',
     collaboratorIds: [],
+    inviteToken: null,
     order: [],
     createdAt: input.now.toISOString(),
   };
@@ -60,6 +67,55 @@ function validName(name: string): string {
     throw new DomainError('INVALID_NAME', `Name must be 1 to ${MAX_NAME_LENGTH} characters`);
   }
   return trimmed;
+}
+
+/** Makes a new invite link. Any earlier link stops working. */
+export function openInvite(category: Category, token: string): Category {
+  return { ...category, inviteToken: token };
+}
+
+/** Turns the invite link off. People who already joined stay. */
+export function closeInvite(category: Category): Category {
+  return { ...category, inviteToken: null };
+}
+
+/** True only for the event's current link. Compares every character, whatever the input. */
+export function acceptsInvite(category: Category, token: string): boolean {
+  const expected = category.inviteToken;
+  if (expected === null || expected.length === 0) return false;
+  let difference = expected.length ^ token.length;
+  for (let index = 0; index < expected.length; index++) {
+    difference |= expected.charCodeAt(index) ^ (token.charCodeAt(index) || 0);
+  }
+  return difference === 0;
+}
+
+/** Adds someone who opened the invite link. The owner, or a member, is left as they are. */
+export function addCollaborator(category: Category, userId: string): Category {
+  if (isMember(category, userId)) return category;
+  if (category.collaboratorIds.length >= MAX_COLLABORATORS) {
+    throw new DomainError(
+      'INVALID_STATE',
+      `An event holds at most ${MAX_COLLABORATORS} invited people`,
+    );
+  }
+  return { ...category, collaboratorIds: [...category.collaboratorIds, userId] };
+}
+
+export function removeCollaborator(category: Category, userId: string): Category {
+  return {
+    ...category,
+    collaboratorIds: category.collaboratorIds.filter((id) => id !== userId),
+  };
+}
+
+/** The owner removes anyone; collaborators can only remove themselves (leave). */
+export function canRemoveCollaborator(
+  category: Category,
+  actorId: string,
+  collaboratorId: string,
+): boolean {
+  return category.ownerId === actorId || actorId === collaboratorId;
 }
 
 /** The owner and the collaborators. */

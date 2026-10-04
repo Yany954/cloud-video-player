@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  acceptsInvite,
+  addCollaborator,
   assignToCategory,
+  canRemoveCollaborator,
+  closeInvite,
+  openInvite,
+  removeCollaborator,
   canAddVideo,
   canManageCategory,
   canViewCategory,
@@ -37,6 +43,7 @@ describe('createCategory', () => {
       name: 'Concert Twenty One Pilots October 2026',
       visibility: 'private',
       collaboratorIds: [],
+      inviteToken: null,
       order: [],
       createdAt: '2026-10-03T10:00:00.000Z',
     });
@@ -151,5 +158,57 @@ describe('order', () => {
     expect(() => reorderCategory(category(), tooMany)).toThrow(
       expect.objectContaining({ code: 'INVALID_ORDER' }),
     );
+  });
+});
+
+describe('invite link', () => {
+  const open = openInvite(category(), 'secret-token');
+
+  it('has no working link until the owner makes one', () => {
+    expect(acceptsInvite(category(), '')).toBe(false);
+    expect(acceptsInvite(category(), 'anything')).toBe(false);
+  });
+
+  it('accepts only the exact current token', () => {
+    expect(acceptsInvite(open, 'secret-token')).toBe(true);
+    expect(acceptsInvite(open, 'secret-toke')).toBe(false);
+    expect(acceptsInvite(open, 'secret-token-and-more')).toBe(false);
+    expect(acceptsInvite(open, 'Secret-token')).toBe(false);
+  });
+
+  it('stops accepting the old token when a new link is made or the link is turned off', () => {
+    expect(acceptsInvite(openInvite(open, 'new-token'), 'secret-token')).toBe(false);
+    expect(acceptsInvite(closeInvite(open), 'secret-token')).toBe(false);
+  });
+
+  it('keeps the people who already joined when the link is turned off', () => {
+    expect(closeInvite(addCollaborator(open, 'ben')).collaboratorIds).toEqual(['ben']);
+  });
+});
+
+describe('collaborators', () => {
+  it('adds someone once, and never the owner', () => {
+    const joined = addCollaborator(addCollaborator(category(), 'ben'), 'ben');
+    expect(joined.collaboratorIds).toEqual(['ben']);
+    expect(addCollaborator(category(), 'ana').collaboratorIds).toEqual([]);
+  });
+
+  it('refuses more than 50 invited people', () => {
+    const full = category({ collaboratorIds: Array.from({ length: 50 }, (_, i) => `user-${i}`) });
+    expect(() => addCollaborator(full, 'one-more')).toThrow(
+      expect.objectContaining({ code: 'INVALID_STATE' }),
+    );
+  });
+
+  it('removes a collaborator', () => {
+    const withTwo = category({ collaboratorIds: ['ben', 'carla'] });
+    expect(removeCollaborator(withTwo, 'ben').collaboratorIds).toEqual(['carla']);
+  });
+
+  it('lets the owner remove anyone, and collaborators only leave themselves', () => {
+    const withTwo = category({ collaboratorIds: ['ben', 'carla'] });
+    expect(canRemoveCollaborator(withTwo, 'ana', 'ben')).toBe(true);
+    expect(canRemoveCollaborator(withTwo, 'ben', 'ben')).toBe(true);
+    expect(canRemoveCollaborator(withTwo, 'ben', 'carla')).toBe(false);
   });
 });

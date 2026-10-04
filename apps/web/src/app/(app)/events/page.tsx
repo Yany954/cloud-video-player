@@ -111,6 +111,14 @@ export default function EventsPage() {
             events={events.mine}
             emptyText="You have no events yet. Create one above, then add your videos to it."
           />
+          {events.invited.length > 0 && (
+            <EventList
+              id="invited-events-title"
+              title="Events I was invited to"
+              events={events.invited}
+              emptyText=""
+            />
+          )}
           {events.shared.length > 0 && (
             <EventList
               id="shared-events-title"

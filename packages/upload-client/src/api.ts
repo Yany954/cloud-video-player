@@ -2,6 +2,7 @@ import type {
   ApiErrorResponse,
   CreateEventRequest,
   EventDetailResponse,
+  EventInviteResponse,
   EventResponse,
   InitiateUploadRequest,
   InitiateUploadResponse,
@@ -43,6 +44,14 @@ export interface UploadApi {
   deleteEvent(eventId: string): Promise<void>;
   /** Moves one of the caller's videos into an event, or out with `null`. */
   setVideoEvent(videoId: string, eventId: string | null): Promise<VideoResponse>;
+  /** Owner only. Makes a new invite link; any earlier one stops working. */
+  openInvite(eventId: string): Promise<EventInviteResponse>;
+  /** Owner only. Turns the invite link off. */
+  closeInvite(eventId: string): Promise<void>;
+  /** What opening an invite link does: the caller becomes a collaborator. */
+  joinEvent(eventId: string, token: string): Promise<EventResponse>;
+  /** The owner removes anyone; a collaborator removes only themselves. */
+  removeCollaborator(eventId: string, userId: string): Promise<void>;
 }
 
 /** The API answered with an error. `code` is the server's error code, e.g. QUOTA_EXCEEDED. */
@@ -116,5 +125,10 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
     deleteEvent: (eventId) => request('DELETE', `/events/${id(eventId)}`),
     setVideoEvent: (videoId, eventId) =>
       request('PUT', `/videos/${id(videoId)}/event`, { eventId }),
+    openInvite: (eventId) => request('PUT', `/events/${id(eventId)}/invite`),
+    closeInvite: (eventId) => request('DELETE', `/events/${id(eventId)}/invite`),
+    joinEvent: (eventId, token) => request('POST', `/events/${id(eventId)}/join`, { token }),
+    removeCollaborator: (eventId, userId) =>
+      request('DELETE', `/events/${id(eventId)}/collaborators/${id(userId)}`),
   };
 }

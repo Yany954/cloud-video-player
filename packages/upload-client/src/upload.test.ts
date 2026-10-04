@@ -80,6 +80,10 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
     reorderEvent: unused,
     deleteEvent: unused,
     setVideoEvent: unused,
+    openInvite: unused,
+    closeInvite: unused,
+    joinEvent: unused,
+    removeCollaborator: unused,
   };
 
   const putPart: PutPart<string> = async ({ partNumber, start, end, onProgress }) => {

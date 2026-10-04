@@ -44,7 +44,16 @@ export function fromCategoryItem(item: object): Category {
     name: category.name,
     visibility: category.visibility,
     collaboratorIds: category.collaboratorIds,
+    // Items written before invite links existed don't have this attribute.
+    inviteToken: category.inviteToken ?? null,
     order: category.order,
     createdAt: category.createdAt,
   };
 }
+
+/** One row per collaborator, in that user's partition: "the events I was invited to". */
+export const membershipKey = (userId: string, categoryId: string) => ({
+  PK: `USER#${userId}`,
+  SK: `MEMBER#${categoryId}`,
+});
+export const MEMBERSHIP_PREFIX = 'MEMBER#';

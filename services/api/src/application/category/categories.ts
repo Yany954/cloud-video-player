@@ -1,5 +1,11 @@
 import {
+  acceptsInvite,
+  addCollaborator,
   assignToCategory,
+  canRemoveCollaborator,
+  closeInvite,
+  openInvite,
+  removeCollaborator,
   canAddVideo,
   canManageCategory,
   canViewCategory,
@@ -15,7 +21,13 @@ import { DomainError } from '../../domain/errors';
 import { canView, type Viewer } from '../../domain/moderation';
 import { isOwnedBy, type Video } from '../../domain/video';
 import { NotFoundError } from '../errors';
-import type { CategoryRepository, Clock, IdGenerator, VideoRepository } from '../ports';
+import type {
+  CategoryRepository,
+  Clock,
+  IdGenerator,
+  TokenGenerator,
+  VideoRepository,
+} from '../ports';
 
 // Enough for the MVP. Add a cursor when someone gets close to these.
 export const MAX_LISTED_CATEGORIES = 100;
@@ -61,13 +73,17 @@ export class CreateCategory {
 export class ListCategories {
   constructor(private readonly categories: CategoryRepository) {}
 
-  /** The caller's own events, then the ones other people shared with everyone. */
-  async execute(input: { userId: string }): Promise<{ mine: Category[]; shared: Category[] }> {
-    const [mine, shared] = await Promise.all([
+  /** The caller's own events, the ones they were invited to, and the ones shared with everyone. */
+  async execute(input: {
+    userId: string;
+  }): Promise<{ mine: Category[]; invited: Category[]; shared: Category[] }> {
+    const [mine, invited, shared] = await Promise.all([
       this.categories.listByOwner(input.userId, MAX_LISTED_CATEGORIES),
+      this.categories.listByMember(input.userId, MAX_LISTED_CATEGORIES),
       this.categories.listShared(MAX_LISTED_CATEGORIES),
     ]);
-    return { mine, shared: shared.filter((category) => category.ownerId !== input.userId) };
+    const listed = new Set([...mine, ...invited].map((category) => category.id));
+    return { mine, invited, shared: shared.filter((category) => !listed.has(category.id)) };
   }
 }
 
@@ -156,7 +172,7 @@ export class DeleteCategory {
     if (first) {
       throw new DomainError('INVALID_STATE', 'Take its videos out before deleting the event');
     }
-    await this.categories.delete(category.id);
+    await this.categories.delete(category);
   }
 }
 
@@ -190,5 +206,73 @@ export class SetVideoCategory {
     const moved = assignToCategory(video, category);
     await this.videos.saveCategoryOf(moved);
     return moved;
+  }
+}
+
+export class OpenInvite {
+  constructor(
+    private readonly categories: CategoryRepository,
+    private readonly newToken: TokenGenerator,
+  ) {}
+
+  /** Owner only. Makes a new invite link; any earlier link stops working. */
+  async execute(input: { userId: string; categoryId: string }): Promise<string> {
+    const category = await findManaged(this.categories, input.categoryId, input.userId);
+    const token = this.newToken();
+    await this.categories.save(openInvite(category, token));
+    return token;
+  }
+}
+
+export class CloseInvite {
+  constructor(private readonly categories: CategoryRepository) {}
+
+  /** Owner only. Turns the link off; people who already joined stay. */
+  async execute(input: { userId: string; categoryId: string }): Promise<void> {
+    const category = await findManaged(this.categories, input.categoryId, input.userId);
+    await this.categories.save(closeInvite(category));
+  }
+}
+
+export class JoinCategory {
+  constructor(private readonly categories: CategoryRepository) {}
+
+  /**
+   * What opening an invite link does for a signed-in user. A wrong or old link looks the same
+   * as an event that does not exist, so links cannot be used to probe for events.
+   */
+  async execute(input: { userId: string; categoryId: string; token: string }): Promise<Category> {
+    const category = await this.categories.findById(input.categoryId);
+    if (!category || !acceptsInvite(category, input.token)) {
+      throw new NotFoundError('This invite link is not valid any more');
+    }
+    const joined = addCollaborator(category, input.userId);
+    // Already a member (or the owner): opening the link again changes nothing.
+    if (joined !== category) await this.categories.join(joined, input.userId);
+    return joined;
+  }
+}
+
+export class RemoveCollaborator {
+  constructor(private readonly categories: CategoryRepository) {}
+
+  /** The owner removes anyone; collaborators can only remove themselves. Their videos stay. */
+  async execute(input: {
+    userId: string;
+    categoryId: string;
+    collaboratorId: string;
+  }): Promise<void> {
+    const category = await this.categories.findById(input.categoryId);
+    if (
+      !category ||
+      !category.collaboratorIds.includes(input.collaboratorId) ||
+      !canRemoveCollaborator(category, input.userId, input.collaboratorId)
+    ) {
+      throw new NotFoundError(NOT_FOUND);
+    }
+    await this.categories.leave(
+      removeCollaborator(category, input.collaboratorId),
+      input.collaboratorId,
+    );
   }
 }

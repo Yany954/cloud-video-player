@@ -66,6 +66,8 @@ describe('ApiStack', () => {
 
     expect(routes.map((route) => route.Properties.RouteKey).sort()).toEqual([
       'DELETE /events/{eventId}',
+      'DELETE /events/{eventId}/collaborators/{userId}',
+      'DELETE /events/{eventId}/invite',
       'DELETE /uploads/{videoId}',
       'DELETE /videos/{videoId}',
       'GET /admin/review',
@@ -80,8 +82,10 @@ describe('ApiStack', () => {
       'PATCH /events/{eventId}',
       'POST /admin/videos/{videoId}/review',
       'POST /events',
+      'POST /events/{eventId}/join',
       'POST /uploads',
       'POST /uploads/{videoId}/complete',
+      'PUT /events/{eventId}/invite',
       'PUT /events/{eventId}/order',
       'PUT /videos/{videoId}/event',
     ]);
@@ -103,12 +107,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(19);
+    expect(functions).toHaveLength(23);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(19);
+    expect(logGroups).toHaveLength(23);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -191,8 +195,9 @@ describe('ApiStack', () => {
 
     it('gives each event route only the table actions it performs, and no file access', () => {
       expect(actionsOf('CreateEvent')).toEqual(['dynamodb:PutItem']);
-      expect(actionsOf('ListEvents')).toEqual(['dynamodb:Query']);
+      expect(actionsOf('ListEvents')).toEqual(['dynamodb:BatchGetItem', 'dynamodb:Query']);
       expect(actionsOf('GetEvent')).toEqual([
+        'cognito-idp:ListUsers',
         'dynamodb:GetItem',
         'dynamodb:Query',
         'ssm:GetParameter',
@@ -210,6 +215,36 @@ describe('ApiStack', () => {
         'dynamodb:Query',
       ]);
       expect(actionsOf('SetVideoEvent')).toEqual(['dynamodb:GetItem', 'dynamodb:UpdateItem']);
+    });
+
+    it('gives the invite routes only the table writes they perform', () => {
+      for (const name of ['OpenInvite', 'CloseInvite']) {
+        expect(actionsOf(name)).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem']);
+      }
+      expect(actionsOf('JoinEvent')).toEqual([
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+        'dynamodb:UpdateItem',
+      ]);
+      expect(actionsOf('RemoveCollaborator')).toEqual([
+        'dynamodb:DeleteItem',
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+      ]);
+    });
+
+    it('lets only the event page look up email addresses, and only in our user pool', () => {
+      const cognito = Object.entries(template.findResources('AWS::IAM::Policy')).flatMap(
+        ([id, policy]) =>
+          (policy.Properties.PolicyDocument.Statement as Statement[])
+            .filter((statement) => [statement.Action].flat().some((a) => a.startsWith('cognito')))
+            .map((statement) => ({ id, statement })),
+      );
+
+      expect(cognito).toHaveLength(1);
+      expect(cognito[0]!.id).toMatch(/^GetEventServiceRoleDefaultPolicy/);
+      expect(cognito[0]!.statement.Action).toBe('cognito-idp:ListUsers');
+      expect(JSON.stringify(cognito[0]!.statement.Resource)).toContain('UserPool');
     });
 
     it('lets "delete video" remove one record, give bytes back and delete files only', () => {

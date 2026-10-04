@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { takeReturnTo } from '@/lib/auth/return-to';
 import { useAuth } from '@/lib/auth/auth-context';
 import type { SignInStep } from '@/lib/auth/cognito';
 import { authErrorMessage } from '@/lib/auth/errors';
@@ -27,7 +28,8 @@ export function LoginForm() {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    if (state.status === 'signedIn') router.replace('/');
+    // Back to the page that sent the visitor here, e.g. an invite link.
+    if (state.status === 'signedIn') router.replace(takeReturnTo());
   }, [state.status, router]);
 
   // Move keyboard and screen-reader focus to the new step's heading.

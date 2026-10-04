@@ -71,9 +71,13 @@ Slices, in order:
    uploading in the web app (the API accepts `eventId`; the upload screen does not send it).
 2. **Continuous play**: "Play all", next video starts by itself in the same `<video>` element
    (so web PiP survives), autoplay switch remembered per browser.
-3. **Collaborators (the user asked for the invite button; do this before continuous play
-   if they confirm)**: invite an existing user by email (look the email up in Cognito), list
-   and remove collaborators, and list "events I was invited to". They add their recordings.
+3. **Collaborators: done, through an invite link.** The owner creates a link on the event
+   page (`/events/{id}/join#<secret>`); whoever opens it while signed in becomes a
+   collaborator. A signed-out visitor goes to the login page and returns to the event after
+   signing in (the destination is kept in session storage, never in the URL). The owner can
+   make a new link, turn it off, and remove people; collaborators can leave.
+   Next for this slice: **open sign-up (the user chose it)** so a person with no account can
+   create one from the login page.
 4. Mobile (Phase 5): background audio, lock-screen controls and PiP for the same playlist.
 
 ### 3d. User management and profile (asked by the user)
@@ -127,7 +131,8 @@ API routes: `GET /health`, `GET /me/storage`, `POST /uploads`, `GET /uploads/{id
 `GET /videos/{id}/playback`, `GET /library`, `GET /admin/review`,
 `POST /admin/videos/{id}/review`, `DELETE /videos/{id}`, `POST /events`, `GET /events`,
 `GET /events/{id}`, `PATCH /events/{id}`, `PUT /events/{id}/order`, `DELETE /events/{id}`,
-`PUT /videos/{id}/event`. `POST /uploads` takes an optional `eventId`. The `/admin` routes check the `admin` group in the handler
+`PUT /videos/{id}/event`, `PUT` and `DELETE /events/{id}/invite`, `POST /events/{id}/join`,
+`DELETE /events/{id}/collaborators/{userId}`. `POST /uploads` takes an optional `eventId`. The `/admin` routes check the `admin` group in the handler
 and answer 403 otherwise.
 
 Outside CDK: the playback private key in SSM (`/cvp-dev/playback/private-key`), the budget
@@ -227,6 +232,12 @@ pnpm --filter @cvp/infra cdk:deploy --all
 - A video moved at the same instant an admin reviews it can lose the move (the review rewrites
   the whole record). Rare; the owner repeats the move.
 - An event page shows at most 200 videos; event lists at most 100 events.
+- Anyone with an account and an event's invite link can join it. Removing a person does not
+  stop them rejoining while the same link is on (the dialog says to make a new link).
+- A removed collaborator's videos stay in the event, and they can no longer reach the event
+  page to take them out (they can still delete them).
+- Memberships are rows `USER#{sub}` / `MEMBER#{categoryId}`; the category's `collaboratorIds`
+  is the source of truth.
 - The library does not say who uploaded a video: user names are not stored yet.
 - A failed "enqueue" after a completed upload leaves the video at `uploaded`; there is no
   "reprocess" action yet.

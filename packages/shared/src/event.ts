@@ -33,6 +33,22 @@ export const setVideoEventRequestSchema = z.object({
 });
 export type SetVideoEventRequest = z.infer<typeof setVideoEventRequestSchema>;
 
+export const joinEventRequestSchema = z.object({
+  /** The secret from the invite link. */
+  token: z.string().min(1).max(200),
+});
+export type JoinEventRequest = z.infer<typeof joinEventRequestSchema>;
+
+export interface EventInviteResponse {
+  token: string;
+}
+
+export interface EventCollaborator {
+  userId: string;
+  /** Null if the account no longer exists. */
+  email: string | null;
+}
+
 export interface EventResponse {
   id: string;
   name: string;
@@ -47,6 +63,8 @@ export interface EventResponse {
 export interface ListEventsResponse {
   /** The caller's own events, newest first. */
   mine: EventResponse[];
+  /** Events the caller joined through an invite link, newest first. */
+  invited: EventResponse[];
   /** Events other people shared with everyone, newest first. */
   shared: EventResponse[];
 }
@@ -57,4 +75,8 @@ export interface EventDetailResponse {
   videos: VideoResponse[];
   /** Which of `videos` the caller uploaded. */
   myVideoIds: string[];
+  /** The secret of the current invite link. Only its owner gets it; null for everyone else. */
+  inviteToken: string | null;
+  /** Who joined through the invite link. Only its owner gets the list; empty for everyone else. */
+  collaborators: EventCollaborator[];
 }
