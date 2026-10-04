@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { ThemeChoiceGroup } from '@/components/theme-control';
 import { StorageWidget } from '@/components/storage/storage-widget';
 import { Button } from '@/components/ui/button';
 import { uploadApi } from '@/lib/api';
@@ -131,6 +132,16 @@ export default function ProfilePage() {
                   : 'Member: you upload and watch'}
               </dd>
             </dl>
+          </section>
+
+          <section
+            aria-labelledby="appearance-title"
+            className="grid gap-3 rounded-3xl border px-5 py-5"
+          >
+            <h2 id="appearance-title" className="text-base font-semibold tracking-tight">
+              Appearance
+            </h2>
+            <ThemeChoiceGroup />
           </section>
 
           <form

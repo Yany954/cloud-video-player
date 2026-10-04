@@ -2,7 +2,8 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* Dark styles follow the theme chosen in the app (see lib/theme.ts), not only the device. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -65,30 +66,32 @@
   --stage: oklch(0.2 0.03 262);
   --stage-foreground: oklch(0.97 0 0);
   --stage-muted: oklch(0.8 0.02 262);
+  /* Native controls (scrollbars, selects, date pickers) match the theme. */
+  color-scheme: light;
 }
 
-/* Follows the operating system setting; there is no manual toggle yet. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.16 0.01 262);
-    --foreground: oklch(0.97 0 0);
-    --card: oklch(0.2 0.012 262);
-    --card-foreground: oklch(0.97 0 0);
-    --popover: oklch(0.2 0.012 262);
-    --popover-foreground: oklch(0.97 0 0);
-    --primary: oklch(0.72 0.15 262);
-    --primary-foreground: oklch(0.16 0.01 262);
-    --secondary: oklch(0.26 0.012 262);
-    --secondary-foreground: oklch(0.97 0 0);
-    --muted: oklch(0.26 0.012 262);
-    --muted-foreground: oklch(0.72 0 0);
-    --accent: oklch(0.26 0.012 262);
-    --accent-foreground: oklch(0.97 0 0);
-    --destructive: oklch(0.72 0.17 22);
-    --border: oklch(0.3 0.012 262);
-    --input: oklch(0.5 0.01 262);
-    --ring: oklch(0.72 0.15 262);
-  }
+/* Set on <html> before the first paint by the script in app/layout.tsx: the visitor's choice
+   (light, dark, or "match my device") resolved to one of the two. */
+:root[data-theme='dark'] {
+  --background: oklch(0.16 0.01 262);
+  --foreground: oklch(0.97 0 0);
+  --card: oklch(0.2 0.012 262);
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.2 0.012 262);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.72 0.15 262);
+  --primary-foreground: oklch(0.16 0.01 262);
+  --secondary: oklch(0.26 0.012 262);
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.26 0.012 262);
+  --muted-foreground: oklch(0.72 0 0);
+  --accent: oklch(0.26 0.012 262);
+  --accent-foreground: oklch(0.97 0 0);
+  --destructive: oklch(0.72 0.17 22);
+  --border: oklch(0.3 0.012 262);
+  --input: oklch(0.5 0.01 262);
+  --ring: oklch(0.72 0.15 262);
+  color-scheme: dark;
 }
 
 @layer base {

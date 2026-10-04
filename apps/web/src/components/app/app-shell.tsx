@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Brand } from '@/components/brand';
+import { ThemeToggle } from '@/components/theme-control';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
 import { rememberReturnTo } from '@/lib/auth/return-to';
@@ -66,6 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </span>
               <span className="sm:hidden">Profile</span>
             </Link>
+            <ThemeToggle />
             <Button variant="outline" onClick={() => void signOut()}>
               <LogOut aria-hidden />
               Sign out

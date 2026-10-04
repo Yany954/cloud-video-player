@@ -135,14 +135,33 @@ minute of CPU: give the user a cost estimate before building it.
   code; the answer is the same whether or not the address has an account).
 - **Choosing an event while uploading: done** (a select above the drop zone on "Your videos",
   listing the user's own events and the ones they were invited to).
-- Google sign-in (needs a Google Cloud OAuth client, created by the user, and a Cognito
-  domain), and MFA at sign-in.
+- **Light and dark mode: done.** A sun/moon button in the header and on the sign-in page; the
+  Profile page offers "Match my device", Light and Dark. The choice is in `localStorage`
+  (`cvp.theme`) and applied to `<html data-theme>` by a script before the first paint.
+- **Google sign-in: postponed by the user (2026-10-04), "leave it for later".** It needs a
+  Google Cloud OAuth client created by the user and a Cognito domain. MFA at sign-in: later.
+
+Asked by the user on 2026-10-04, in this order (agree each plan before coding):
+
+1. **English and Spanish.** The user has family in Colombia. Every screen, error message,
+   dialog and email in both languages; a language switch; dates and numbers per language.
+2. **Legal pages, in both languages:** privacy policy, terms of service (with the prohibited
+   content), cookie policy; a cookie banner only if something beyond strictly necessary
+   storage is used (today nothing is); consent at sign-up; business details; minimum age. No
+   reviews, testimonials or claims that are not true. Drafts only: a lawyer reviews them
+   before a public launch (`CLAUDE.md`). Needs from the user: the name and contact to show,
+   the country, the minimum age.
+3. **Landing page for signed-out visitors at `/`**, with a "Sign in" link to the existing
+   sign-in page, using the visual effects of step 4b (ShaderGradient hero + liquid metal
+   logo) and all of 4b's requirements. The user wants it to look distinctive, "not AI", and
+   more inviting, using what `CLAUDE.md` says the product is.
+
 - A full pass with the `web-design-guidelines` skill.
 - The landing page (`landing-01` block, `design-taste-frontend` skill).
 - Playwright E2E tests in the repo (so far the browser checks were manual runs with
   `playwright-cli`).
 
-### 4b. Visual effects on the web (a later phase; requirements from the user, 2026-10-04)
+### 4b. Visual effects on the web (requirements from the user, 2026-10-04; now wanted with the landing page)
 
 Web only (Next.js), in a few key places. Before writing code: explain the plan, the
 components, where they live and the trade-offs, and get the user's OK.

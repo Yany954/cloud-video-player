@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { LoginForm } from '@/components/auth/login-form';
 import { Brand } from '@/components/brand';
+import { ThemeToggle } from '@/components/theme-control';
 
 export const metadata: Metadata = { title: 'Sign in | Cloud Video Player' };
 
@@ -10,7 +11,10 @@ export default function LoginPage() {
     <div className="flex min-h-dvh w-full flex-col p-2 lg:flex-row">
       <main className="flex flex-1 flex-col items-center justify-center px-6 py-12 sm:px-10 lg:max-w-xl lg:px-16">
         <div className="grid w-full max-w-sm gap-10">
-          <Brand />
+          <div className="flex items-center justify-between gap-4">
+            <Brand />
+            <ThemeToggle />
+          </div>
           <LoginForm />
           <p className="text-muted-foreground text-sm">
             Videos here are private. You see only your own, the events you were invited to, and what
