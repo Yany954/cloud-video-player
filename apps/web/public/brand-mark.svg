@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <!-- The Cloud Video Player mark: a rounded tile with a play triangle cut out. Drawn for this project. -->
+  <path fill="#000" fill-rule="evenodd" d="M56 16h128a40 40 0 0 1 40 40v128a40 40 0 0 1-40 40H56a40 40 0 0 1-40-40V56a40 40 0 0 1 40-40Zm42 60v88a8 8 0 0 0 12.2 6.8l70-44a8 8 0 0 0 0-13.6l-70-44A8 8 0 0 0 98 76Z"/>
+</svg>

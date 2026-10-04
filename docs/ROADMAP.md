@@ -148,9 +148,9 @@ Decided by the user on 2026-10-04 for the three items below:
   guardian's permission: Colombia and several other countries treat under-18s as minors.)
 - Spanish: **neutral Latin American, using "tú"**.
 - **No liquid glass.** The floating bar gets something distinctive that works in every browser.
-- **Contact email for the legal pages: NOT decided.** It must not be the user's personal
-  address, and it must not be an address at their former employer's domain (see the
-  working agreements). Ask again before the legal pages; suggest a dedicated mailbox.
+- **Contact email for the legal pages and the landing page:
+  cloudvideoplayer.contact@gmail.com** (a mailbox made for the app; never the user's personal
+  address or one at their former employer's domain).
 
 Asked by the user on 2026-10-04, in this order (agree each plan before coding):
 
@@ -172,22 +172,20 @@ Asked by the user on 2026-10-04, in this order (agree each plan before coding):
    reviews, testimonials or claims that are not true. Drafts only: a lawyer reviews them
    before a public launch (`CLAUDE.md`). Needs from the user: the name and contact to show,
    the country, the minimum age.
-3. **Landing page (plan given to the user 2026-10-04, waiting for their go-ahead).** Plan:
-   landing at `/`, the signed-in home moves to `/videos`; effect components in
-   `apps/web/src/components/effects/` (a shader-gradient background and a liquid-metal logo,
-   each loaded lazily in the browser only, over a static CSS fallback); a floating bar in
-   plain CSS; texts in both languages; no testimonials, counts or unproven claims.
-   Original request: **Landing page for signed-out visitors at `/`**, with a "Sign in" link to the existing
-   sign-in page, using the visual effects of step 4b (ShaderGradient hero + liquid metal
-   logo) and all of 4b's requirements. The user wants it to look distinctive, "not AI", and
-   more inviting, using what `CLAUDE.md` says the product is.
+3. **Landing page: done.** `/` is the public landing page (`apps/web/src/app/page.tsx`); the
+   signed-in home moved to `/videos` (`HOME` in `lib/auth/return-to.ts`). A `cvp.session`
+   cookie, set while signed in, is only a hint that lets the server send signed-in visitors
+   from `/` straight to `/videos`; it is not a credential.
+   Effects live in `apps/web/src/components/effects/`: `StageGradient` (ShaderGradient) and
+   `LiquidMetalLogo` (Paper's LiquidMetal shader, with our own `public/brand-mark.svg`). Each
+   is loaded in the browser only, after the first paint, over a static fallback that is the
+   server's HTML; removed while off screen; never created with reduced motion, without WebGL
+   or with data-saving on (`use-effects-allowed.ts`). The landing page has two canvases, the
+   sign-in page one. The floating bar is plain CSS (`.light-rim`), no liquid glass.
+   Contact shown in the footer: cloudvideoplayer.contact@gmail.com (a mailbox the user made
+   for the app). Content rule: only what the product does today; no testimonials or counts.
 
-- A full pass with the `web-design-guidelines` skill.
-- The landing page (`landing-01` block, `design-taste-frontend` skill).
-- Playwright E2E tests in the repo (so far the browser checks were manual runs with
-  `playwright-cli`).
-
-### 4b. Visual effects on the web (requirements from the user, 2026-10-04; now wanted with the landing page)
+### 4b. Visual effects on the web: landing and sign-in done; event header gradient still open
 
 Web only (Next.js), in a few key places. Before writing code: explain the plan, the
 components, where they live and the trade-offs, and get the user's OK.
@@ -358,6 +356,11 @@ pnpm --filter @cvp/infra cdk:deploy --all
 
 ## Known gaps
 
+- Visual effects were checked in Chrome/Edge and in Playwright's WebKit (desktop and an
+  emulated iPhone), never on a real iPhone or in real Safari.
+- ShaderGradient needs `three` and `@react-three/fiber` installed beside it; together they are
+  a script of about 1.1 MB (before compression) that only the landing and sign-in pages load,
+  lazily.
 - The web app sends basic security headers (HSTS, no framing, no MIME sniffing, referrer
   policy) but no Content-Security-Policy yet.
 - Amplify builds on every push to `main`, including pushes that do not touch the web app.

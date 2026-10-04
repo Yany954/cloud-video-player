@@ -11,6 +11,7 @@ import { ReportPanel } from '@/components/video/report-panel';
 import { ReviewActions } from '@/components/moderation/review-actions';
 import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
+import { HOME } from '@/lib/auth/return-to';
 import { formatDuration } from '@/lib/format';
 import { useI18n } from '@/lib/i18n/i18n-context';
 
@@ -54,7 +55,7 @@ function Watch() {
       }
     : known
       ? { href: known.href, label: t.nav[known.label] }
-      : { href: '/', label: t.nav.yourVideos };
+      : { href: HOME, label: t.nav.yourVideos };
   const auth = useAuth().state;
   const isAdmin = auth.status === 'signedIn' && auth.user.isAdmin;
   const [state, setState] = useState<State>({ status: 'loading' });

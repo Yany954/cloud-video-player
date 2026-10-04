@@ -51,6 +51,13 @@ export function LoginForm() {
     else router.replace(path);
   }, [state.status, router]);
 
+  // The landing page's "Create an account" button links to /login#create.
+  useEffect(() => {
+    if (window.location.hash !== '#create') return;
+    const timer = window.setTimeout(() => setStep('signUp'), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // Move keyboard and screen-reader focus to the new step's heading.
   useEffect(() => {
     if (step !== 'credentials') headingRef.current?.focus();

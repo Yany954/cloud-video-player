@@ -2,6 +2,7 @@
 
 import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react';
 import * as cognito from './cognito';
+import { SESSION_HINT_COOKIE } from './return-to';
 import type { SessionUser, SignInStep } from './cognito';
 
 type AuthState =
@@ -37,6 +38,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       active = false;
     };
   }, []);
+
+  // A hint for the server, not a credential: with it the landing page sends a signed-in visitor
+  // straight to their videos, without first flashing the landing page. Every API call still
+  // needs the real token.
+  useEffect(() => {
+    if (state.status === 'loading') return;
+    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie =
+      state.status === 'signedIn'
+        ? `${SESSION_HINT_COOKIE}=1; Path=/; Max-Age=2592000; SameSite=Lax${secure}`
+        : `${SESSION_HINT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+  }, [state.status]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

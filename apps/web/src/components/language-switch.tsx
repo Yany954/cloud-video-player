@@ -8,7 +8,7 @@ import { useI18n } from '@/lib/i18n/i18n-context';
 export function LanguageSwitch() {
   const { locale, setLocale, t } = useI18n();
   return (
-    <label className="border-input bg-background focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 relative flex h-8 items-center gap-1.5 rounded-lg border px-2 text-sm focus-within:ring-3">
+    <label className="border-input bg-background text-foreground focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 relative flex h-8 items-center gap-1.5 rounded-lg border px-2 text-sm focus-within:ring-3">
       <Languages aria-hidden className="size-4 shrink-0" />
       <span className="sr-only">{t.language.label}</span>
       <select

@@ -544,6 +544,52 @@ export const en = {
     removed: (name: string) => `${name} was removed from the event.`,
     removeFailed: (name: string) => `${name} could not be removed.`,
   },
+  landing: {
+    title: 'Cloud Video Player: keep the whole concert',
+    description:
+      'A private place for the videos you film at concerts and events: original quality, off your phone, shared only with the people you invite.',
+    signIn: 'Sign in',
+    createAccount: 'Create an account',
+    eyebrow: 'A private library for the shows you film',
+    heading: 'Keep the whole concert.',
+    lead: 'Upload the videos you filmed at full quality, free up your phone, and watch them again with the people who were there.',
+    startNote: 'Each account starts with 5 GB. No card is asked for.',
+    featuresTitle: 'What it does',
+    features: {
+      quality: {
+        title: 'Original quality, off your phone',
+        text: 'Upload MP4, MOV, MKV or AVI files of any length. A large upload can pause and pick up where it stopped, and the original file is kept exactly as you sent it.',
+      },
+      privacy: {
+        title: 'Private unless you decide otherwise',
+        text: 'A video is seen by nobody else until an admin has approved it, and an event belongs only to the people you invite. Links to videos stop working after a few hours.',
+      },
+      events: {
+        title: 'One night, everyone’s angles',
+        text: 'Create an event, send its invite link, and let your friends add what they filmed. Put the clips in the order you want.',
+      },
+      play: {
+        title: 'Made to be watched through',
+        text: 'Press “Play all” and one video follows the next. Turn autoplay off when you would rather choose.',
+      },
+    },
+    factsTitle: 'Plain facts',
+    facts: {
+      formats: { label: 'Formats', value: 'MP4, MOV, MKV, AVI' },
+      storage: { label: 'Storage to start', value: '5 GB per account' },
+      languages: { label: 'Languages', value: 'English and Spanish' },
+      where: { label: 'Where it runs', value: 'In the browser, on a computer or a phone' },
+      apps: { label: 'Phone apps', value: 'In the works, not available yet' },
+      safety: {
+        label: 'Your controls',
+        value: 'Report a video, block a person, delete your account and data',
+      },
+    },
+    closingTitle: 'Your next concert deserves more than 30 seconds.',
+    closingText: 'It takes a minute to create an account and upload the first video.',
+    footerContact: 'Contact',
+    footerRights: 'Videos stay the property of the people who upload them.',
+  },
 };
 
 /** The shape every language must have: same keys; texts stay texts, functions keep their arguments. */

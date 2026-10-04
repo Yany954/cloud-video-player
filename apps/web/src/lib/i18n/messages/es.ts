@@ -555,4 +555,53 @@ export const es: Messages = {
     removed: (name: string) => `Se quitó a ${name} del evento.`,
     removeFailed: (name: string) => `No se pudo quitar a ${name}.`,
   },
+  landing: {
+    title: 'Cloud Video Player: guarda el concierto completo',
+    description:
+      'Un lugar privado para los videos que grabas en conciertos y eventos: en calidad original, fuera de tu teléfono y compartidos solo con quienes invites.',
+    signIn: 'Iniciar sesión',
+    createAccount: 'Crear una cuenta',
+    eyebrow: 'Una biblioteca privada para los conciertos que grabas',
+    heading: 'Guarda el concierto completo.',
+    lead: 'Sube los videos que grabaste en su calidad original, libera espacio en tu teléfono y vuelve a verlos con quienes estuvieron ahí.',
+    startNote: 'Cada cuenta empieza con 5 GB. No se pide tarjeta.',
+    featuresTitle: 'Qué hace',
+    features: {
+      quality: {
+        title: 'Calidad original, fuera de tu teléfono',
+        text: 'Sube archivos MP4, MOV, MKV o AVI de cualquier duración. Una subida grande se puede pausar y continuar donde quedó, y el archivo original se conserva tal como lo enviaste.',
+      },
+      privacy: {
+        title: 'Privado, a menos que tú decidas otra cosa',
+        text: 'Nadie más ve un video hasta que un administrador lo aprueba, y un evento es solo de las personas que invites. Los enlaces a los videos dejan de funcionar a las pocas horas.',
+      },
+      events: {
+        title: 'Una noche, desde todos los ángulos',
+        text: 'Crea un evento, envía su enlace de invitación y deja que tus amigos agreguen lo que grabaron. Pon los videos en el orden que quieras.',
+      },
+      play: {
+        title: 'Hecho para verse de corrido',
+        text: 'Pulsa «Reproducir todo» y un video sigue al otro. Desactiva la reproducción automática cuando prefieras elegir.',
+      },
+    },
+    factsTitle: 'Datos concretos',
+    facts: {
+      formats: { label: 'Formatos', value: 'MP4, MOV, MKV, AVI' },
+      storage: { label: 'Almacenamiento inicial', value: '5 GB por cuenta' },
+      languages: { label: 'Idiomas', value: 'Español e inglés' },
+      where: {
+        label: 'Dónde funciona',
+        value: 'En el navegador, en una computadora o un teléfono',
+      },
+      apps: { label: 'Aplicaciones para teléfono', value: 'En desarrollo, aún no disponibles' },
+      safety: {
+        label: 'Tus controles',
+        value: 'Reportar un video, bloquear a una persona, eliminar tu cuenta y tus datos',
+      },
+    },
+    closingTitle: 'Tu próximo concierto merece más que 30 segundos.',
+    closingText: 'Crear una cuenta y subir el primer video toma un minuto.',
+    footerContact: 'Contacto',
+    footerRights: 'Los videos siguen siendo de quienes los suben.',
+  },
 };

@@ -9,7 +9,7 @@ import { LanguageSwitch } from '@/components/language-switch';
 import { ThemeToggle } from '@/components/theme-control';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
-import { rememberReturnTo } from '@/lib/auth/return-to';
+import { HOME, rememberReturnTo } from '@/lib/auth/return-to';
 import { useI18n } from '@/lib/i18n/i18n-context';
 
 /** Signed-in frame. Sends signed-out visitors to /login. */
@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (state.status !== 'signedIn') return <ShellSkeleton />;
 
   const links = [
-    { href: '/', label: t.nav.yourVideos },
+    { href: HOME, label: t.nav.yourVideos },
     { href: '/events', label: t.nav.events },
     { href: '/library', label: t.nav.library },
     // Hidden from everyone else; the server enforces it too.
@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="border-b">
         <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link
-            href="/"
+            href={HOME}
             className="focus-visible:ring-ring/50 rounded-lg outline-none focus-visible:ring-3"
           >
             {/* On a phone the header holds five controls: the name gives way to them. */}
@@ -90,9 +90,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           <ul className="flex gap-1">
             {links.map((link) => {
+              // "Your videos" is /videos; a single video (/videos/<id>) is reached from many lists.
               const current =
                 pathname === link.href ||
-                (link.href !== '/' && pathname.startsWith(`${link.href}/`));
+                (link.href !== HOME && pathname.startsWith(`${link.href}/`));
               return (
                 <li key={link.href}>
                   <Link

@@ -109,3 +109,84 @@
     @apply font-sans;
   }
 }
+
+/* ---- Landing page and sign-in decoration ---- */
+
+/* What is shown before, behind and instead of the WebGL gradient: stage lights in plain CSS. */
+.stage-fallback {
+  background:
+    radial-gradient(60% 50% at 22% 0%, oklch(0.55 0.2 262 / 0.6), transparent 70%),
+    radial-gradient(45% 45% at 88% 12%, oklch(0.62 0.15 60 / 0.4), transparent 70%),
+    radial-gradient(70% 55% at 60% 112%, oklch(0.42 0.18 275 / 0.55), transparent 70%), var(--stage);
+}
+
+.effect-fade-in {
+  animation: effect-fade-in 900ms ease-out both;
+}
+@keyframes effect-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The plain mark on the dark stage: a soft metal fill, so it reads without WebGL too. */
+.brand-mark-static {
+  filter: invert(1) brightness(0.92) drop-shadow(0 10px 30px oklch(0.6 0.2 262 / 0.45));
+}
+
+/* The floating bar: a frosted pill with a rim of light that travels around it. Plain CSS, so it
+   works in Safari, Chrome and Firefox alike. */
+@property --rim-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.light-rim {
+  position: relative;
+  isolation: isolate;
+  background: color-mix(in oklch, var(--stage) 72%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+}
+.light-rim::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--rim-angle),
+    oklch(1 0 0 / 0.14),
+    oklch(0.8 0.14 70 / 0.9) 12%,
+    oklch(1 0 0 / 0.14) 26%,
+    oklch(0.72 0.15 262 / 0.85) 58%,
+    oklch(1 0 0 / 0.14) 74%
+  );
+  /* Only the 1px ring is painted. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: rim-travel 14s linear infinite;
+}
+@keyframes rim-travel {
+  to {
+    --rim-angle: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .light-rim::before,
+  .effect-fade-in {
+    animation: none;
+  }
+}
+/* Where the background cannot be blurred, the bar is simply solid. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .light-rim {
+    background: var(--stage);
+  }
+}

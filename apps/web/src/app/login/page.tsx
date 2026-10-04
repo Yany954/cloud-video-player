@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { LoginForm } from '@/components/auth/login-form';
 import { Brand } from '@/components/brand';
+import { StageGradient } from '@/components/effects/stage-gradient';
 import { LanguageSwitch } from '@/components/language-switch';
 import { ThemeToggle } from '@/components/theme-control';
 import { getLocale, messagesFor } from '@/lib/i18n/server';
@@ -29,11 +30,9 @@ export default async function LoginPage() {
       </main>
 
       <aside className="bg-stage text-stage-foreground relative hidden flex-1 overflow-hidden rounded-3xl lg:flex lg:items-end lg:p-14">
-        {/* Stage lights: decorative only. Replace with a real photo in public/ when one is chosen. */}
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-[radial-gradient(60%_50%_at_25%_0%,oklch(0.6_0.2_262/0.55),transparent_70%),radial-gradient(45%_40%_at_85%_10%,oklch(0.7_0.14_230/0.35),transparent_70%),radial-gradient(70%_50%_at_60%_110%,oklch(0.45_0.18_275/0.5),transparent_70%)]"
-        />
+        <StageGradient subtle />
+        {/* Keeps the text readable whatever the light behind it is doing. */}
+        <div aria-hidden className="from-stage/85 to-stage/10 absolute inset-0 bg-linear-to-t" />
         <div className="relative grid max-w-md gap-3">
           <p className="text-3xl leading-tight font-semibold tracking-tight">{t.asideTitle}</p>
           <p className="text-stage-muted text-base leading-relaxed">{t.asideText}</p>

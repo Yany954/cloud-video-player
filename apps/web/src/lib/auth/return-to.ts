@@ -4,9 +4,16 @@
 
 const KEY = 'cvp.return-to';
 
+/** Set while signed in. A hint for the server (see auth-context.tsx), never a credential. */
+export const SESSION_HINT_COOKIE = 'cvp.session';
+
+/** Where a signed-in person lands: their own videos. `/` is the public landing page. */
+export const HOME = '/videos';
+
 /** Only paths inside this app: never another site, whatever was stored. */
 export function isSafePath(path: string): boolean {
-  return /^\/(?![/\\])/.test(path) && !path.startsWith('/login');
+  // Not the landing page either: a signed-in person has no use for it.
+  return /^\/(?![/\\])/.test(path) && !path.startsWith('/login') && path !== '/';
 }
 
 export function rememberReturnTo(path: string): void {
@@ -23,8 +30,8 @@ export function takeReturnTo(): string {
   try {
     const path = window.sessionStorage.getItem(KEY);
     window.sessionStorage.removeItem(KEY);
-    return path !== null && isSafePath(path) ? path : '/';
+    return path !== null && isSafePath(path) ? path : HOME;
   } catch {
-    return '/';
+    return HOME;
   }
 }

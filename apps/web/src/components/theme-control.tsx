@@ -75,6 +75,8 @@ export function ThemeToggle() {
     <Button
       variant="outline"
       size="icon"
+      // Its own colour, so it stays readable on the dark landing bar too.
+      className="text-foreground"
       onClick={() => setChoice(next)}
       aria-label={next === 'dark' ? t.theme.switchToDark : t.theme.switchToLight}
       // The server cannot know the theme; the label settles when the page starts.
