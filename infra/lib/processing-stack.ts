@@ -143,6 +143,8 @@ export class ProcessingStack extends Stack {
       'dynamodb:PutItem',
       'dynamodb:UpdateItem',
       'dynamodb:DeleteItem',
+      // Reports against their videos and their list of blocked people go in batches.
+      'dynamodb:BatchWriteItem',
     );
     deleter.addToRolePolicy(
       new PolicyStatement({

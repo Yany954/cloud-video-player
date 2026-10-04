@@ -71,6 +71,7 @@ describe('ApiStack', () => {
       'DELETE /events/{eventId}',
       'DELETE /events/{eventId}/collaborators/{userId}',
       'DELETE /events/{eventId}/invite',
+      'DELETE /me/blocks/{userId}',
       'DELETE /uploads/{videoId}',
       'DELETE /videos/{videoId}',
       'GET /admin/review',
@@ -79,6 +80,7 @@ describe('ApiStack', () => {
       'GET /events/{eventId}',
       'GET /health',
       'GET /library',
+      'GET /me/blocks',
       'GET /me/storage',
       'GET /uploads/{videoId}/parts',
       'GET /videos',
@@ -89,9 +91,11 @@ describe('ApiStack', () => {
       'POST /admin/videos/{videoId}/review',
       'POST /events',
       'POST /events/{eventId}/join',
+      'POST /me/blocks',
       'POST /me/deletion',
       'POST /uploads',
       'POST /uploads/{videoId}/complete',
+      'POST /videos/{videoId}/reports',
       'PUT /events/{eventId}/invite',
       'PUT /events/{eventId}/order',
       'PUT /videos/{videoId}/event',
@@ -114,12 +118,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(28);
+    expect(functions).toHaveLength(32);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(28);
+    expect(logGroups).toHaveLength(32);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -136,14 +140,33 @@ describe('ApiStack', () => {
       expect(actionsOf('ListVideos')).toEqual(['dynamodb:Query', 'ssm:GetParameter']);
     });
 
-    it('lets "playback" only read one video and sign its links', () => {
-      expect(actionsOf('GetPlayback')).toEqual(['dynamodb:GetItem', 'ssm:GetParameter']);
+    it('lets "playback" only read (one video, the caller\'s blocks) and sign links', () => {
+      expect(actionsOf('GetPlayback')).toEqual([
+        'dynamodb:GetItem',
+        'dynamodb:Query',
+        'ssm:GetParameter',
+      ]);
     });
 
     it('lets the library and the review queue only query and sign poster links', () => {
-      for (const name of ['ListLibrary', 'ListReviewQueue']) {
-        expect(actionsOf(name)).toEqual(['dynamodb:Query', 'ssm:GetParameter']);
-      }
+      expect(actionsOf('ListLibrary')).toEqual(['dynamodb:Query', 'ssm:GetParameter']);
+      expect(actionsOf('ListReviewQueue')).toEqual([
+        'cognito-idp:ListUsers',
+        'dynamodb:Query',
+        'ssm:GetParameter',
+      ]);
+    });
+
+    it('gives reporting and blocking only the table actions they perform, and no files', () => {
+      expect(actionsOf('ReportVideo')).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem']);
+      expect(actionsOf('BlockUploader')).toEqual([
+        'dynamodb:DeleteItem',
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+        'dynamodb:Query',
+      ]);
+      expect(actionsOf('ListBlocks')).toEqual(['dynamodb:Query']);
+      expect(actionsOf('Unblock')).toEqual(['dynamodb:DeleteItem']);
     });
 
     it('lets "review" only read and rewrite one video: no delete, no files, no key', () => {
@@ -237,6 +260,7 @@ describe('ApiStack', () => {
       expect(actionsOf('JoinEvent')).toEqual([
         'dynamodb:GetItem',
         'dynamodb:PutItem',
+        'dynamodb:Query',
         'dynamodb:UpdateItem',
       ]);
       expect(actionsOf('RemoveCollaborator')).toEqual([
@@ -246,7 +270,7 @@ describe('ApiStack', () => {
       ]);
     });
 
-    it('gives user-pool access only to six routes, each only what it does, in our pool', () => {
+    it('gives user-pool access only to seven routes, each only what it does, in our pool', () => {
       const cognito = Object.entries(template.findResources('AWS::IAM::Policy')).flatMap(
         ([id, policy]) =>
           (policy.Properties.PolicyDocument.Statement as Statement[])
@@ -260,6 +284,7 @@ describe('ApiStack', () => {
 
       expect(Object.fromEntries(cognito.map(({ route, actions }) => [route, actions]))).toEqual({
         GetEvent: ['cognito-idp:ListUsers'],
+        ListReviewQueue: ['cognito-idp:ListUsers'],
         ListUsers: ['cognito-idp:ListUsers', 'cognito-idp:ListUsersInGroup'],
         InviteUser: ['cognito-idp:AdminCreateUser'],
         DeleteMyAccount: [
@@ -310,8 +335,10 @@ describe('ApiStack', () => {
 
     it('lets "delete video" remove one record, give bytes back and delete files only', () => {
       expect(actionsOf('DeleteVideo')).toEqual([
+        'dynamodb:BatchWriteItem',
         'dynamodb:DeleteItem',
         'dynamodb:GetItem',
+        'dynamodb:Query',
         'dynamodb:UpdateItem',
         's3:AbortMultipartUpload',
         's3:DeleteObject',

@@ -1,6 +1,6 @@
 'use client';
 
-import type { StorageUsageResponse } from '@cvp/shared';
+import type { BlockResponse, StorageUsageResponse } from '@cvp/shared';
 import { useEffect, useState } from 'react';
 import { ApiError } from '@cvp/upload-client';
 import { PasswordField } from '@/components/auth/password-field';
@@ -23,9 +23,13 @@ import { changePassword } from '@/lib/auth/cognito';
 import { authErrorMessage } from '@/lib/auth/errors';
 
 const MIN_PASSWORD_LENGTH = 12;
+const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 
 export default function ProfilePage() {
   const { state, signOut } = useAuth();
+  const [blocks, setBlocks] = useState<BlockResponse[] | null>(null);
+  const [blockNotice, setBlockNotice] = useState('');
+  const [blockError, setBlockError] = useState('');
   const [deletePassword, setDeletePassword] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -42,6 +46,10 @@ export default function ProfilePage() {
     uploadApi.getStorageUsage().then(
       (loaded) => active && setUsage(loaded),
       () => {},
+    );
+    uploadApi.listBlocks().then(
+      (loaded) => active && setBlocks(loaded.blocks),
+      () => active && setBlocks([]),
     );
     return () => {
       active = false;
@@ -174,6 +182,69 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
+
+          {blocks !== null && blocks.length > 0 && (
+            <section
+              aria-labelledby="blocked-title"
+              className="grid gap-3 rounded-3xl border px-5 py-5"
+            >
+              <div className="grid gap-1">
+                <h2 id="blocked-title" className="text-base font-semibold tracking-tight">
+                  People you blocked
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  You do not see their videos. The app shows no names, so each person is listed by
+                  the video you blocked them from.
+                </p>
+              </div>
+              <ul className="divide-y rounded-lg border">
+                {blocks.map((block) => (
+                  <li key={block.id} className="flex items-center gap-3 px-3 py-2">
+                    <span className="min-w-0 flex-1 text-sm">
+                      The person who uploaded{' '}
+                      <span className="font-medium break-words">“{block.videoTitle}”</span>
+                      <span className="text-muted-foreground">
+                        , blocked on{' '}
+                        <time dateTime={block.createdAt}>
+                          {dateFormat.format(new Date(block.createdAt))}
+                        </time>
+                      </span>
+                    </span>
+                    <Button
+                      variant="outline"
+                      aria-label={`Unblock the person who uploaded ${block.videoTitle}`}
+                      onClick={() => {
+                        setBlockError('');
+                        uploadApi.unblock(block.id).then(
+                          () => {
+                            setBlocks(
+                              (current) => current?.filter((b) => b.id !== block.id) ?? null,
+                            );
+                            setBlockNotice('Unblocked. You will see their videos again.');
+                          },
+                          () =>
+                            setBlockError(
+                              'The person could not be unblocked. Check your connection and try again.',
+                            ),
+                        );
+                      }}
+                    >
+                      Unblock
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+              {blockError && (
+                <p role="alert" className="text-destructive text-sm">
+                  {blockError}
+                </p>
+              )}
+            </section>
+          )}
+          {/* Outside the section, which disappears with its last entry. */}
+          <p role="status" className="text-sm empty:sr-only">
+            {blockNotice}
+          </p>
 
           <section
             aria-labelledby="delete-account-title"

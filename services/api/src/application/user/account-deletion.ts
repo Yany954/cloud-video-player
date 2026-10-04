@@ -5,12 +5,15 @@ import { MAX_CATEGORY_VIDEOS, MAX_LISTED_CATEGORIES } from '../category/categori
 import { ForbiddenError, NotFoundError } from '../errors';
 import type {
   AccountDeletionQueue,
+  BlockRepository,
   CategoryRepository,
   ObjectStorage,
+  ReportRepository,
   StorageAccountAdmin,
   UserAccounts,
   VideoRepository,
 } from '../ports';
+import { NO_BLOCKS, NO_REPORTS } from '../safety/defaults';
 import { DeleteVideo } from '../video/delete-video';
 import { MAX_LISTED_VIDEOS } from '../video/list-my-videos';
 
@@ -54,8 +57,10 @@ export class DeleteAccountData {
     storage: ObjectStorage,
     private readonly accounts: StorageAccountAdmin,
     private readonly users: UserAccounts,
+    reports: ReportRepository = NO_REPORTS,
+    private readonly blocks: BlockRepository = NO_BLOCKS,
   ) {
-    this.deleteVideo = new DeleteVideo(videos, storage);
+    this.deleteVideo = new DeleteVideo(videos, storage, reports);
   }
 
   /**
@@ -90,7 +95,10 @@ export class DeleteAccountData {
       await this.categories.leave(removeCollaborator(category, userId), userId);
     }
 
-    // 4. Their storage record, then the sign-in account itself.
+    // 4. The list of people they blocked.
+    await this.blocks.deleteByBlocker(userId);
+
+    // 5. Their storage record, then the sign-in account itself.
     await this.accounts.deleteAccount(userId);
     await this.users.delete(userId);
   }

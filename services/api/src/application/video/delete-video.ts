@@ -1,11 +1,13 @@
 import { assertDeletable, canDelete, type Viewer } from '../../domain/moderation';
 import { NotFoundError } from '../errors';
-import type { ObjectStorage, VideoRepository } from '../ports';
+import type { ObjectStorage, ReportRepository, VideoRepository } from '../ports';
+import { NO_REPORTS } from '../safety/defaults';
 
 export class DeleteVideo {
   constructor(
     private readonly videos: VideoRepository,
     private readonly storage: ObjectStorage,
+    private readonly reports: ReportRepository = NO_REPORTS,
   ) {}
 
   /**
@@ -23,10 +25,15 @@ export class DeleteVideo {
         await this.storage.abortMultipartUpload(video, video.uploadSessionId);
       }
       await this.videos.delete(video.id);
+      await this.reports.deleteByVideo(video.id);
       return;
     }
 
     await this.videos.deleteCounted(video);
-    await Promise.all([this.storage.deleteOriginal(video), this.storage.deletePlayable(video)]);
+    await Promise.all([
+      this.storage.deleteOriginal(video),
+      this.storage.deletePlayable(video),
+      this.reports.deleteByVideo(video.id),
+    ]);
   }
 }

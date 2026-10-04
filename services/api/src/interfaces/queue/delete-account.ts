@@ -4,6 +4,10 @@ import { DeleteAccountData } from '../../application/user/account-deletion';
 import { documentClient, s3Client } from '../../infrastructure/aws-clients';
 import { CognitoUserAccounts } from '../../infrastructure/cognito-user-accounts';
 import { DynamoCategoryRepository } from '../../infrastructure/dynamo-category-repository';
+import {
+  DynamoBlockRepository,
+  DynamoReportRepository,
+} from '../../infrastructure/dynamo-safety-repositories';
 import { DynamoStorageAccountRepository } from '../../infrastructure/dynamo-storage-account-repository';
 import { DynamoVideoRepository } from '../../infrastructure/dynamo-video-repository';
 import { S3ObjectStorage } from '../../infrastructure/s3-object-storage';
@@ -17,6 +21,8 @@ const deleteAccountData = new DeleteAccountData(
   new S3ObjectStorage(s3Client, env('UPLOADS_BUCKET'), env('MEDIA_BUCKET')),
   accounts,
   new CognitoUserAccounts(new CognitoIdentityProviderClient({}), env('USER_POOL_ID')),
+  new DynamoReportRepository(documentClient, env('TABLE_NAME')),
+  new DynamoBlockRepository(documentClient, env('TABLE_NAME')),
 );
 
 // Triggered by the account-deletion queue, one account per message.

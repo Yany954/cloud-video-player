@@ -44,6 +44,8 @@ export interface PlaybackResponse {
   moderationStatus: ModerationStatus;
   /** True for the video's owner and for admins. */
   canDelete: boolean;
+  /** The caller uploaded it: reporting and blocking are for other people's videos. */
+  isMine: boolean;
 }
 
 export interface ListVideosResponse {

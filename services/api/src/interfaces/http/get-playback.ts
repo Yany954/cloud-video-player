@@ -18,5 +18,6 @@ export const handler = route(async (event) => {
     height: playback.height,
     moderationStatus: playback.moderationStatus,
     canDelete: playback.canDelete,
+    isMine: playback.isMine,
   } satisfies PlaybackResponse);
 });

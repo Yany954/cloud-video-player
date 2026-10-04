@@ -23,6 +23,8 @@ interface VideoListProps {
   showStatus?: boolean;
   /** Extra controls at the end of each row. */
   renderActions?: (video: VideoResponse) => React.ReactNode;
+  /** Extra information under a row, across its whole width. */
+  renderDetails?: (video: VideoResponse) => React.ReactNode;
 }
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
@@ -38,6 +40,7 @@ export function VideoList({
   hrefFor,
   showStatus = false,
   renderActions,
+  renderDetails,
 }: VideoListProps) {
   return (
     <section aria-labelledby={id} className="grid gap-3">
@@ -73,6 +76,7 @@ export function VideoList({
                   {renderActions(video)}
                 </div>
               )}
+              {renderDetails && <div className="w-full empty:hidden">{renderDetails(video)}</div>}
             </li>
           ))}
         </ul>

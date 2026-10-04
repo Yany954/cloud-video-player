@@ -225,6 +225,13 @@ export default function PlayEventPage() {
         </div>
       </div>
 
+      <Link
+        href={`/videos/${currentId}?from=event-${eventId}`}
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 w-fit rounded-lg text-sm underline underline-offset-4 outline-none focus-visible:ring-3"
+      >
+        Report or manage this video
+      </Link>
+
       <AutoplaySwitch
         on={autoplay}
         onChange={(on) => {

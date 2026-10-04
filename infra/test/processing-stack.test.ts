@@ -125,6 +125,7 @@ describe('ProcessingStack', () => {
         'cognito-idp:AdminDeleteUser',
         'cognito-idp:ListUsers',
         'dynamodb:BatchGetItem',
+        'dynamodb:BatchWriteItem',
         'dynamodb:DeleteItem',
         'dynamodb:GetItem',
         'dynamodb:PutItem',

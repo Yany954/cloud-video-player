@@ -69,6 +69,7 @@ describe('GetPlayback', () => {
       title: 'concert',
       moderationStatus: 'pending',
       canDelete: true,
+      isMine: true,
       expiresAt: '2026-10-03T18:00:00.000Z',
     });
   });

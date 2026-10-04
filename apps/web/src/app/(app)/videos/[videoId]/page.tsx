@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { DeleteVideoButton } from '@/components/video/delete-video-button';
+import { ReportPanel } from '@/components/video/report-panel';
 import { ReviewActions } from '@/components/moderation/review-actions';
 import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -140,6 +141,12 @@ function Watch() {
                 </p>
               )}
             </div>
+          )}
+          {!state.playback.isMine && (
+            <ReportPanel
+              video={{ id: videoId, title: state.playback.title }}
+              onHidden={() => router.replace(back.href)}
+            />
           )}
           {isAdmin && (
             <section

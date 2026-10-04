@@ -31,10 +31,19 @@ for reports.
 `DELETE /videos/{id}`: the owner, or an admin for any video. Removes the row, the original,
 the playable copy and the poster; the bytes go back to the owner in the same transaction.
 
-### 3a-3. Report a video, block a user
+### 3a-3. Report a video, block a user: done
 
-Required by the app stores before the mobile release. A report sets `flagged`, which puts the
-video back in the review queue.
+- **Report** (`POST /videos/{id}/reports`): anyone who can see a video, except its uploader,
+  once per person; reasons violence, sexual, harassment, other; optional note. An approved
+  video becomes `flagged` at once (hidden from everyone but its uploader and admins) and
+  returns to the review queue, where admins see each report with the reporter's email.
+- **Block** (`POST /me/blocks` with a `videoId`, `GET /me/blocks`, `DELETE /me/blocks/{id}`):
+  one-way and silent. The blocker stops seeing that person's videos (library, events, direct
+  link); the blocked person is removed from the blocker's events and their invite links
+  answer "not valid". Admins still open blocked people's videos to review them.
+- Rows: `VIDEO#{id}` / `REPORT#{reporterId}` and `USER#{blockerId}` / `BLOCK#{blockedId}`.
+  Reports go when their video is deleted; a block list goes with its owner's account.
+- Suspending and deleting accounts (the "ban" part) are in the Users view.
 
 ### 3b. Events (categories), continuous playlist and collaborators
 
@@ -92,7 +101,8 @@ Slices, in order:
   suspend/reactivate. Admins cannot suspend themselves or drop their own admin role.
 - **Profile** page for everyone (the email in the header links to it): email, role, storage,
   change password.
-- Routes: `GET /admin/users`, `POST /admin/users`, `PATCH` and `DELETE /admin/users/{userId}`, `POST /me/deletion`. No Lambda may
+- Routes: `GET /admin/users`, `POST /admin/users`, `PATCH` and `DELETE /admin/users/{userId}`, `POST /me/deletion`,
+  `POST /videos/{id}/reports`, `POST` and `GET /me/blocks`, `DELETE /me/blocks/{userId}`. No Lambda may
   delete a user or read or set a password (a CDK test enforces it).
 
 ### 3e. Delete an account and its data: done
@@ -305,6 +315,9 @@ pnpm --filter @cvp/infra cdk:deploy --all
 - A video kept private after its event was deleted has no button to make it public again
   (its owner can add it to one of their own events, or delete it).
 - The last-admin guard is unit-tested only: the real pool always has the owner as an admin.
+- One report hides a video until an admin decides, so a person can temporarily hide someone
+  else's video by reporting it (the user accepted this; admins see who reported).
+- Blocks made against a person stay as rows after that person's account is deleted.
 - Suspending a user or changing a role fully applies only when their current token expires
   (up to 1 hour).
 - HEVC, audio conversion, large files and Safari/phone playback are unit-tested only.

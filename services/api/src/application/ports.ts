@@ -1,5 +1,6 @@
 import type { Category } from '../domain/category';
 import type { StorageUsage } from '../domain/quota';
+import type { Block, Report } from '../domain/safety';
 import type { UserAccount, UserRole } from '../domain/user';
 import type { NormalizationPlan, ProbeResult } from '../domain/normalization';
 import type { Video } from '../domain/video';
@@ -68,6 +69,24 @@ export interface UserDirectory {
 
 /** An unguessable secret for invite links. */
 export type TokenGenerator = () => string;
+
+export interface ReportRepository {
+  /** False (and nothing stored) if this person already reported this video. */
+  add(report: Report): Promise<boolean>;
+  /** Oldest first. */
+  listByVideo(videoId: string): Promise<Report[]>;
+  deleteByVideo(videoId: string): Promise<void>;
+}
+
+export interface BlockRepository {
+  /** Blocking the same person again only refreshes the entry. */
+  add(block: Block): Promise<void>;
+  remove(blockerId: string, blockedId: string): Promise<void>;
+  /** Newest first. */
+  listByBlocker(blockerId: string): Promise<Block[]>;
+  /** Forgets every block this person made. */
+  deleteByBlocker(blockerId: string): Promise<void>;
+}
 
 export interface StorageAccountRepository {
   /** A user who never uploaded has 0 bytes used and the default quota. */

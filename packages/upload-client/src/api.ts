@@ -1,17 +1,21 @@
 import type {
   ApiErrorResponse,
+  BlockResponse,
   CreateEventRequest,
   EventDetailResponse,
   EventInviteResponse,
   EventResponse,
   InitiateUploadRequest,
   InitiateUploadResponse,
+  ListBlocksResponse,
   ListEventsResponse,
   ListUsersResponse,
   ListVideosResponse,
   PartUrlsResponse,
   PlaybackResponse,
+  ReportVideoRequest,
   ReviewDecision,
+  ReviewQueueResponse,
   StorageUsageResponse,
   UpdateEventRequest,
   UpdateUserRequest,
@@ -30,8 +34,8 @@ export interface UploadApi {
   getPlayback(videoId: string): Promise<PlaybackResponse>;
   /** Approved videos from every user. */
   listLibrary(): Promise<ListVideosResponse>;
-  /** Admins only: videos waiting for a decision. */
-  listReviewQueue(): Promise<ListVideosResponse>;
+  /** Admins only: videos waiting for a decision, with the reports made against them. */
+  listReviewQueue(): Promise<ReviewQueueResponse>;
   /** Admins only. */
   reviewVideo(videoId: string, decision: ReviewDecision): Promise<VideoResponse>;
   /** Permanent. Owners delete their own videos; admins can delete any. */
@@ -65,6 +69,12 @@ export interface UploadApi {
   deleteUser(userId: string): Promise<void>;
   /** Permanent. The password proves it is the account's owner asking. */
   deleteMyAccount(password: string): Promise<void>;
+  /** Hides the video until an admin reviews it. For other people's videos only. */
+  reportVideo(videoId: string, report: ReportVideoRequest): Promise<void>;
+  /** Blocks whoever uploaded this video: their videos disappear for the caller. */
+  blockUploader(videoId: string): Promise<BlockResponse>;
+  listBlocks(): Promise<ListBlocksResponse>;
+  unblock(blockId: string): Promise<void>;
 }
 
 /** The API answered with an error. `code` is the server's error code, e.g. QUOTA_EXCEEDED. */
@@ -150,5 +160,9 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
     updateUser: (userId, change) => request('PATCH', `/admin/users/${id(userId)}`, change),
     deleteUser: (userId) => request('DELETE', `/admin/users/${id(userId)}`),
     deleteMyAccount: (password) => request('POST', '/me/deletion', { password }),
+    reportVideo: (videoId, report) => request('POST', `/videos/${id(videoId)}/reports`, report),
+    blockUploader: (videoId) => request('POST', '/me/blocks', { videoId }),
+    listBlocks: () => request('GET', '/me/blocks'),
+    unblock: (blockId) => request('DELETE', `/me/blocks/${id(blockId)}`),
   };
 }

@@ -21,13 +21,16 @@ import { DomainError } from '../../domain/errors';
 import { canView, type Viewer } from '../../domain/moderation';
 import { isOwnedBy, type Video } from '../../domain/video';
 import { NotFoundError } from '../errors';
+import { isHiddenByBlock } from '../../domain/safety';
 import type {
+  BlockRepository,
   CategoryRepository,
   Clock,
   IdGenerator,
   TokenGenerator,
   VideoRepository,
 } from '../ports';
+import { blockedIdsOf, NO_BLOCKS } from '../safety/defaults';
 
 // Enough for the MVP. Add a cursor when someone gets close to these.
 export const MAX_LISTED_CATEGORIES = 100;
@@ -91,6 +94,7 @@ export class GetCategory {
   constructor(
     private readonly categories: CategoryRepository,
     private readonly videos: VideoRepository,
+    private readonly blocks: BlockRepository = NO_BLOCKS,
   ) {}
 
   /** The event and the videos of it that this viewer may see, in playing order. */
@@ -102,11 +106,14 @@ export class GetCategory {
     if (!category || !canViewCategory(category, input.viewer)) throw new NotFoundError(NOT_FOUND);
 
     const videos = await this.videos.listByCategory(category.id, MAX_CATEGORY_VIDEOS);
+    const blocked = await blockedIdsOf(this.blocks, input.viewer.userId);
     return {
       category,
       videos: inPlayingOrder(
         category,
-        videos.filter((video) => canView(video, input.viewer, category)),
+        videos.filter(
+          (video) => canView(video, input.viewer, category) && !isHiddenByBlock(video, blocked),
+        ),
       ),
     };
   }
@@ -235,7 +242,10 @@ export class CloseInvite {
 }
 
 export class JoinCategory {
-  constructor(private readonly categories: CategoryRepository) {}
+  constructor(
+    private readonly categories: CategoryRepository,
+    private readonly blocks: BlockRepository = NO_BLOCKS,
+  ) {}
 
   /**
    * What opening an invite link does for a signed-in user. A wrong or old link looks the same
@@ -244,6 +254,10 @@ export class JoinCategory {
   async execute(input: { userId: string; categoryId: string; token: string }): Promise<Category> {
     const category = await this.categories.findById(input.categoryId);
     if (!category || !acceptsInvite(category, input.token)) {
+      throw new NotFoundError('This invite link is not valid any more');
+    }
+    // Someone the owner blocked gets the same answer as for a bad link: they are not told.
+    if ((await blockedIdsOf(this.blocks, category.ownerId)).has(input.userId)) {
       throw new NotFoundError('This invite link is not valid any more');
     }
     const joined = addCollaborator(category, input.userId);

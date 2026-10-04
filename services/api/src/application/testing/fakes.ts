@@ -2,13 +2,16 @@ import type { Category } from '../../domain/category';
 import { DomainError } from '../../domain/errors';
 import { awaitsReview, isInLibrary } from '../../domain/moderation';
 import { DEFAULT_QUOTA_BYTES, fits, type StorageUsage } from '../../domain/quota';
+import type { Block, Report } from '../../domain/safety';
 import type { UserAccount, UserRole } from '../../domain/user';
 import type { Video } from '../../domain/video';
 import type {
+  BlockRepository,
   CategoryRepository,
   ObjectStorage,
   PartUrl,
   ProcessingQueue,
+  ReportRepository,
   StorageAccountAdmin,
   UserAccounts,
   UploadedPart,
@@ -274,5 +277,48 @@ export class InMemoryUserAccounts implements UserAccounts {
       ...this.users.get(userId)!,
       status: suspended ? 'suspended' : 'active',
     });
+  }
+}
+
+export class InMemoryReports implements ReportRepository {
+  readonly items: Report[] = [];
+
+  async add(report: Report) {
+    const duplicate = this.items.some(
+      (item) => item.videoId === report.videoId && item.reporterId === report.reporterId,
+    );
+    if (!duplicate) this.items.push(report);
+    return !duplicate;
+  }
+  async listByVideo(videoId: string) {
+    return this.items.filter((item) => item.videoId === videoId);
+  }
+  async deleteByVideo(videoId: string) {
+    for (let index = this.items.length - 1; index >= 0; index--) {
+      if (this.items[index]!.videoId === videoId) this.items.splice(index, 1);
+    }
+  }
+}
+
+export class InMemoryBlocks implements BlockRepository {
+  readonly items: Block[] = [];
+
+  async add(block: Block) {
+    await this.remove(block.blockerId, block.blockedId);
+    this.items.push(block);
+  }
+  async remove(blockerId: string, blockedId: string) {
+    const index = this.items.findIndex(
+      (item) => item.blockerId === blockerId && item.blockedId === blockedId,
+    );
+    if (index !== -1) this.items.splice(index, 1);
+  }
+  async listByBlocker(blockerId: string) {
+    return this.items.filter((item) => item.blockerId === blockerId).reverse();
+  }
+  async deleteByBlocker(blockerId: string) {
+    for (const block of await this.listByBlocker(blockerId)) {
+      await this.remove(blockerId, block.blockedId);
+    }
   }
 }

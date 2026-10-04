@@ -1,8 +1,9 @@
 import { listLibrary } from './container';
-import { json, route } from './http';
+import { json, route, userIdOf } from './http';
 import { toListVideosResponse } from './video-list-response';
 
 // GET /library
-export const handler = route(async () => {
-  return json(200, await toListVideosResponse(await listLibrary.execute()));
+export const handler = route(async (event) => {
+  const videos = await listLibrary.execute({ userId: userIdOf(event) });
+  return json(200, await toListVideosResponse(videos));
 });

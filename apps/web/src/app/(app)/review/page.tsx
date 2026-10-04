@@ -1,16 +1,25 @@
 'use client';
 
-import type { VideoResponse } from '@cvp/shared';
+import type { ReportReason, ReviewItemResponse, VideoResponse } from '@cvp/shared';
 import { useEffect, useState } from 'react';
 import { ReviewActions } from '@/components/moderation/review-actions';
 import { VideoList } from '@/components/video/video-list';
 import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
 
+const REASON_LABELS: Record<ReportReason, string> = {
+  violence: 'Violence',
+  sexual: 'Sexual content',
+  harassment: 'Harassment or hate',
+  other: 'Something else',
+};
+
+const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
+
 export default function ReviewPage() {
   const { state } = useAuth();
   const isAdmin = state.status === 'signedIn' && state.user.isAdmin;
-  const [videos, setVideos] = useState<VideoResponse[] | null>(null);
+  const [videos, setVideos] = useState<ReviewItemResponse[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -73,6 +82,37 @@ export default function ReviewPage() {
           errorText="The review queue could not be loaded. Reload the page to try again."
           empty={{ title: 'All caught up', text: 'No videos are waiting for review.' }}
           from="review"
+          renderDetails={(video) => {
+            const reports = videos?.find((item) => item.id === video.id)?.reports ?? [];
+            if (reports.length === 0) return null;
+            return (
+              <div className="grid gap-2 px-4 pb-4 sm:px-5">
+                <p className="text-destructive text-sm font-medium">
+                  Reported {reports.length === 1 ? 'once' : `${reports.length} times`}. It is hidden
+                  from everyone but its uploader until you decide.
+                </p>
+                <ul className="grid gap-1.5 text-sm">
+                  {reports.map((report) => (
+                    <li key={`${report.reporterEmail}-${report.createdAt}`}>
+                      <span className="font-medium">{REASON_LABELS[report.reason]}</span>
+                      {report.note && <span>: “{report.note}”</span>}
+                      <span className="text-muted-foreground">
+                        {' '}
+                        (by{' '}
+                        <span translate="no">
+                          {report.reporterEmail ?? 'a deleted account'}
+                        </span>,{' '}
+                        <time dateTime={report.createdAt}>
+                          {dateFormat.format(new Date(report.createdAt))}
+                        </time>
+                        )
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          }}
           renderActions={(video) => (
             <ReviewActions
               video={video}

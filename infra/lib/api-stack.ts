@@ -102,7 +102,8 @@ export class ApiStack extends Stack {
       method: HttpMethod.GET,
       path: '/videos/{videoId}/playback',
       file: 'get-playback.ts',
-      tableActions: ['dynamodb:GetItem'],
+      // Also reads the caller's list of blocked people.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:Query'],
       signsPlaybackUrls: true,
     });
     this.route('DeleteVideo', {
@@ -110,7 +111,14 @@ export class ApiStack extends Stack {
       path: '/videos/{videoId}',
       file: 'delete-video.ts',
       // Removing the record and giving the bytes back is one transaction of these two writes.
-      tableActions: ['dynamodb:GetItem', 'dynamodb:DeleteItem', 'dynamodb:UpdateItem'],
+      // Reports made against the video go with it.
+      tableActions: [
+        'dynamodb:GetItem',
+        'dynamodb:DeleteItem',
+        'dynamodb:UpdateItem',
+        'dynamodb:Query',
+        'dynamodb:BatchWriteItem',
+      ],
       uploadActions: ['s3:DeleteObject', 's3:AbortMultipartUpload'],
       deletesMedia: true,
     });
@@ -154,7 +162,13 @@ export class ApiStack extends Stack {
       path: '/events/{eventId}/join',
       file: 'join-event.ts',
       // Adds the collaborator and their membership row in one transaction.
-      tableActions: ['dynamodb:GetItem', 'dynamodb:UpdateItem', 'dynamodb:PutItem'],
+      // Also checks that the event's owner has not blocked the caller.
+      tableActions: [
+        'dynamodb:GetItem',
+        'dynamodb:UpdateItem',
+        'dynamodb:PutItem',
+        'dynamodb:Query',
+      ],
     });
     this.route('RemoveCollaborator', {
       method: HttpMethod.DELETE,
@@ -208,6 +222,39 @@ export class ApiStack extends Stack {
       file: 'list-review-queue.ts',
       tableActions: ['dynamodb:Query'],
       signsPlaybackUrls: true,
+      // Shows admins who reported a video.
+      userPoolActions: ['cognito-idp:ListUsers'],
+    });
+    // Reporting a video and blocking a person: required of apps with user-generated content.
+    this.route('ReportVideo', {
+      method: HttpMethod.POST,
+      path: '/videos/{videoId}/reports',
+      file: 'report-video.ts',
+      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+    });
+    this.route('BlockUploader', {
+      method: HttpMethod.POST,
+      path: '/me/blocks',
+      file: 'block-uploader.ts',
+      // Also removes the blocked person from the events the caller owns.
+      tableActions: [
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+        'dynamodb:Query',
+        'dynamodb:DeleteItem',
+      ],
+    });
+    this.route('ListBlocks', {
+      method: HttpMethod.GET,
+      path: '/me/blocks',
+      file: 'list-blocks.ts',
+      tableActions: ['dynamodb:Query'],
+    });
+    this.route('Unblock', {
+      method: HttpMethod.DELETE,
+      path: '/me/blocks/{userId}',
+      file: 'unblock.ts',
+      tableActions: ['dynamodb:DeleteItem'],
     });
     this.route('ReviewVideo', {
       method: HttpMethod.POST,
