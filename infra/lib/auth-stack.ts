@@ -11,7 +11,28 @@ import type { Construct } from 'constructs';
 
 export interface AuthStackProps extends StackProps {
   prefix: string;
+  /** Address of the web app, for the link in invitation emails. */
+  webUrl: string;
 }
+
+// Cognito sends one template to everyone, so every email carries English and Spanish. Each
+// placeholder ({####}, {username}) appears exactly once.
+const codeEmail = {
+  subject: 'Your Cloud Video Player code / Tu código de Cloud Video Player',
+  body: [
+    '<p style="font-size:20px"><strong>{####}</strong></p>',
+    '<p>This is your Cloud Video Player code. Type it in the app to continue. If you did not ask for it, you can ignore this email.</p>',
+    '<p>Este es tu código de Cloud Video Player. Escríbelo en la aplicación para continuar. Si no lo pediste, puedes ignorar este correo.</p>',
+  ].join(''),
+};
+const invitationEmail = (webUrl: string) => ({
+  subject: 'You are invited to Cloud Video Player / Te invitaron a Cloud Video Player',
+  body: [
+    '<p>Email / Correo: <strong>{username}</strong><br>Temporary password / Contraseña temporal: <strong>{####}</strong></p>',
+    `<p>You have been invited to Cloud Video Player, a private place for the videos you film at concerts and events. Sign in at <a href="${webUrl}/login">${webUrl}/login</a> with the temporary password above; you will be asked to choose your own. It works for 7 days.</p>`,
+    `<p>Te invitaron a Cloud Video Player, un lugar privado para los videos que grabas en conciertos y eventos. Inicia sesión en <a href="${webUrl}/login">${webUrl}/login</a> con la contraseña temporal de arriba; se te pedirá elegir una propia. Sirve durante 7 días.</p>`,
+  ].join(''),
+});
 
 export class AuthStack extends Stack {
   readonly userPool: UserPool;
@@ -35,13 +56,13 @@ export class AuthStack extends Stack {
       autoVerify: { email: true },
       userVerification: {
         emailStyle: VerificationEmailStyle.CODE,
-        emailSubject: 'Your Cloud Video Player code',
-        emailBody: 'Your Cloud Video Player confirmation code is {####}',
+        // Also used for the password-reset code.
+        emailSubject: codeEmail.subject,
+        emailBody: codeEmail.body,
       },
       userInvitation: {
-        emailSubject: 'You are invited to Cloud Video Player',
-        emailBody:
-          'You have been invited to Cloud Video Player.<br>Username: {username}<br>Temporary password: {####}<br>You will be asked to choose a new password on first sign-in.',
+        emailSubject: invitationEmail(props.webUrl).subject,
+        emailBody: invitationEmail(props.webUrl).body,
       },
 
       // Length over composition rules (NIST SP 800-63B).

@@ -155,8 +155,8 @@ Decided by the user on 2026-10-04 for the three items below:
 Asked by the user on 2026-10-04, in this order (agree each plan before coding):
 
 1. **English and Spanish: done for the whole web app.** Every screen, dialog, error message,
-   label for screen readers, date and number. Still English only: the emails Cognito sends
-   (confirmation code, invitation, password reset), to be made bilingual in the auth stack.
+   label for screen readers, date and number. Cognito's emails (confirmation and reset code, invitation) carry both languages in one
+   message (`infra/lib/auth-stack.ts`); how they look in an inbox was not checked.
    How it works: texts live in `apps/web/src/lib/i18n/messages/en.ts` (the source) and
    `es.ts` (same shape, checked by a test); texts with values are functions. The language is
    the `cvp.lang` cookie if set, else the browser's `Accept-Language`, read on the server in
@@ -198,7 +198,7 @@ Asked by the user on 2026-10-04, in this order (agree each plan before coding):
    Contact shown in the footer: cloudvideoplayer.contact@gmail.com (a mailbox the user made
    for the app). Content rule: only what the product does today; no testimonials or counts.
 
-### 4b. Visual effects on the web: landing and sign-in done; event header gradient still open
+### 4b. Visual effects on the web: done (landing, sign-in, event header)
 
 Web only (Next.js), in a few key places. Before writing code: explain the plan, the
 components, where they live and the trade-offs, and get the user's OK.
@@ -221,6 +221,14 @@ Where:
   have colors: decide where they come from (chosen by the owner, or taken from a poster).
 - Floating navigation bar: glass effect.
 - NOT in: the admin panel, upload forms, video lists, or on top of a playing video.
+
+Event header (done 2026-10-04): an event has a `theme`, one of eight (`CATEGORY_THEMES` in the
+domain, `EVENT_THEMES` in `packages/shared`): stage, sunset, forest, ocean, ember, violet,
+gold, steel. The owner picks it on the event page; an event with none gets one from its id
+(`defaultTheme`), also for rows written before themes existed. The web app owns the colours
+(`apps/web/src/lib/event/themes.ts`); a test keeps white text at AA on every colour through
+the header's 60% scrim. Colours are not taken from posters: the browser may not read pixels
+from signed image links.
 
 Requirements:
 
@@ -323,6 +331,9 @@ infra                    CDK stacks, tests, scripts (smoke tests, ffmpeg and key
 - **Admin uploads also start as `pending`**: one rule for everyone.
 - **Deleting removes the table row first, then the files**, and is refused while a video is
   being processed. The web app offers it only for ready or failed videos.
+- **"Your videos" explains the review** under the upload area (the user asked for it): every
+  upload is reviewed before others see it, and inappropriate content is rejected or taken
+  down, with a link to the terms.
 - **A decision can be changed later** (take down an approved video, approve a rejected one);
   the video records who decided and when.
 - **New accounts get 5 GiB** (`DEFAULT_QUOTA_BYTES`); the owner's account keeps the 50 GiB

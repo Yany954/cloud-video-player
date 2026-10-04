@@ -10,7 +10,10 @@ import {
   canAddVideo,
   canManageCategory,
   canViewCategory,
+  CATEGORY_THEMES,
   createCategory,
+  defaultTheme,
+  setTheme,
   inPlayingOrder,
   isMember,
   renameCategory,
@@ -42,6 +45,7 @@ describe('createCategory', () => {
       ownerId: 'ana',
       name: 'Concert Twenty One Pilots October 2026',
       visibility: 'private',
+      theme: defaultTheme('cat-1'),
       collaboratorIds: [],
       inviteToken: null,
       order: [],
@@ -210,5 +214,31 @@ describe('collaborators', () => {
     expect(canRemoveCollaborator(withTwo, 'ana', 'ben')).toBe(true);
     expect(canRemoveCollaborator(withTwo, 'ben', 'ben')).toBe(true);
     expect(canRemoveCollaborator(withTwo, 'ben', 'carla')).toBe(false);
+  });
+});
+
+describe('theme', () => {
+  it('gives every event one of the known themes, always the same for the same id', () => {
+    for (const id of ['cat-1', 'a', '9bced8c1-4018-44d9-b93a-a5f4a717d9e0', '']) {
+      expect(CATEGORY_THEMES).toContain(defaultTheme(id));
+      expect(defaultTheme(id)).toBe(defaultTheme(id));
+    }
+  });
+
+  it('spreads different events over different themes', () => {
+    const used = new Set(Array.from({ length: 200 }, (_, index) => defaultTheme(`event-${index}`)));
+    expect(used.size).toBe(CATEGORY_THEMES.length);
+  });
+
+  it('keeps the theme chosen at creation, and lets the owner change it', () => {
+    const chosen = createCategory({
+      id: 'cat-1',
+      ownerId: 'ana',
+      name: 'Concert',
+      theme: 'gold',
+      now: new Date(),
+    });
+    expect(chosen.theme).toBe('gold');
+    expect(setTheme(chosen, 'ocean').theme).toBe('ocean');
   });
 });

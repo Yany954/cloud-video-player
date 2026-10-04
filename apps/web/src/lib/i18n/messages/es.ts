@@ -151,6 +151,9 @@ export const es: Messages = {
     free: (amount: string) => `${amount} libres`,
   },
   upload: {
+    reviewNote:
+      'Por qué tu video no lo ven los demás de inmediato: un administrador revisa primero cada subida. El contenido violento, sexual o inapropiado se rechaza, y un video ya aprobado puede retirarse. Tú siempre ves tus propios videos.',
+    reviewRules: 'Lee lo que no está permitido',
     dropTitle: 'Suelta tus videos aquí',
     dropHint: 'MP4, MOV, MKV o AVI. Se guardan en su calidad original.',
     choose: 'Elegir videos',
@@ -236,6 +239,18 @@ export const es: Messages = {
     visibleToAll: 'Visible para todos los usuarios',
   },
   event: {
+    themeLegend: 'Colores del encabezado',
+    themeChanged: 'Se cambiaron los colores del encabezado.',
+    themes: {
+      stage: 'Escenario',
+      sunset: 'Atardecer',
+      forest: 'Bosque',
+      ocean: 'Océano',
+      ember: 'Brasa',
+      violet: 'Violeta',
+      gold: 'Dorado',
+      steel: 'Acero',
+    },
     back: 'Eventos',
     loading: 'Cargando el evento',
     notFound: 'Este evento no existe, o es privado.',

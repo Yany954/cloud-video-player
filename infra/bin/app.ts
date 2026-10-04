@@ -14,7 +14,8 @@ const prefix = 'cvp-dev';
 // and the web app on Amplify Hosting.
 const webOrigins = ['http://localhost:3000', 'https://main.d1fywgy7g1rdyk.amplifyapp.com'];
 
-const auth = new AuthStack(app, `${prefix}-auth`, { env, prefix });
+const webUrl = 'https://main.d1fywgy7g1rdyk.amplifyapp.com';
+const auth = new AuthStack(app, `${prefix}-auth`, { env, prefix, webUrl });
 const data = new DataStack(app, `${prefix}-data`, { env, prefix });
 const storage = new StorageStack(app, `${prefix}-storage`, { env, webOrigins });
 const processing = new ProcessingStack(app, `${prefix}-processing`, {

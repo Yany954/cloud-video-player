@@ -6,6 +6,26 @@ import { isOwnedBy, type Video } from './video';
 /** `private`: only its members see it and its videos. `shared`: every signed-in user does. */
 export type CategoryVisibility = 'private' | 'shared';
 
+/** The colour themes an event's header can use. The web app owns what each one looks like. */
+export const CATEGORY_THEMES = [
+  'stage',
+  'sunset',
+  'forest',
+  'ocean',
+  'ember',
+  'violet',
+  'gold',
+  'steel',
+] as const;
+export type CategoryTheme = (typeof CATEGORY_THEMES)[number];
+
+/** The theme an event gets when nobody chose one: always the same for the same id. */
+export function defaultTheme(categoryId: string): CategoryTheme {
+  let hash = 0;
+  for (const character of categoryId) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return CATEGORY_THEMES[hash % CATEGORY_THEMES.length]!;
+}
+
 const MAX_NAME_LENGTH = 120;
 /** Keeps the stored order small; far more than one event's worth of recordings. */
 export const MAX_ORDERED_VIDEOS = 1000;
@@ -16,6 +36,8 @@ export interface Category {
   readonly ownerId: string;
   readonly name: string;
   readonly visibility: CategoryVisibility;
+  /** The colours of its header. */
+  readonly theme: CategoryTheme;
   /** People invited to add their own recordings. The owner is not listed here. */
   readonly collaboratorIds: readonly string[];
   /**
@@ -36,6 +58,7 @@ export interface CreateCategoryInput {
   ownerId: string;
   name: string;
   visibility?: CategoryVisibility;
+  theme?: CategoryTheme;
   now: Date;
 }
 
@@ -46,6 +69,7 @@ export function createCategory(input: CreateCategoryInput): Category {
     ownerId: input.ownerId,
     name: validName(input.name),
     visibility: input.visibility ?? 'private',
+    theme: input.theme ?? defaultTheme(input.id),
     collaboratorIds: [],
     inviteToken: null,
     order: [],
@@ -55,6 +79,10 @@ export function createCategory(input: CreateCategoryInput): Category {
 
 export function renameCategory(category: Category, name: string): Category {
   return { ...category, name: validName(name) };
+}
+
+export function setTheme(category: Category, theme: CategoryTheme): Category {
+  return { ...category, theme };
 }
 
 export function setVisibility(category: Category, visibility: CategoryVisibility): Category {

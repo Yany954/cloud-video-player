@@ -6,7 +6,9 @@ import { ArrowLeft, ArrowUp, ArrowUpDown, Pencil, Play, Plus, Trash2, X } from '
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { EventHeader } from '@/components/event/event-header';
 import { InvitePanel } from '@/components/event/invite-panel';
+import { ThemePicker } from '@/components/event/theme-picker';
 import { ReorderList } from '@/components/event/reorder-list';
 import { selectClassName, VisibilityBadge } from '@/components/event/visibility-badge';
 import {
@@ -134,12 +136,9 @@ export default function EventPage() {
 
       <div className="grid gap-3">
         {renaming === null ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="min-w-0 text-2xl font-semibold tracking-tight text-balance break-words">
-              {event.name}
-            </h1>
+          <EventHeader name={event.name} theme={event.theme}>
             <VisibilityBadge visibility={event.visibility} />
-          </div>
+          </EventHeader>
         ) : (
           <form
             className="flex flex-wrap items-end gap-2"
@@ -282,6 +281,20 @@ export default function EventPage() {
           </div>
         )}
       </div>
+
+      {event.isOwner && renaming === null && draft === null && (
+        <ThemePicker
+          value={event.theme}
+          disabled={busy}
+          onChange={(theme) =>
+            void run(
+              () => uploadApi.updateEvent(eventId, { theme }),
+              e.themeChanged,
+              e.changeFailed,
+            )
+          }
+        />
+      )}
 
       <div className="grid gap-3">
         {/* Always rendered, never display:none, so screen readers announce each change. */}

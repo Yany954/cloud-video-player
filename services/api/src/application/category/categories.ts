@@ -13,8 +13,10 @@ import {
   inPlayingOrder,
   renameCategory,
   reorderCategory,
+  setTheme,
   setVisibility,
   type Category,
+  type CategoryTheme,
   type CategoryVisibility,
 } from '../../domain/category';
 import { DomainError } from '../../domain/errors';
@@ -60,12 +62,14 @@ export class CreateCategory {
     userId: string;
     name: string;
     visibility?: CategoryVisibility;
+    theme?: CategoryTheme;
   }): Promise<Category> {
     const category = createCategory({
       id: this.newId(),
       ownerId: input.userId,
       name: input.name,
       visibility: input.visibility,
+      theme: input.theme,
       now: this.now(),
     });
     await this.categories.create(category);
@@ -130,9 +134,11 @@ export class UpdateCategory {
     categoryId: string;
     name?: string;
     visibility?: CategoryVisibility;
+    theme?: CategoryTheme;
   }): Promise<Category> {
     let category = await findManaged(this.categories, input.categoryId, input.userId);
     if (input.name !== undefined) category = renameCategory(category, input.name);
+    if (input.theme !== undefined) category = setTheme(category, input.theme);
     if (input.visibility !== undefined) category = setVisibility(category, input.visibility);
     await this.categories.save(category);
 

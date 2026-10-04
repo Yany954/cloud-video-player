@@ -7,6 +7,7 @@ export function toEventResponse(category: Category, userId: string): EventRespon
     id: category.id,
     name: category.name,
     visibility: category.visibility,
+    theme: category.theme,
     isOwner: canManageCategory(category, userId),
     isMember: isMember(category, userId),
     createdAt: category.createdAt,

@@ -1,6 +1,8 @@
 'use client';
 
 import type { EventResponse, StorageUsageResponse, VideoResponse } from '@cvp/shared';
+import { ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { DeleteVideoButton } from '@/components/video/delete-video-button';
 import { selectClassName } from '@/components/event/visibility-badge';
@@ -84,6 +86,19 @@ export function UploadPanel({ userId }: { userId: string }) {
             </div>
           )}
           <Dropzone onFiles={(files) => uploads.add(files, eventId || undefined)} />
+          <p className="text-muted-foreground flex gap-2 text-sm leading-relaxed">
+            <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0" />
+            <span>
+              {t.upload.reviewNote}{' '}
+              <Link
+                href="/terms"
+                className="text-foreground focus-visible:ring-ring/50 rounded-sm underline underline-offset-4 outline-none focus-visible:ring-3"
+              >
+                {t.upload.reviewRules}
+              </Link>
+              .
+            </span>
+          </p>
         </div>
         <UploadList
           items={uploads.items}

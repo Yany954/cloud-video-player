@@ -27,7 +27,8 @@ describe('ProcessingStack', () => {
         table: data.table,
         uploadsBucket: storage.uploadsBucket,
         mediaBucket: storage.mediaBucket,
-        userPool: new AuthStack(app, 'TestAuth', { prefix: 'test' }).userPool,
+        userPool: new AuthStack(app, 'TestAuth', { prefix: 'test', webUrl: 'https://app.test' })
+          .userPool,
         allowMissingFfmpeg: true,
       }),
     );
@@ -162,7 +163,8 @@ describe('ProcessingStack', () => {
           table: data.table,
           uploadsBucket: storage.uploadsBucket,
           mediaBucket: storage.mediaBucket,
-          userPool: new AuthStack(app, 'TestAuth2', { prefix: 'test' }).userPool,
+          userPool: new AuthStack(app, 'TestAuth2', { prefix: 'test', webUrl: 'https://app.test' })
+            .userPool,
           ffmpegLayerDir: mkdtempSync(join(tmpdir(), 'no-ffmpeg-')),
         }),
     ).toThrow(/fetch:ffmpeg/);

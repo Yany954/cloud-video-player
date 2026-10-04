@@ -147,6 +147,9 @@ export const en = {
     free: (amount: string) => `${amount} free`,
   },
   upload: {
+    reviewNote:
+      'Why your video is not visible to others right away: an administrator reviews every upload first. Violent, sexual or otherwise inappropriate content is rejected, and a video already approved can be taken down. You always see your own videos.',
+    reviewRules: 'Read what is not allowed',
     dropTitle: 'Drop videos here',
     dropHint: 'MP4, MOV, MKV or AVI. They are stored in their original quality.',
     choose: 'Choose videos',
@@ -231,6 +234,18 @@ export const en = {
     visibleToAll: 'Visible to all users',
   },
   event: {
+    themeLegend: 'Header colours',
+    themeChanged: 'The header colours were changed.',
+    themes: {
+      stage: 'Stage',
+      sunset: 'Sunset',
+      forest: 'Forest',
+      ocean: 'Ocean',
+      ember: 'Ember',
+      violet: 'Violet',
+      gold: 'Gold',
+      steel: 'Steel',
+    },
     back: 'Events',
     loading: 'Loading event',
     notFound: 'This event does not exist, or it is private.',

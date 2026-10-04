@@ -252,6 +252,19 @@ describe('UpdateCategory', () => {
   });
 });
 
+describe('theme', () => {
+  it('is chosen by the owner, and only the owner', async () => {
+    await concert();
+
+    await update.execute({ userId: 'ana', categoryId: 'cat-1', theme: 'gold' });
+    await expect(
+      update.execute({ userId: 'ben', categoryId: 'cat-1', theme: 'ocean' }),
+    ).rejects.toThrow(NotFoundError);
+
+    expect((await db.categories.findById('cat-1'))?.theme).toBe('gold');
+  });
+});
+
 describe('ReorderCategory', () => {
   it('is the owner’s alone, even among collaborators', async () => {
     const category = await concert();

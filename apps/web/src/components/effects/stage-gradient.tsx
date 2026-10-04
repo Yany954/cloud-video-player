@@ -12,14 +12,29 @@ const Canvas = dynamic(() => import('./stage-gradient-canvas'), { ssr: false });
  * reduced motion is on, is the static CSS gradient `stage-fallback`. The canvas fades in over
  * it and is removed while off screen, so nothing is drawn that nobody sees.
  */
-export function StageGradient({ subtle = false }: { subtle?: boolean }) {
+export function StageGradient({
+  subtle = false,
+  colors,
+  fallback,
+}: {
+  subtle?: boolean;
+  /** Base, main and accent colours. Without them, the app's own stage lights. */
+  colors?: readonly [string, string, string];
+  /** The CSS background to show under (and instead of) the canvas when `colors` is given. */
+  fallback?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const { running } = useEffectsAllowed(ref);
   return (
-    <div ref={ref} aria-hidden className="stage-fallback absolute inset-0 overflow-hidden">
+    <div
+      ref={ref}
+      aria-hidden
+      className={`absolute inset-0 overflow-hidden ${fallback ? '' : 'stage-fallback'}`}
+      style={fallback ? { background: fallback } : undefined}
+    >
       {running && (
         <div className="effect-fade-in absolute inset-0">
-          <Canvas subtle={subtle} />
+          <Canvas subtle={subtle} colors={colors} />
         </div>
       )}
     </div>

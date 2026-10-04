@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadApi } from '@/lib/api';
+import { themeBackground } from '@/lib/event/themes';
 import { useI18n } from '@/lib/i18n/i18n-context';
 
 export default function EventsPage() {
@@ -162,6 +163,11 @@ function EventList({
                 href={`/events/${event.id}`}
                 className="hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-ring/50 flex items-center gap-4 px-4 py-4 outline-none focus-visible:ring-3 focus-visible:ring-inset sm:px-5"
               >
+                <span
+                  aria-hidden
+                  className="size-8 shrink-0 rounded-lg border"
+                  style={{ background: themeBackground(event.theme) }}
+                />
                 <span className="min-w-0 flex-1 truncate font-medium" title={event.name}>
                   {event.name}
                 </span>

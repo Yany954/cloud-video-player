@@ -7,7 +7,10 @@ describe('AuthStack', () => {
   let template: Template;
 
   beforeAll(() => {
-    const stack = new AuthStack(new App(), 'TestAuth', { prefix: 'test' });
+    const stack = new AuthStack(new App(), 'TestAuth', {
+      prefix: 'test',
+      webUrl: 'https://app.test',
+    });
     template = Template.fromStack(stack);
   });
 
@@ -55,5 +58,28 @@ describe('AuthStack', () => {
 
   it.each(['admin', 'user'])('creates the %s group', (groupName) => {
     template.hasResourceProperties('AWS::Cognito::UserPoolGroup', { GroupName: groupName });
+  });
+
+  it('sends its emails in English and Spanish, with each placeholder exactly once', () => {
+    const pool = Object.values(template.findResources('AWS::Cognito::UserPool'))[0]!.Properties;
+    const code: string = pool.VerificationMessageTemplate.EmailMessage;
+    const invitation: string = pool.AdminCreateUserConfig.InviteMessageTemplate.EmailMessage;
+    const count = (text: string, part: string) => text.split(part).length - 1;
+
+    expect(count(code, '{####}')).toBe(1);
+    expect(code).toContain('Type it in the app');
+    expect(code).toContain('Escríbelo en la aplicación');
+
+    expect(count(invitation, '{####}')).toBe(1);
+    expect(count(invitation, '{username}')).toBe(1);
+    expect(invitation).toContain('You have been invited');
+    expect(invitation).toContain('Te invitaron');
+    // The link people follow to sign in for the first time.
+    expect(invitation).toContain('https://app.test/login');
+
+    expect(pool.VerificationMessageTemplate.EmailSubject.length).toBeLessThanOrEqual(140);
+    expect(
+      pool.AdminCreateUserConfig.InviteMessageTemplate.EmailSubject.length,
+    ).toBeLessThanOrEqual(140);
   });
 });

@@ -7,7 +7,15 @@ import { ShaderGradient, ShaderGradientCanvas } from '@shadergradient/react';
  * stage-gradient.tsx). The library bundles its own 3D engine and, with `lightType="3d"`,
  * fetches nothing from other servers.
  */
-export default function StageGradientCanvas({ subtle }: { subtle: boolean }) {
+export default function StageGradientCanvas({
+  subtle,
+  colors,
+}: {
+  subtle: boolean;
+  /** Base, main and accent. Defaults to night sky, the app's cobalt, and a warm spotlight. */
+  colors?: readonly [string, string, string];
+}) {
+  const [base, main, accent] = colors ?? ['#0b1230', '#2447d6', '#c2630c'];
   return (
     <ShaderGradientCanvas
       // One device pixel per CSS pixel is plenty for a blurry gradient, and far cheaper.
@@ -24,10 +32,9 @@ export default function StageGradientCanvas({ subtle }: { subtle: boolean }) {
         uStrength={subtle ? 1.6 : 2.4}
         uDensity={1.1}
         uFrequency={5.5}
-        // Night sky, the app's cobalt, and a warm spotlight.
-        color1="#0b1230"
-        color2="#2447d6"
-        color3="#c2630c"
+        color1={base}
+        color2={main}
+        color3={accent}
         lightType="3d"
         brightness={subtle ? 0.9 : 1.05}
         grain="off"

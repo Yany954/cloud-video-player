@@ -8,16 +8,34 @@ export const EVENT_VISIBILITIES = ['private', 'shared'] as const;
 /** `private`: only its owner and collaborators. `shared`: every signed-in user. */
 export type EventVisibility = (typeof EVENT_VISIBILITIES)[number];
 
+/** The colour themes an event's header can use. Each app decides what a theme looks like. */
+export const EVENT_THEMES = [
+  'stage',
+  'sunset',
+  'forest',
+  'ocean',
+  'ember',
+  'violet',
+  'gold',
+  'steel',
+] as const;
+export type EventTheme = (typeof EVENT_THEMES)[number];
+
 const name = z.string().trim().min(1).max(120);
+const theme = z.enum(EVENT_THEMES);
 const visibility = z.enum(EVENT_VISIBILITIES);
 
-export const createEventRequestSchema = z.object({ name, visibility: visibility.optional() });
+export const createEventRequestSchema = z.object({
+  name,
+  visibility: visibility.optional(),
+  theme: theme.optional(),
+});
 export type CreateEventRequest = z.infer<typeof createEventRequestSchema>;
 
 export const updateEventRequestSchema = z
-  .object({ name: name.optional(), visibility: visibility.optional() })
-  .refine((body) => body.name !== undefined || body.visibility !== undefined, {
-    message: 'Send a name, a visibility, or both',
+  .object({ name: name.optional(), visibility: visibility.optional(), theme: theme.optional() })
+  .refine((body) => Object.values(body).some((value) => value !== undefined), {
+    message: 'Send a name, a visibility or a theme',
   });
 export type UpdateEventRequest = z.infer<typeof updateEventRequestSchema>;
 
@@ -53,6 +71,8 @@ export interface EventResponse {
   id: string;
   name: string;
   visibility: EventVisibility;
+  /** The colours of its header. */
+  theme: EventTheme;
   /** The caller created it: they can rename, reorder, share and delete it. */
   isOwner: boolean;
   /** The caller is its owner or a collaborator: they can add their own videos. */

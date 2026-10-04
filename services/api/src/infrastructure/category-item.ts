@@ -1,4 +1,4 @@
-import type { Category } from '../domain/category';
+import { defaultTheme, type Category } from '../domain/category';
 
 // Single-table key patterns. See infra/lib/data-stack.ts for the full table.
 export const categoryKey = (categoryId: string) => ({ PK: `CATEGORY#${categoryId}`, SK: 'META' });
@@ -43,6 +43,8 @@ export function fromCategoryItem(item: object): Category {
     ownerId: category.ownerId,
     name: category.name,
     visibility: category.visibility,
+    // Items written before themes existed get the one their id maps to.
+    theme: category.theme ?? defaultTheme(category.id),
     collaboratorIds: category.collaboratorIds,
     // Items written before invite links existed don't have this attribute.
     inviteToken: category.inviteToken ?? null,
