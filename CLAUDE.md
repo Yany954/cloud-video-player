@@ -107,6 +107,8 @@ Explicitly out of scope: watch party.
 - Web shadcn blocks: `landing-01`; auth `https://registry.watermelon.sh/r/auth-05.json` (remove the GitHub button); navigation `https://registry.watermelon.sh/r/navigation-4.json`; storage widget `https://registry.watermelon.sh/r/widget-2.json`.
 - Motion (web): Motion Primitives (motion-primitives.com; React + Tailwind + Motion, shadcn-style copy-in components). Use for the landing and key moments (category card -> player transition, scroll reveals, thumbnail effects). Keep the admin mostly static.
 - Motion (mobile): Motion Primitives does NOT run in React Native. Use it only as visual inspiration and implement with React Native Reanimated (or Moti).
+- Visual effects (WEB only, DECIDED 2026-10-04; build in a later phase, plan in `docs/ROADMAP.md`): ShaderGradient (`@shadergradient/react` + `@react-three/fiber` v9 + `three`), a liquid-glass effect, and the LiquidMetal shader from `@paper-design/shaders` (Apache-2.0) for the logo. Never copy code from `paper-design/liquid-logo` (PolyForm Shield licence). Use them only on the landing hero, the login/sign-up page, the event header (gradient in that event's colors) and a floating navigation bar. Never in the admin panel, upload forms, video lists, or on top of a playing video.
+- Mobile will not use those libraries (they do not run in React Native): recreate the look later with Reanimated / Expo native glass.
 - Always respect reduced-motion preferences (`prefers-reduced-motion` on web, OS "Reduce Motion" setting on mobile). Animations must never block or delay playback.
 
 ## About me / how to work with me

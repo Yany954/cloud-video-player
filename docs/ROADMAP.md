@@ -113,6 +113,47 @@ minute of CPU: give the user a cost estimate before building it.
 - Playwright E2E tests in the repo (so far the browser checks were manual runs with
   `playwright-cli`).
 
+### 4b. Visual effects on the web (a later phase; requirements from the user, 2026-10-04)
+
+Web only (Next.js), in a few key places. Before writing code: explain the plan, the
+components, where they live and the trade-offs, and get the user's OK.
+
+Libraries:
+
+1. **ShaderGradient**: `@shadergradient/react` + `@react-three/fiber` + `three`. The web app is
+   on Next.js 16 and React 19.2, so it needs R3F v9. Check compatibility first.
+2. **Liquid glass**: evaluate `shuding/liquid-glass` (SVG filters) against a glass built with
+   R3F. Check Safari and iOS support first; if it does not work in Safari, propose the
+   alternative.
+3. **Liquid metal logo**: the LiquidMetal shader from `@paper-design/shaders` (Apache-2.0).
+   Do NOT copy code from `paper-design/liquid-logo` (PolyForm Shield licence).
+
+Where:
+
+- Landing hero: ShaderGradient background + liquid metal logo.
+- Login / sign-up page: a subtle ShaderGradient background.
+- Event (category/concert) header: a gradient in that event's colors. This needs an event to
+  have colors: decide where they come from (chosen by the owner, or taken from a poster).
+- Floating navigation bar: glass effect.
+- NOT in: the admin panel, upload forms, video lists, or on top of a playing video.
+
+Requirements:
+
+- Load every WebGL component on the client only (dynamic import with `ssr: false`) and
+  lazily, so it never slows the first paint.
+- At most one or two WebGL canvases per page. Pause animations when off-screen or when the
+  tab is hidden.
+- `prefers-reduced-motion`: show a static image or CSS gradient instead.
+- No WebGL available: fall back to a static CSS gradient.
+- Text over glass or gradients keeps WCAG AA contrast.
+- Test on mobile Safari and Chrome.
+- The mobile app is out of scope for these libraries; it recreates the look later with
+  Reanimated / Expo native glass (noted in `CLAUDE.md`).
+
+Also asked in the same message, to clarify with the user when this phase starts: "listas
+largas de videos" (long lists of videos), probably how an event page should handle many
+videos (today it shows at most 200, with no paging).
+
 ### 5. Mobile app
 
 Expo development build. Reuse `packages/upload-client`: implement `putPart` with the native
@@ -120,6 +161,9 @@ background uploader. Player with `expo-video`.
 
 ### After the MVP
 
+- **Security review of the whole MVP with the official Claude security plugin** (the user
+  asked for it on 2026-10-04: not now, at the end of MVP development). Fix what it finds
+  before calling the MVP done.
 - A polished `README.md` for GitHub (the user asked for it; not before the MVP is finished).
 - Differentiators from `CLAUDE.md`, one at a time. Audio mode is the suggested first one, and it
   is when HLS and an audio-only rendition get added.
