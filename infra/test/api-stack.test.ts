@@ -71,6 +71,7 @@ describe('ApiStack', () => {
       'DELETE /uploads/{videoId}',
       'DELETE /videos/{videoId}',
       'GET /admin/review',
+      'GET /admin/users',
       'GET /events',
       'GET /events/{eventId}',
       'GET /health',
@@ -79,7 +80,9 @@ describe('ApiStack', () => {
       'GET /uploads/{videoId}/parts',
       'GET /videos',
       'GET /videos/{videoId}/playback',
+      'PATCH /admin/users/{userId}',
       'PATCH /events/{eventId}',
+      'POST /admin/users',
       'POST /admin/videos/{videoId}/review',
       'POST /events',
       'POST /events/{eventId}/join',
@@ -107,12 +110,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(23);
+    expect(functions).toHaveLength(26);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(23);
+    expect(logGroups).toHaveLength(26);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -233,18 +236,43 @@ describe('ApiStack', () => {
       ]);
     });
 
-    it('lets only the event page look up email addresses, and only in our user pool', () => {
+    it('gives user-pool access only to four routes, each only what it does, in our pool', () => {
       const cognito = Object.entries(template.findResources('AWS::IAM::Policy')).flatMap(
         ([id, policy]) =>
           (policy.Properties.PolicyDocument.Statement as Statement[])
             .filter((statement) => [statement.Action].flat().some((a) => a.startsWith('cognito')))
-            .map((statement) => ({ id, statement })),
+            .map((statement) => ({
+              route: id.replace(/ServiceRoleDefaultPolicy.*/, ''),
+              actions: [statement.Action].flat().sort(),
+              resource: JSON.stringify(statement.Resource),
+            })),
       );
 
-      expect(cognito).toHaveLength(1);
-      expect(cognito[0]!.id).toMatch(/^GetEventServiceRoleDefaultPolicy/);
-      expect(cognito[0]!.statement.Action).toBe('cognito-idp:ListUsers');
-      expect(JSON.stringify(cognito[0]!.statement.Resource)).toContain('UserPool');
+      expect(Object.fromEntries(cognito.map(({ route, actions }) => [route, actions]))).toEqual({
+        GetEvent: ['cognito-idp:ListUsers'],
+        ListUsers: ['cognito-idp:ListUsers', 'cognito-idp:ListUsersInGroup'],
+        InviteUser: ['cognito-idp:AdminCreateUser'],
+        UpdateUser: [
+          'cognito-idp:AdminAddUserToGroup',
+          'cognito-idp:AdminDisableUser',
+          'cognito-idp:AdminEnableUser',
+          'cognito-idp:AdminListGroupsForUser',
+          'cognito-idp:AdminRemoveUserFromGroup',
+          'cognito-idp:AdminUserGlobalSignOut',
+          'cognito-idp:ListUsers',
+        ],
+      });
+      for (const { resource } of cognito) expect(resource).toContain('UserPool');
+    });
+
+    it('never lets a route delete a user or read or set a password', () => {
+      const actions = Object.values(template.findResources('AWS::IAM::Policy'))
+        .flatMap((policy) => policy.Properties.PolicyDocument.Statement as Statement[])
+        .flatMap((statement) => statement.Action);
+
+      for (const action of actions) {
+        expect(action).not.toMatch(/AdminDeleteUser|AdminSetUserPassword|AdminGetUser/);
+      }
     });
 
     it('lets "delete video" remove one record, give bytes back and delete files only', () => {

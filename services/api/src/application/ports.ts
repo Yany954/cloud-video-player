@@ -1,5 +1,6 @@
 import type { Category } from '../domain/category';
 import type { StorageUsage } from '../domain/quota';
+import type { UserAccount, UserRole } from '../domain/user';
 import type { NormalizationPlan, ProbeResult } from '../domain/normalization';
 import type { Video } from '../domain/video';
 
@@ -71,6 +72,29 @@ export type TokenGenerator = () => string;
 export interface StorageAccountRepository {
   /** A user who never uploaded has 0 bytes used and the default quota. */
   getUsage(userId: string): Promise<StorageUsage>;
+}
+
+/** What the admin Users view needs on top of reading one user's usage. */
+export interface StorageAccountAdmin extends StorageAccountRepository {
+  /** The same, for many users at once. Every requested user is in the result. */
+  getUsages(userIds: readonly string[]): Promise<Map<string, StorageUsage>>;
+  /** Changes how much one user may store. Works for a user who never uploaded. */
+  setQuota(userId: string, quotaBytes: number): Promise<void>;
+}
+
+/** The accounts themselves (Cognito), as the admin Users view needs them. */
+export interface UserAccounts {
+  /** Oldest first. */
+  list(limit: number): Promise<UserAccount[]>;
+  findById(userId: string): Promise<UserAccount | null>;
+  /**
+   * Creates the account and emails the person a temporary password.
+   * Throws DomainError USER_EXISTS if that email already has an account.
+   */
+  invite(email: string): Promise<UserAccount>;
+  setRole(userId: string, role: UserRole): Promise<void>;
+  /** Suspending also signs the person out of every device. */
+  setSuspended(userId: string, suspended: boolean): Promise<void>;
 }
 
 export interface UploadedPart {

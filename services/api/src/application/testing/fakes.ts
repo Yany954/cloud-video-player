@@ -8,13 +8,13 @@ import type {
   ObjectStorage,
   PartUrl,
   ProcessingQueue,
-  StorageAccountRepository,
+  StorageAccountAdmin,
   UploadedPart,
   VideoRepository,
 } from '../ports';
 
 /** Videos and storage accounts share state, like the single DynamoDB table does. */
-export class InMemoryDatabase implements VideoRepository, StorageAccountRepository {
+export class InMemoryDatabase implements VideoRepository, StorageAccountAdmin {
   readonly videos = new Map<string, Video>();
   readonly usage = new Map<string, StorageUsage>();
 
@@ -138,6 +138,16 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountReposito
 
   async getUsage(userId: string) {
     return this.usage.get(userId) ?? { bytesUsed: 0, quotaBytes: DEFAULT_QUOTA_BYTES };
+  }
+
+  async getUsages(userIds: readonly string[]) {
+    return new Map(
+      await Promise.all(userIds.map(async (id) => [id, await this.getUsage(id)] as const)),
+    );
+  }
+
+  async setQuota(userId: string, quotaBytes: number) {
+    this.usage.set(userId, { ...(await this.getUsage(userId)), quotaBytes });
   }
 }
 

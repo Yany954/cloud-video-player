@@ -85,12 +85,22 @@ Slices, in order:
    account"); Cognito emails a 6-digit code that must be entered before the first sign-in.
 4. Mobile (Phase 5): background audio, lock-screen controls and PiP for the same playlist.
 
-### 3d. User management and profile (asked by the user)
+### 3d. User management and profile: done
 
-- Admin "Users" view: list users and invite a new one by email (Cognito `AdminCreateUser`
-  sends the invitation), with role and suspend/remove actions.
-- A profile page for every user: their details, storage use, change password, and later
-  "delete my account and data" (item 20 of the legal checklist).
+- Admin **Users** page: every account with role, status and storage; invite by email
+  (Cognito sends a temporary password); storage limit in GB per account; make/remove admin;
+  suspend/reactivate. Admins cannot suspend themselves or drop their own admin role.
+- **Profile** page for everyone (the email in the header links to it): email, role, storage,
+  change password.
+- Routes: `GET /admin/users`, `POST /admin/users`, `PATCH /admin/users/{userId}`. No Lambda may
+  delete a user or read or set a password (a CDK test enforces it).
+
+### 3e. Delete an account and its data (next; design to agree with the user first)
+
+Item 20 of the legal checklist, and required in-app by Apple. It must remove the person's
+videos (rows and files), the events they own, their memberships in other people's events,
+their profile row and the Cognito user. Open question: what happens to other people's videos
+inside an event that gets deleted (taking them out would put approved ones in the library).
 
 ### 3c. Fargate re-encoding
 
@@ -186,7 +196,8 @@ API routes: `GET /health`, `GET /me/storage`, `POST /uploads`, `GET /uploads/{id
 `POST /admin/videos/{id}/review`, `DELETE /videos/{id}`, `POST /events`, `GET /events`,
 `GET /events/{id}`, `PATCH /events/{id}`, `PUT /events/{id}/order`, `DELETE /events/{id}`,
 `PUT /videos/{id}/event`, `PUT` and `DELETE /events/{id}/invite`, `POST /events/{id}/join`,
-`DELETE /events/{id}/collaborators/{userId}`. `POST /uploads` takes an optional `eventId`. The `/admin` routes check the `admin` group in the handler
+`DELETE /events/{id}/collaborators/{userId}`, `GET` and `POST /admin/users`,
+`PATCH /admin/users/{userId}`. `POST /uploads` takes an optional `eventId`. The `/admin` routes check the `admin` group in the handler
 and answer 403 otherwise.
 
 Outside CDK: the Amplify app `cvp-web` (hosting for `apps/web`), the playback private key in SSM (`/cvp-dev/playback/private-key`), the budget
@@ -286,6 +297,8 @@ pnpm --filter @cvp/infra cdk:deploy --all
 - The web app sends basic security headers (HSTS, no framing, no MIME sniffing, referrer
   policy) but no Content-Security-Policy yet.
 - Amplify builds on every push to `main`, including pushes that do not touch the web app.
+- Suspending a user or changing a role fully applies only when their current token expires
+  (up to 1 hour).
 - HEVC, audio conversion, large files and Safari/phone playback are unit-tested only.
 - No captions on the player (WCAG 1.2.2); expected with the transcription feature.
 - `GET /videos`, the library and the review queue return at most 100 videos, with no paging.

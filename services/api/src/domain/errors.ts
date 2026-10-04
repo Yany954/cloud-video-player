@@ -4,6 +4,8 @@ export type DomainErrorCode =
   | 'INVALID_TITLE'
   | 'INVALID_NAME'
   | 'INVALID_ORDER'
+  | 'INVALID_QUOTA'
+  | 'USER_EXISTS'
   | 'QUOTA_EXCEEDED'
   | 'INVALID_STATE'
   | 'UPLOAD_INCOMPLETE';

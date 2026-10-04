@@ -38,8 +38,8 @@ interface RouteProps {
   deletesMedia?: boolean;
   /** May put jobs on the processing queue. */
   startsProcessing?: boolean;
-  /** May look up users' email addresses in the user pool. */
-  readsUserEmails?: boolean;
+  /** Actions this handler may perform on the user pool, and on that pool only. */
+  userPoolActions?: string[];
   /** May read the private key that signs playback URLs. */
   signsPlaybackUrls?: boolean;
   timeout?: Duration;
@@ -131,7 +131,7 @@ export class ApiStack extends Stack {
       tableActions: ['dynamodb:GetItem', 'dynamodb:Query'],
       signsPlaybackUrls: true,
       // Shows the owner who joined through the invite link.
-      readsUserEmails: true,
+      userPoolActions: ['cognito-idp:ListUsers'],
     });
     this.route('OpenInvite', {
       method: HttpMethod.PUT,
@@ -210,6 +210,37 @@ export class ApiStack extends Stack {
       path: '/admin/videos/{videoId}/review',
       file: 'review-video.ts',
       tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+    });
+    // The admin Users view. Like the other /admin routes, the handler checks the group.
+    this.route('ListUsers', {
+      method: HttpMethod.GET,
+      path: '/admin/users',
+      file: 'list-users.ts',
+      // Each account's storage, read in one batch.
+      tableActions: ['dynamodb:BatchGetItem'],
+      userPoolActions: ['cognito-idp:ListUsers', 'cognito-idp:ListUsersInGroup'],
+    });
+    this.route('InviteUser', {
+      method: HttpMethod.POST,
+      path: '/admin/users',
+      file: 'invite-user.ts',
+      tableActions: ['dynamodb:GetItem'],
+      userPoolActions: ['cognito-idp:AdminCreateUser'],
+    });
+    this.route('UpdateUser', {
+      method: HttpMethod.PATCH,
+      path: '/admin/users/{userId}',
+      file: 'update-user.ts',
+      tableActions: ['dynamodb:GetItem', 'dynamodb:UpdateItem'],
+      userPoolActions: [
+        'cognito-idp:ListUsers',
+        'cognito-idp:AdminListGroupsForUser',
+        'cognito-idp:AdminAddUserToGroup',
+        'cognito-idp:AdminRemoveUserFromGroup',
+        'cognito-idp:AdminDisableUser',
+        'cognito-idp:AdminEnableUser',
+        'cognito-idp:AdminUserGlobalSignOut',
+      ],
     });
     this.route('InitiateUpload', {
       method: HttpMethod.POST,
@@ -294,10 +325,10 @@ export class ApiStack extends Stack {
         }),
       );
     }
-    if (route.readsUserEmails) {
+    if (route.userPoolActions) {
       fn.addToRolePolicy(
         new PolicyStatement({
-          actions: ['cognito-idp:ListUsers'],
+          actions: route.userPoolActions,
           resources: [this.props.userPool.userPoolArn],
         }),
       );

@@ -35,6 +35,8 @@ describe('route error mapping', () => {
     ['INVALID_TITLE', 400],
     ['INVALID_NAME', 400],
     ['INVALID_ORDER', 400],
+    ['INVALID_QUOTA', 400],
+    ['USER_EXISTS', 409],
   ] as const)('maps %s to HTTP %i', async (code, status) => {
     const result = await failing(new DomainError(code, 'why'));
 

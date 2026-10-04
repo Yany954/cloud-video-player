@@ -7,6 +7,7 @@ import {
   signIn as amplifySignIn,
   signOut as amplifySignOut,
   signUp as amplifySignUp,
+  updatePassword as amplifyUpdatePassword,
 } from 'aws-amplify/auth';
 
 export interface SessionUser {
@@ -78,6 +79,12 @@ export async function confirmSignUp(email: string, code: string): Promise<void> 
 export async function resendSignUpCode(email: string): Promise<void> {
   configure();
   await amplifyResendSignUpCode({ username: email });
+}
+
+/** Changes the signed-in user's password. Cognito checks the current one. */
+export async function changePassword(current: string, next: string): Promise<void> {
+  configure();
+  await amplifyUpdatePassword({ oldPassword: current, newPassword: next });
 }
 
 export async function signOut(): Promise<void> {

@@ -7,12 +7,15 @@ import type {
   InitiateUploadRequest,
   InitiateUploadResponse,
   ListEventsResponse,
+  ListUsersResponse,
   ListVideosResponse,
   PartUrlsResponse,
   PlaybackResponse,
   ReviewDecision,
   StorageUsageResponse,
   UpdateEventRequest,
+  UpdateUserRequest,
+  UserResponse,
   VideoResponse,
 } from '@cvp/shared';
 
@@ -52,6 +55,12 @@ export interface UploadApi {
   joinEvent(eventId: string, token: string): Promise<EventResponse>;
   /** The owner removes anyone; a collaborator removes only themselves. */
   removeCollaborator(eventId: string, userId: string): Promise<void>;
+  /** Admins only. */
+  listUsers(): Promise<ListUsersResponse>;
+  /** Admins only. Creates the account and emails a temporary password. */
+  inviteUser(email: string): Promise<UserResponse>;
+  /** Admins only. Changes the quota, the role, or whether the account can sign in. */
+  updateUser(userId: string, change: UpdateUserRequest): Promise<UserResponse>;
 }
 
 /** The API answered with an error. `code` is the server's error code, e.g. QUOTA_EXCEEDED. */
@@ -130,5 +139,8 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
     joinEvent: (eventId, token) => request('POST', `/events/${id(eventId)}/join`, { token }),
     removeCollaborator: (eventId, userId) =>
       request('DELETE', `/events/${id(eventId)}/collaborators/${id(userId)}`),
+    listUsers: () => request('GET', '/admin/users'),
+    inviteUser: (email) => request('POST', '/admin/users', { email }),
+    updateUser: (userId, change) => request('PATCH', `/admin/users/${id(userId)}`, change),
   };
 }

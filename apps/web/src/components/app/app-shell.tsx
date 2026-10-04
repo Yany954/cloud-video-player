@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut } from 'lucide-react';
+import { CircleUser, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -30,7 +30,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { href: '/events', label: 'Events' },
     { href: '/library', label: 'Library' },
     // Hidden from everyone else; the server enforces it too.
-    ...(state.user.isAdmin ? [{ href: '/review', label: 'Review' }] : []),
+    ...(state.user.isAdmin
+      ? [
+          { href: '/review', label: 'Review' },
+          { href: '/users', label: 'Users' },
+        ]
+      : []),
   ];
 
   return (
@@ -50,9 +55,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Brand />
           </Link>
           <div className="flex items-center gap-3">
-            <span className="text-muted-foreground hidden max-w-56 truncate text-sm sm:block">
-              {state.user.email}
-            </span>
+            <Link
+              href="/profile"
+              aria-label={`Profile of ${state.user.email}`}
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex h-8 max-w-56 items-center gap-1.5 rounded-lg px-1 text-sm outline-none focus-visible:ring-3"
+            >
+              <CircleUser aria-hidden className="size-4 shrink-0" />
+              <span className="hidden truncate sm:block" translate="no">
+                {state.user.email}
+              </span>
+              <span className="sm:hidden">Profile</span>
+            </Link>
             <Button variant="outline" onClick={() => void signOut()}>
               <LogOut aria-hidden />
               Sign out
