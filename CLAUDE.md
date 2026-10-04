@@ -59,6 +59,7 @@ Explicitly out of scope: watch party.
 - Before any public launch (Phase 2): research legal reporting obligations for illegal content (e.g., child sexual abuse material must be reported, not just deleted) and hash-matching tools.
 
 ## Legal & compliance checklist (draft with Claude, have a lawyer review before public launch / Phase 2)
+Status 2026-10-04: items 1, 2, 4, 6, 16, 17 and 20 are built for the web (privacy policy, terms, cookie policy at `/privacy`, `/terms`, `/cookies`; consent and age checkbox at sign-up; contact in the footer; account deletion). Item 5 (cookie banner) is not needed while nothing beyond strictly necessary storage is used. Items 3 and 18 do not apply yet. The texts are drafts: no lawyer has reviewed them.
 1. Privacy policy
 2. Terms of service (include prohibited content)
 3. Refund policy (Phase 2)

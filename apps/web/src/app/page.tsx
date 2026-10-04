@@ -7,13 +7,12 @@ import { Brand } from '@/components/brand';
 import { LiquidMetalLogo } from '@/components/effects/liquid-metal-logo';
 import { StageGradient } from '@/components/effects/stage-gradient';
 import { LanguageSwitch } from '@/components/language-switch';
+import { LegalLinks } from '@/components/legal/legal-links';
 import { ThemeToggle } from '@/components/theme-control';
 import { Button } from '@/components/ui/button';
+import { CONTACT_EMAIL } from '@/content/legal/types';
 import { HOME, SESSION_HINT_COOKIE } from '@/lib/auth/return-to';
 import { getLocale, messagesFor } from '@/lib/i18n/server';
-
-/** Where people can write to the people behind the app. Public on purpose. */
-const CONTACT_EMAIL = 'cloudvideoplayer.contact@gmail.com';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { landing } = messagesFor(await getLocale());
@@ -144,6 +143,7 @@ export default async function LandingPage() {
       <footer className="border-t">
         <div className="text-muted-foreground mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-5 py-8 text-sm sm:px-8">
           <p>{t.footerRights}</p>
+          <LegalLinks t={messages.legal} />
           <p>
             {t.footerContact}:{' '}
             <a

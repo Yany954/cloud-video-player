@@ -590,6 +590,19 @@ export const en = {
     footerContact: 'Contact',
     footerRights: 'Videos stay the property of the people who upload them.',
   },
+  legal: {
+    navLabel: 'Legal',
+    privacy: 'Privacy policy',
+    terms: 'Terms of service',
+    cookies: 'Cookie policy',
+    updated: 'Last updated:',
+    contact: 'Contact',
+    consentBefore: 'I am at least 13 years old, and I agree to the',
+    consentBetween: 'and the',
+    consentAfter: '.',
+    consentMissing: 'Tick the box to create your account.',
+    opensInNewTab: '(opens in a new tab)',
+  },
 };
 
 /** The shape every language must have: same keys; texts stay texts, functions keep their arguments. */

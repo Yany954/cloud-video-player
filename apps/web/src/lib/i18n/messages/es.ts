@@ -604,4 +604,17 @@ export const es: Messages = {
     footerContact: 'Contacto',
     footerRights: 'Los videos siguen siendo de quienes los suben.',
   },
+  legal: {
+    navLabel: 'Información legal',
+    privacy: 'Política de privacidad',
+    terms: 'Términos del servicio',
+    cookies: 'Política de cookies',
+    updated: 'Última actualización:',
+    contact: 'Contacto',
+    consentBefore: 'Tengo al menos 13 años y acepto los',
+    consentBetween: 'y la',
+    consentAfter: '.',
+    consentMissing: 'Marca la casilla para crear tu cuenta.',
+    opensInNewTab: '(se abre en una pestaña nueva)',
+  },
 };

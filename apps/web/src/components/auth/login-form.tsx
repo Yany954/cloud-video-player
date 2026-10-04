@@ -40,6 +40,7 @@ export function LoginForm() {
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   useEffect(() => {
     if (state.status !== 'signedIn') return;
@@ -99,6 +100,11 @@ export function LoginForm() {
       <form
         onSubmit={(event) => {
           if (mismatch) return event.preventDefault();
+          if (!consent) {
+            event.preventDefault();
+            setError(t.legal.consentMissing);
+            return;
+          }
           void submit(event, async () => {
             await signUp(email, newPassword);
             return 'confirmEmail';
@@ -134,6 +140,22 @@ export function LoginForm() {
           onChange={setConfirmation}
           error={mismatch || undefined}
         />
+        <div className="flex items-start gap-3">
+          <input
+            id="consent"
+            name="consent"
+            type="checkbox"
+            checked={consent}
+            onChange={(event) => setConsent(event.target.checked)}
+            aria-describedby={error === t.legal.consentMissing ? 'form-error' : undefined}
+            className="accent-primary mt-0.5 size-5 shrink-0"
+          />
+          <label htmlFor="consent" className="text-sm leading-relaxed">
+            {t.legal.consentBefore} <ConsentLink href="/terms" label={t.legal.terms} />{' '}
+            {t.legal.consentBetween} <ConsentLink href="/privacy" label={t.legal.privacy} />
+            {t.legal.consentAfter}
+          </label>
+        </div>
         <FormError message={error} />
         <SubmitButton
           pending={pending}
@@ -446,10 +468,26 @@ function SwitchLink(props: { text: string; action: string; onClick(): void }) {
   );
 }
 
+/** Opens in a new tab, so what was typed in the form is not lost. */
+function ConsentLink({ href, label }: { href: string; label: string }) {
+  const { t } = useI18n();
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      className="text-primary focus-visible:ring-ring/50 rounded-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-3"
+    >
+      {label}
+      <span className="sr-only"> {t.legal.opensInNewTab}</span>
+    </a>
+  );
+}
+
 function FormError({ message }: { message: string | null }) {
   // Always in the DOM so screen readers announce the message when it appears.
   return (
-    <p role="alert" className="text-destructive text-sm empty:hidden">
+    <p id="form-error" role="alert" className="text-destructive text-sm empty:hidden">
       {message}
     </p>
   );

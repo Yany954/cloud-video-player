@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Brand } from '@/components/brand';
 import { LanguageSwitch } from '@/components/language-switch';
+import { LegalLinks } from '@/components/legal/legal-links';
 import { ThemeToggle } from '@/components/theme-control';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -116,6 +117,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main id="content" className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
         {children}
       </main>
+      <footer className="border-t">
+        <div className="text-muted-foreground mx-auto w-full max-w-5xl px-4 py-6 text-sm sm:px-6">
+          <LegalLinks t={t.legal} />
+        </div>
+      </footer>
     </>
   );
 }

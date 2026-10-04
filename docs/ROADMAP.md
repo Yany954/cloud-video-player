@@ -166,12 +166,25 @@ Asked by the user on 2026-10-04, in this order (agree each plan before coding):
    Helpers that return text (`authErrorMessage`, `uploadErrorMessage`, `videoStatusLabel`)
    take the messages as an argument. New screens must add their texts to both files.
    Spanish is neutral Latin American with "tú" and «» quotes. The user has family in Colombia.
-2. **Legal pages, in both languages:** privacy policy, terms of service (with the prohibited
-   content), cookie policy; a cookie banner only if something beyond strictly necessary
-   storage is used (today nothing is); consent at sign-up; business details; minimum age. No
-   reviews, testimonials or claims that are not true. Drafts only: a lawyer reviews them
-   before a public launch (`CLAUDE.md`). Needs from the user: the name and contact to show,
-   the country, the minimum age.
+2. **Legal pages: drafted and published, NOT yet reviewed by a lawyer.** `/privacy`,
+   `/terms` and `/cookies`, in English and Spanish, linked from the landing page, the sign-in
+   page and the app's footer. Their text is in `apps/web/src/content/legal/` (one file per
+   document, both languages in it; a test checks the two languages have the same outline and
+   that the cookie policy names every item the code stores). `LEGAL_UPDATED` is the date shown.
+   Creating an account requires ticking "I am at least 13 years old, and I agree to the Terms
+   of service and the Privacy policy".
+   No cookie banner: the app stores only what it needs to work and preferences the visitor
+   sets; if analytics or anything similar is ever added, a banner becomes necessary.
+   Keep the texts true: when the app changes what it stores, who can see it, or how long,
+   change the policy in both languages.
+   Open points for the lawyer and the user:
+   - The terms say "the laws of the United States" without a state; a lawyer should name one.
+   - Copyright complaints go to the contact email; a registered DMCA agent may be advisable.
+   - The consent is a required checkbox in the browser; the server keeps no record of it.
+   - Commitments made in the text: answer data requests within 30 days; notify users of a
+     breach that affects them; give reasonable notice before closing the service.
+   - Refund policy and unsubscribe links are not applicable (no payments, no marketing email).
+
 3. **Landing page: done.** `/` is the public landing page (`apps/web/src/app/page.tsx`); the
    signed-in home moved to `/videos` (`HOME` in `lib/auth/return-to.ts`). A `cvp.session`
    cookie, set while signed in, is only a hint that lets the server send signed-in visitors
