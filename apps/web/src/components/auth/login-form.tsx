@@ -17,12 +17,15 @@ import {
   type SignInStep,
 } from '@/lib/auth/cognito';
 import { authErrorMessage } from '@/lib/auth/errors';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { PasswordField } from './password-field';
 
 const MIN_PASSWORD_LENGTH = 12;
 
 export function LoginForm() {
   const { state, signIn, completeNewPassword } = useAuth();
+  const { t } = useI18n();
+  const a = t.auth;
   const router = useRouter();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -54,13 +57,13 @@ export function LoginForm() {
   }, [step]);
 
   const mismatch =
-    confirmation.length > 0 && confirmation !== newPassword ? 'The passwords do not match.' : '';
+    confirmation.length > 0 && confirmation !== newPassword ? a.passwordsDoNotMatch : '';
 
   function advance(next: SignInStep) {
     if (next === 'newPasswordRequired') setStep('newPassword');
     else if (next === 'confirmEmail') setStep('confirmEmail');
     else if (next === 'unsupported' && step !== 'forgot') {
-      setError('This account needs a sign-in step this app does not support yet.');
+      setError(a.unsupportedStep);
     }
   }
 
@@ -72,7 +75,7 @@ export function LoginForm() {
     try {
       advance(await action());
     } catch (caught) {
-      setError(authErrorMessage(caught));
+      setError(authErrorMessage(caught, t.authErrors));
     } finally {
       setPending(false);
     }
@@ -102,35 +105,37 @@ export function LoginForm() {
             tabIndex={-1}
             className="text-2xl font-semibold tracking-tight outline-none"
           >
-            Create your account
+            {a.signUp.title}
           </h1>
-          <p className="text-muted-foreground text-sm">
-            We will email you a code to confirm the address is yours.
-          </p>
+          <p className="text-muted-foreground text-sm">{a.signUp.intro}</p>
         </div>
-        <EmailField value={email} onChange={setEmail} autoComplete="email" />
+        <EmailField value={email} onChange={setEmail} autoComplete="email" label={a.email} />
         <PasswordField
           id="new-password"
-          label="Password"
+          label={a.password}
           autoComplete="new-password"
           value={newPassword}
           onChange={setNewPassword}
           minLength={MIN_PASSWORD_LENGTH}
-          hint={`At least ${MIN_PASSWORD_LENGTH} characters. A few random words work well.`}
+          hint={a.passwordHint(MIN_PASSWORD_LENGTH)}
         />
         <PasswordField
           id="confirm-password"
-          label="Repeat password"
+          label={a.signUp.repeatPassword}
           autoComplete="new-password"
           value={confirmation}
           onChange={setConfirmation}
           error={mismatch || undefined}
         />
         <FormError message={error} />
-        <SubmitButton pending={pending} label="Create account" pendingLabel="Creating account" />
+        <SubmitButton
+          pending={pending}
+          label={a.signUp.submit}
+          pendingLabel={a.signUp.submitting}
+        />
         <SwitchLink
-          text="Already have an account?"
-          action="Sign in"
+          text={a.signUp.haveAccount}
+          action={a.signUp.signIn}
           onClick={() => go('credentials')}
         />
       </form>
@@ -159,16 +164,22 @@ export function LoginForm() {
             tabIndex={-1}
             className="text-2xl font-semibold tracking-tight outline-none"
           >
-            Forgot your password?
+            {a.forgot.title}
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Enter your email and we will send you a code to choose a new one.
-          </p>
+          <p className="text-muted-foreground text-sm">{a.forgot.intro}</p>
         </div>
-        <EmailField value={email} onChange={setEmail} autoComplete="username" />
+        <EmailField value={email} onChange={setEmail} autoComplete="username" label={a.email} />
         <FormError message={error} />
-        <SubmitButton pending={pending} label="Send code" pendingLabel="Sending" />
-        <SwitchLink text="Remembered it?" action="Sign in" onClick={() => go('credentials')} />
+        <SubmitButton
+          pending={pending}
+          label={a.forgot.submit}
+          pendingLabel={a.forgot.submitting}
+        />
+        <SwitchLink
+          text={a.forgot.remembered}
+          action={a.forgot.signIn}
+          onClick={() => go('credentials')}
+        />
       </form>
     );
   }
@@ -191,15 +202,14 @@ export function LoginForm() {
             tabIndex={-1}
             className="text-2xl font-semibold tracking-tight outline-none"
           >
-            Choose a new password
+            {a.reset.title}
           </h1>
           <p className="text-muted-foreground text-sm">
-            If <span translate="no">{email}</span> has an account, we sent it a 6-digit code. It can
-            take a minute, and it may be in your spam folder.
+            {a.reset.introBefore} <span translate="no">{email}</span> {a.reset.introAfter}
           </p>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="code">Code from the email</Label>
+          <Label htmlFor="code">{a.reset.code}</Label>
           <Input
             id="code"
             name="code"
@@ -215,24 +225,24 @@ export function LoginForm() {
         </div>
         <PasswordField
           id="new-password"
-          label="New password"
+          label={a.reset.newPassword}
           autoComplete="new-password"
           value={newPassword}
           onChange={setNewPassword}
           minLength={MIN_PASSWORD_LENGTH}
-          hint={`At least ${MIN_PASSWORD_LENGTH} characters. A few random words work well.`}
+          hint={a.passwordHint(MIN_PASSWORD_LENGTH)}
         />
         <PasswordField
           id="confirm-password"
-          label="Repeat new password"
+          label={a.reset.repeatNewPassword}
           autoComplete="new-password"
           value={confirmation}
           onChange={setConfirmation}
           error={mismatch || undefined}
         />
         <FormError message={error} />
-        <SubmitButton pending={pending} label="Save and sign in" pendingLabel="Saving" />
-        <SwitchLink text="No email yet?" action="Send a new code" onClick={() => go('forgot')} />
+        <SubmitButton pending={pending} label={a.reset.submit} pendingLabel={a.reset.submitting} />
+        <SwitchLink text={a.reset.noEmail} action={a.reset.resend} onClick={() => go('forgot')} />
       </form>
     );
   }
@@ -256,15 +266,15 @@ export function LoginForm() {
             tabIndex={-1}
             className="text-2xl font-semibold tracking-tight outline-none"
           >
-            Check your email
+            {a.confirmEmail.title}
           </h1>
           <p className="text-muted-foreground text-sm">
-            We sent a 6-digit code to <span translate="no">{email}</span>. It can take a minute, and
-            it may be in your spam folder.
+            {a.confirmEmail.introBefore} <span translate="no">{email}</span>
+            {a.confirmEmail.introAfter}
           </p>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="code">Confirmation code</Label>
+          <Label htmlFor="code">{a.confirmEmail.code}</Label>
           <Input
             id="code"
             name="code"
@@ -282,15 +292,19 @@ export function LoginForm() {
         <p role="status" className="text-sm empty:hidden">
           {notice}
         </p>
-        <SubmitButton pending={pending} label="Confirm and sign in" pendingLabel="Confirming" />
+        <SubmitButton
+          pending={pending}
+          label={a.confirmEmail.submit}
+          pendingLabel={a.confirmEmail.submitting}
+        />
         <SwitchLink
-          text="No email yet?"
-          action="Send a new code"
+          text={a.confirmEmail.noEmail}
+          action={a.confirmEmail.resend}
           onClick={() => {
             setError(null);
             resendSignUpCode(email).then(
-              () => setNotice('A new code is on its way.'),
-              (caught: unknown) => setError(authErrorMessage(caught)),
+              () => setNotice(a.confirmEmail.resent),
+              (caught: unknown) => setError(authErrorMessage(caught, t.authErrors)),
             );
           }}
         />
@@ -313,31 +327,33 @@ export function LoginForm() {
             tabIndex={-1}
             className="text-2xl font-semibold tracking-tight outline-none"
           >
-            Choose your password
+            {a.newPassword.title}
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Your temporary password worked. Now pick one that only you know.
-          </p>
+          <p className="text-muted-foreground text-sm">{a.newPassword.intro}</p>
         </div>
         <PasswordField
           id="new-password"
-          label="New password"
+          label={a.newPassword.newPassword}
           autoComplete="new-password"
           value={newPassword}
           onChange={setNewPassword}
           minLength={MIN_PASSWORD_LENGTH}
-          hint={`At least ${MIN_PASSWORD_LENGTH} characters. A few random words work well.`}
+          hint={a.passwordHint(MIN_PASSWORD_LENGTH)}
         />
         <PasswordField
           id="confirm-password"
-          label="Repeat new password"
+          label={a.newPassword.repeatNewPassword}
           autoComplete="new-password"
           value={confirmation}
           onChange={setConfirmation}
           error={mismatch || undefined}
         />
         <FormError message={error} />
-        <SubmitButton pending={pending} label="Save and continue" pendingLabel="Saving" />
+        <SubmitButton
+          pending={pending}
+          label={a.newPassword.submit}
+          pendingLabel={a.newPassword.submitting}
+        />
       </form>
     );
   }
@@ -348,28 +364,30 @@ export function LoginForm() {
       className="grid gap-6"
     >
       <div className="grid gap-1.5">
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-        <p className="text-muted-foreground text-sm">
-          Use the email address and password of your account.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{a.signIn.title}</h1>
+        <p className="text-muted-foreground text-sm">{a.signIn.intro}</p>
       </div>
-      <EmailField value={email} onChange={setEmail} autoComplete="username" />
+      <EmailField value={email} onChange={setEmail} autoComplete="username" label={a.email} />
       <PasswordField
         id="password"
-        label="Password"
+        label={a.password}
         autoComplete="current-password"
         value={password}
         onChange={setPassword}
       />
       <FormError message={error} />
-      <SubmitButton pending={pending} label="Sign in" pendingLabel="Signing in" />
+      <SubmitButton pending={pending} label={a.signIn.submit} pendingLabel={a.signIn.submitting} />
       <div className="grid gap-2">
         <SwitchLink
-          text="Can’t sign in?"
-          action="Reset your password"
+          text={a.signIn.cantSignIn}
+          action={a.signIn.resetPassword}
           onClick={() => go('forgot')}
         />
-        <SwitchLink text="New here?" action="Create an account" onClick={() => go('signUp')} />
+        <SwitchLink
+          text={a.signIn.newHere}
+          action={a.signIn.createAccount}
+          onClick={() => go('signUp')}
+        />
       </div>
     </form>
   );
@@ -379,10 +397,11 @@ function EmailField(props: {
   value: string;
   onChange(value: string): void;
   autoComplete: 'username' | 'email';
+  label: string;
 }) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="email">Email</Label>
+      <Label htmlFor="email">{props.label}</Label>
       <div className="relative">
         <Mail
           aria-hidden

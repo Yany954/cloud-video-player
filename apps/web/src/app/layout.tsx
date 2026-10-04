@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth/auth-context';
+import { I18nProvider } from '@/lib/i18n/i18n-context';
+import { getLocale } from '@/lib/i18n/server';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
@@ -19,12 +21,14 @@ export const metadata: Metadata = {
   description: 'Store and stream your live event videos privately.',
 };
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default async function RootLayout({ children }: LayoutProps<'/'>) {
+  // Read per request, so the very first paint is already in the visitor's language.
+  const locale = await getLocale();
   return (
     // The boot script sets data-theme before React starts, so the attribute differs from the
     // server's markup by design.
     <html
-      lang="en"
+      lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
@@ -32,7 +36,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col">
-        <AuthProvider>{children}</AuthProvider>
+        <I18nProvider locale={locale}>
+          <AuthProvider>{children}</AuthProvider>
+        </I18nProvider>
       </body>
     </html>
   );

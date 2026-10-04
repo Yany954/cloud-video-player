@@ -22,12 +22,14 @@ import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
 import { changePassword } from '@/lib/auth/cognito';
 import { authErrorMessage } from '@/lib/auth/errors';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 const MIN_PASSWORD_LENGTH = 12;
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 
 export default function ProfilePage() {
   const { state, signOut } = useAuth();
+  const { t } = useI18n();
   const [blocks, setBlocks] = useState<BlockResponse[] | null>(null);
   const [blockNotice, setBlockNotice] = useState('');
   const [blockError, setBlockError] = useState('');
@@ -80,7 +82,7 @@ export default function ProfilePage() {
       setError(
         name === 'NotAuthorizedException'
           ? 'Your current password is not right.'
-          : authErrorMessage(caught),
+          : authErrorMessage(caught, t.authErrors),
       );
     } finally {
       setPending(false);

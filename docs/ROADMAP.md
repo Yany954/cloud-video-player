@@ -141,9 +141,30 @@ minute of CPU: give the user a cost estimate before building it.
 - **Google sign-in: postponed by the user (2026-10-04), "leave it for later".** It needs a
   Google Cloud OAuth client created by the user and a Cognito domain. MFA at sign-in: later.
 
+Decided by the user on 2026-10-04 for the three items below:
+
+- Name shown: **Cloud Video Player**. Operated from the **United States**.
+- **Minimum age 13.** (Draft the terms so that people aged 13 to 17 need a parent's or
+  guardian's permission: Colombia and several other countries treat under-18s as minors.)
+- Spanish: **neutral Latin American, using "tú"**.
+- **No liquid glass.** The floating bar gets something distinctive that works in every browser.
+- **Contact email for the legal pages: NOT decided.** It must not be the user's personal
+  address, and it must not be an address at their former employer's domain (see the
+  working agreements). Ask again before the legal pages; suggest a dedicated mailbox.
+
 Asked by the user on 2026-10-04, in this order (agree each plan before coding):
 
-1. **English and Spanish.** The user has family in Colombia. Every screen, error message,
+1. **English and Spanish (in progress).** Built so far: the mechanism and the first screens
+   (sign-in, sign-up, password reset, navigation, theme labels). Still English only: every
+   signed-in page (your videos, events, library, review, users, profile, player) and the
+   Cognito emails. How it works: texts live in `apps/web/src/lib/i18n/messages/en.ts` (the
+   source) and `es.ts` (same shape, checked by a test); texts with values are functions.
+   The language is the `cvp.lang` cookie if set, else the browser's `Accept-Language`, read
+   on the server in the root layout, so every page is now rendered per request and the first
+   paint is already in the right language. `useI18n()` gives `t` in client components,
+   `messagesFor(await getLocale())` in server ones. Helper functions that return text
+   (`authErrorMessage`) take the messages as an argument.
+   The user has family in Colombia. Every screen, error message,
    dialog and email in both languages; a language switch; dates and numbers per language.
 2. **Legal pages, in both languages:** privacy policy, terms of service (with the prohibited
    content), cookie policy; a cookie banner only if something beyond strictly necessary

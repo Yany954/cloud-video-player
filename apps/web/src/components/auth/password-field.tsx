@@ -4,6 +4,7 @@ import { Eye, EyeOff, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 interface PasswordFieldProps {
   id: string;
@@ -18,6 +19,7 @@ interface PasswordFieldProps {
 
 export function PasswordField(props: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
+  const { t } = useI18n();
   const hintId = props.hint ? `${props.id}-hint` : undefined;
   const errorId = props.error ? `${props.id}-error` : undefined;
 
@@ -45,7 +47,7 @@ export function PasswordField(props: PasswordFieldProps) {
           type="button"
           onClick={() => setVisible((current) => !current)}
           aria-pressed={visible}
-          aria-label="Show password"
+          aria-label={t.auth.showPassword}
           className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 absolute top-1/2 right-1.5 flex size-8 -translate-y-1/2 items-center justify-center rounded-md outline-none focus-visible:ring-3"
         >
           {visible ? (

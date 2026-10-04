@@ -10,6 +10,7 @@ import {
   type ResolvedTheme,
   type ThemeChoice,
 } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 const CHANGED = 'cvp-theme-changed';
 
@@ -68,13 +69,14 @@ export function useTheme() {
 /** One button for the header: switches between light and dark. */
 export function ThemeToggle() {
   const { applied, setChoice } = useTheme();
+  const { t } = useI18n();
   const next = applied === 'dark' ? 'light' : 'dark';
   return (
     <Button
       variant="outline"
       size="icon"
       onClick={() => setChoice(next)}
-      aria-label={next === 'dark' ? 'Switch to dark mode' : 'Switch to light mode'}
+      aria-label={next === 'dark' ? t.theme.switchToDark : t.theme.switchToLight}
       // The server cannot know the theme; the label settles when the page starts.
       suppressHydrationWarning
     >
@@ -83,20 +85,21 @@ export function ThemeToggle() {
   );
 }
 
-const OPTIONS: { value: ThemeChoice; label: string; icon: typeof Sun }[] = [
-  { value: 'system', label: 'Match my device', icon: Monitor },
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
+const OPTIONS: { value: ThemeChoice; icon: typeof Sun }[] = [
+  { value: 'system', icon: Monitor },
+  { value: 'light', icon: Sun },
+  { value: 'dark', icon: Moon },
 ];
 
 /** The full choice, for the profile page. */
 export function ThemeChoiceGroup() {
   const { choice, setChoice } = useTheme();
+  const { t } = useI18n();
   return (
     <fieldset className="grid gap-2">
-      <legend className="mb-2 text-sm font-medium">Colours</legend>
+      <legend className="mb-2 text-sm font-medium">{t.theme.legend}</legend>
       <div className="flex flex-wrap gap-2">
-        {OPTIONS.map(({ value, label, icon: Icon }) => (
+        {OPTIONS.map(({ value, icon: Icon }) => (
           <label
             key={value}
             className="has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:ring-ring/50 flex h-9 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm has-focus-visible:ring-3"
@@ -110,7 +113,7 @@ export function ThemeChoiceGroup() {
               className="sr-only"
             />
             <Icon aria-hidden className="size-4" />
-            {label}
+            {t.theme[value]}
           </label>
         ))}
       </div>

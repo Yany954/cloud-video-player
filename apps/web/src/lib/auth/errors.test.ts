@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { authErrorMessage } from './errors';
+import { en } from '../i18n/messages/en';
+import { es } from '../i18n/messages/es';
+import { authErrorMessage as translated } from './errors';
+
+const authErrorMessage = (error: unknown) => translated(error, en.authErrors);
 
 const named = (name: string, message = '') => Object.assign(new Error(message), { name });
 
@@ -61,5 +65,11 @@ describe('authErrorMessage', () => {
       'Something went wrong. Please try again.',
     );
     expect(authErrorMessage('boom')).toBe('Something went wrong. Please try again.');
+  });
+
+  it('answers in the language it is given', () => {
+    expect(translated(named('CodeMismatchException'), es.authErrors)).toBe(
+      'Ese código no es correcto. Revisa el correo y escríbelo de nuevo.',
+    );
   });
 });
