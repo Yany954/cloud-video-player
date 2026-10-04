@@ -25,6 +25,14 @@ describe('authErrorMessage', () => {
     expect(authErrorMessage(named('InvalidPasswordException'))).toMatch(/at least 12 characters/);
   });
 
+  it.each([
+    ['UsernameExistsException', /already exists\. Sign in instead/],
+    ['CodeMismatchException', /code is not right/],
+    ['ExpiredCodeException', /expired\. Ask for a new one/],
+  ])('explains a sign-up problem: %s', (name, expected) => {
+    expect(authErrorMessage(named(name))).toMatch(expected);
+  });
+
   it('explains a connection problem', () => {
     expect(authErrorMessage(named('NetworkError'))).toMatch(/Check your connection/);
   });

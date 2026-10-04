@@ -1,9 +1,12 @@
 import { Amplify } from 'aws-amplify';
 import {
   confirmSignIn,
+  confirmSignUp as amplifyConfirmSignUp,
   fetchAuthSession,
+  resendSignUpCode as amplifyResendSignUpCode,
   signIn as amplifySignIn,
   signOut as amplifySignOut,
+  signUp as amplifySignUp,
 } from 'aws-amplify/auth';
 
 export interface SessionUser {
@@ -12,7 +15,7 @@ export interface SessionUser {
   isAdmin: boolean;
 }
 
-export type SignInStep = 'signedIn' | 'newPasswordRequired' | 'unsupported';
+export type SignInStep = 'signedIn' | 'newPasswordRequired' | 'confirmEmail' | 'unsupported';
 
 let configured = false;
 
@@ -33,6 +36,8 @@ function configure() {
 function toStep(signInStep: string): SignInStep {
   if (signInStep === 'DONE') return 'signedIn';
   if (signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') return 'newPasswordRequired';
+  // The account exists but its email address was never confirmed with the emailed code.
+  if (signInStep === 'CONFIRM_SIGN_UP') return 'confirmEmail';
   return 'unsupported';
 }
 
@@ -57,6 +62,22 @@ export async function completeNewPassword(newPassword: string): Promise<SignInSt
   configure();
   const { nextStep } = await confirmSignIn({ challengeResponse: newPassword });
   return toStep(nextStep.signInStep);
+}
+
+/** Creates an account. Cognito emails a code that `confirmSignUp` needs. */
+export async function signUp(email: string, password: string): Promise<void> {
+  configure();
+  await amplifySignUp({ username: email, password, options: { userAttributes: { email } } });
+}
+
+export async function confirmSignUp(email: string, code: string): Promise<void> {
+  configure();
+  await amplifyConfirmSignUp({ username: email, confirmationCode: code });
+}
+
+export async function resendSignUpCode(email: string): Promise<void> {
+  configure();
+  await amplifyResendSignUpCode({ username: email });
 }
 
 export async function signOut(): Promise<void> {

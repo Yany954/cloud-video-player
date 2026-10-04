@@ -13,8 +13,8 @@ export default function LoginPage() {
           <Brand />
           <LoginForm />
           <p className="text-muted-foreground text-sm">
-            This is an invite-only library. If you need access, ask the person who shared it with
-            you.
+            Videos here are private. You see only your own, the events you were invited to, and what
+            the library’s admins approved.
           </p>
         </div>
       </main>

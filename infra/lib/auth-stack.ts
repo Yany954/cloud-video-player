@@ -4,6 +4,7 @@ import {
   FeaturePlan,
   Mfa,
   UserPool,
+  VerificationEmailStyle,
   type UserPoolClient,
 } from 'aws-cdk-lib/aws-cognito';
 import type { Construct } from 'constructs';
@@ -28,9 +29,15 @@ export class AuthStack extends Stack {
       signInCaseSensitive: false,
       standardAttributes: { email: { required: true, mutable: true } },
 
-      // Invite-only MVP: admins create users, nobody signs up on their own.
-      selfSignUpEnabled: false,
+      // Anyone can create an account (decided by the owner, so people invited to an event can
+      // join by themselves). The email address must be confirmed with a code before first use.
+      selfSignUpEnabled: true,
       autoVerify: { email: true },
+      userVerification: {
+        emailStyle: VerificationEmailStyle.CODE,
+        emailSubject: 'Your Cloud Video Player code',
+        emailBody: 'Your Cloud Video Player confirmation code is {####}',
+      },
       userInvitation: {
         emailSubject: 'You are invited to Cloud Video Player',
         emailBody:

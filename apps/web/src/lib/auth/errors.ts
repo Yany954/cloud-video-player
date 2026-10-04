@@ -10,6 +10,18 @@ export function authErrorMessage(error: unknown): string {
   if (name === 'NotAuthorizedException' || name === 'UserNotFoundException') {
     return 'Incorrect email or password.';
   }
+  if (name === 'UsernameExistsException') {
+    return 'An account with this email already exists. Sign in instead.';
+  }
+  if (name === 'CodeMismatchException') {
+    return 'That code is not right. Check the email and type it again.';
+  }
+  if (name === 'ExpiredCodeException') {
+    return 'That code has expired. Ask for a new one below.';
+  }
+  if (name === 'InvalidParameterException' && /email/i.test(message)) {
+    return 'Enter a valid email address, like name@example.com.';
+  }
   if (name === 'InvalidPasswordException') {
     return 'Choose a password with at least 12 characters.';
   }

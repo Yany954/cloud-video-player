@@ -11,9 +11,11 @@ describe('AuthStack', () => {
     template = Template.fromStack(stack);
   });
 
-  it('is invite-only (no self sign-up)', () => {
+  it('lets anyone sign up, but only with an email address confirmed by a code', () => {
     template.hasResourceProperties('AWS::Cognito::UserPool', {
-      AdminCreateUserConfig: { AllowAdminCreateUserOnly: true },
+      AdminCreateUserConfig: { AllowAdminCreateUserOnly: false },
+      AutoVerifiedAttributes: ['email'],
+      VerificationMessageTemplate: { DefaultEmailOption: 'CONFIRM_WITH_CODE' },
     });
   });
 

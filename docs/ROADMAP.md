@@ -76,8 +76,8 @@ Slices, in order:
    collaborator. A signed-out visitor goes to the login page and returns to the event after
    signing in (the destination is kept in session storage, never in the URL). The owner can
    make a new link, turn it off, and remove people; collaborators can leave.
-   Next for this slice: **open sign-up (the user chose it)** so a person with no account can
-   create one from the login page.
+   **Open sign-up: done.** Anyone can create an account from the login page ("Create an
+   account"); Cognito emails a 6-digit code that must be entered before the first sign-in.
 4. Mobile (Phase 5): background audio, lock-screen controls and PiP for the same playlist.
 
 ### 3d. User management and profile (asked by the user)
@@ -118,13 +118,13 @@ background uploader. Player with `expo-video`.
 
 ### AWS (account region `us-east-1`, all stacks prefixed `cvp-dev-`)
 
-| Stack        | Contents                                                                               |
-| ------------ | -------------------------------------------------------------------------------------- |
-| `auth`       | Cognito user pool (invite-only, email sign-in), groups `admin` and `user`, app client  |
-| `data`       | DynamoDB single table `cvp-dev-data`, `GSI1`..`GSI3`, PITR, TTL on `expiresAt`         |
-| `storage`    | `uploads` bucket (originals), `media` bucket (playable copies), CloudFront + key group |
-| `processing` | SQS queue + dead-letter queue, ffmpeg layer, processor Lambda                          |
-| `api`        | HTTP API with Cognito JWT authorizer, one Lambda per route                             |
+| Stack        | Contents                                                                                 |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `auth`       | Cognito user pool (open sign-up, email confirmed by code), groups `admin`/`user`, client |
+| `data`       | DynamoDB single table `cvp-dev-data`, `GSI1`..`GSI3`, PITR, TTL on `expiresAt`           |
+| `storage`    | `uploads` bucket (originals), `media` bucket (playable copies), CloudFront + key group   |
+| `processing` | SQS queue + dead-letter queue, ffmpeg layer, processor Lambda                            |
+| `api`        | HTTP API with Cognito JWT authorizer, one Lambda per route                               |
 
 API routes: `GET /health`, `GET /me/storage`, `POST /uploads`, `GET /uploads/{id}/parts`,
 `POST /uploads/{id}/complete`, `DELETE /uploads/{id}`, `GET /videos`,
@@ -185,6 +185,12 @@ infra                    CDK stacks, tests, scripts (smoke tests, ffmpeg and key
   being processed. The web app offers it only for ready or failed videos.
 - **A decision can be changed later** (take down an approved video, approve a rejected one);
   the video records who decided and when.
+- **Sign-up is open to anyone** (the user chose this over sign-up restricted to invite
+  links, knowing the trade-off). Consequence: any stranger who finds the login page can create
+  an account and upload up to 50 GiB, which the owner pays for. Not built yet, and worth
+  proposing: a smaller quota for accounts nobody invited, an admin "approve new account"
+  step, or a CloudWatch alarm on total storage. Cognito's built-in sender allows about 50
+  emails a day; beyond that it needs Amazon SES.
 - Web buttons use sentence case ("Take down"), not Title Case.
 - pnpm 10 (not 12: corepack 0.31 cannot run it) and TypeScript 5.9 (not 7: tooling).
 
