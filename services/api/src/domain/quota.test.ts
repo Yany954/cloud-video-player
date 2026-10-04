@@ -4,8 +4,8 @@ import { assertFits, DEFAULT_QUOTA_BYTES, fits } from './quota';
 const GIB = 1024 ** 3;
 
 describe('quota', () => {
-  it('defaults to 50 GiB per user', () => {
-    expect(DEFAULT_QUOTA_BYTES).toBe(50 * GIB);
+  it('gives a new account 5 GiB', () => {
+    expect(DEFAULT_QUOTA_BYTES).toBe(5 * GIB);
   });
 
   it('accepts a file that fills the quota exactly', () => {

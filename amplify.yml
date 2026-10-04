@@ -1,0 +1,28 @@
+# Build settings for AWS Amplify Hosting, which deploys apps/web on every push to main.
+# NEXT_PUBLIC_API_URL, NEXT_PUBLIC_USER_POOL_ID and NEXT_PUBLIC_USER_POOL_CLIENT_ID are set in
+# the Amplify console (Hosting > Environment variables), not here.
+version: 1
+applications:
+  - appRoot: apps/web
+    frontend:
+      # Install and build from the repository root: the web app uses workspace packages.
+      buildPath: /
+      phases:
+        preBuild:
+          commands:
+            - nvm install 22 && nvm use 22
+            - npm install -g pnpm@10.34.6
+            # Amplify needs a flat node_modules to package a pnpm workspace. Set here only, so
+            # local installs keep pnpm's stricter default layout.
+            - echo "node-linker=hoisted" >> .npmrc
+            - pnpm install --frozen-lockfile
+        build:
+          commands:
+            - pnpm --filter @cvp/web build
+      artifacts:
+        baseDirectory: apps/web/.next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*

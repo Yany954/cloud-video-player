@@ -2,7 +2,11 @@ import { DomainError } from './errors';
 
 const GIB = 1024 ** 3;
 
-export const DEFAULT_QUOTA_BYTES = 50 * GIB;
+/**
+ * What a new account gets. Sign-up is open, so this caps what a stranger can cost the owner.
+ * A user's own limit is stored in their profile once they upload; raise it there.
+ */
+export const DEFAULT_QUOTA_BYTES = 5 * GIB;
 
 export interface StorageUsage {
   bytesUsed: number;

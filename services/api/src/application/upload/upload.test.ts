@@ -249,7 +249,7 @@ describe('AbortUpload', () => {
 });
 
 describe('GetStorageUsage', () => {
-  it('gives a new user 0 bytes used and the default 50 GiB quota', async () => {
+  it('gives a new user 0 bytes used and the default quota', async () => {
     expect(await getUsage.execute({ userId: ANA })).toEqual({
       bytesUsed: 0,
       quotaBytes: DEFAULT_QUOTA_BYTES,
