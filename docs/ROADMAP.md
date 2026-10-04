@@ -172,7 +172,12 @@ Asked by the user on 2026-10-04, in this order (agree each plan before coding):
    reviews, testimonials or claims that are not true. Drafts only: a lawyer reviews them
    before a public launch (`CLAUDE.md`). Needs from the user: the name and contact to show,
    the country, the minimum age.
-3. **Landing page for signed-out visitors at `/`**, with a "Sign in" link to the existing
+3. **Landing page (plan given to the user 2026-10-04, waiting for their go-ahead).** Plan:
+   landing at `/`, the signed-in home moves to `/videos`; effect components in
+   `apps/web/src/components/effects/` (a shader-gradient background and a liquid-metal logo,
+   each loaded lazily in the browser only, over a static CSS fallback); a floating bar in
+   plain CSS; texts in both languages; no testimonials, counts or unproven claims.
+   Original request: **Landing page for signed-out visitors at `/`**, with a "Sign in" link to the existing
    sign-in page, using the visual effects of step 4b (ShaderGradient hero + liquid metal
    logo) and all of 4b's requirements. The user wants it to look distinctive, "not AI", and
    more inviting, using what `CLAUDE.md` says the product is.
