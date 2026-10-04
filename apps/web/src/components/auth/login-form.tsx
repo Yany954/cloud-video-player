@@ -32,8 +32,13 @@ export function LoginForm() {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
+    if (state.status !== 'signedIn') return;
     // Back to the page that sent the visitor here, e.g. an invite link.
-    if (state.status === 'signedIn') router.replace(takeReturnTo());
+    const path = takeReturnTo();
+    // An invite link carries its secret after "#". A full page load guarantees the secret is
+    // in the address before the page reads it; a client-side navigation applies it too late.
+    if (path.includes('#')) window.location.replace(path);
+    else router.replace(path);
   }, [state.status, router]);
 
   // Move keyboard and screen-reader focus to the new step's heading.

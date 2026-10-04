@@ -19,13 +19,22 @@ export default function JoinEventPage() {
   useEffect(() => {
     let active = true;
     const token = window.location.hash.slice(1);
+    const invalid =
+      'This invite link is not valid any more. Ask the person who sent it for a new one.';
+    if (token.length === 0) {
+      // Reported asynchronously, like every other outcome of this effect.
+      void Promise.resolve().then(() => active && setError(invalid));
+      return () => {
+        active = false;
+      };
+    }
     uploadApi.joinEvent(eventId, token).then(
       () => active && router.replace(`/events/${eventId}`),
       (caught: unknown) =>
         active &&
         setError(
           caught instanceof ApiError && [400, 404, 409].includes(caught.status)
-            ? 'This invite link is not valid any more. Ask the person who sent it for a new one.'
+            ? invalid
             : 'The invitation could not be opened. Check your connection and reload the page.',
         ),
     );
