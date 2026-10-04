@@ -127,6 +127,15 @@ describe('uploadVideo', () => {
     expect(server.calls).toMatchObject({ initiate: 1, complete: 1, abort: 0 });
   });
 
+  it('starts the upload inside an event when one is given', async () => {
+    const server = fakeServer({ sizeBytes: 5 });
+    const initiate = vi.spyOn(server.api, 'initiate');
+
+    await uploadVideo({ ...base, ...server, sizeBytes: 5, eventId: 'event-1' });
+
+    expect(initiate).toHaveBeenCalledWith(expect.objectContaining({ eventId: 'event-1' }));
+  });
+
   it('reports progress that only grows and ends at 100%', async () => {
     const server = fakeServer({ sizeBytes: 25 });
     const seen: UploadProgress[] = [];

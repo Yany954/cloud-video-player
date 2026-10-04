@@ -1,9 +1,11 @@
 import { Amplify } from 'aws-amplify';
 import {
+  confirmResetPassword,
   confirmSignIn,
   confirmSignUp as amplifyConfirmSignUp,
   fetchAuthSession,
   resendSignUpCode as amplifyResendSignUpCode,
+  resetPassword,
   signIn as amplifySignIn,
   signOut as amplifySignOut,
   signUp as amplifySignUp,
@@ -79,6 +81,24 @@ export async function confirmSignUp(email: string, code: string): Promise<void> 
 export async function resendSignUpCode(email: string): Promise<void> {
   configure();
   await amplifyResendSignUpCode({ username: email });
+}
+
+/**
+ * Emails a code for choosing a new password. Cognito answers the same way whether or not the
+ * address has an account, so this never reveals who is registered.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  configure();
+  await resetPassword({ username: email });
+}
+
+export async function confirmPasswordReset(
+  email: string,
+  code: string,
+  newPassword: string,
+): Promise<void> {
+  configure();
+  await confirmResetPassword({ username: email, confirmationCode: code, newPassword });
 }
 
 /** Changes the signed-in user's password. Cognito checks the current one. */

@@ -8,7 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { takeReturnTo } from '@/lib/auth/return-to';
 import { useAuth } from '@/lib/auth/auth-context';
-import { confirmSignUp, resendSignUpCode, signUp, type SignInStep } from '@/lib/auth/cognito';
+import {
+  confirmPasswordReset,
+  confirmSignUp,
+  requestPasswordReset,
+  resendSignUpCode,
+  signUp,
+  type SignInStep,
+} from '@/lib/auth/cognito';
 import { authErrorMessage } from '@/lib/auth/errors';
 import { PasswordField } from './password-field';
 
@@ -19,9 +26,9 @@ export function LoginForm() {
   const router = useRouter();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  const [step, setStep] = useState<'credentials' | 'newPassword' | 'signUp' | 'confirmEmail'>(
-    'credentials',
-  );
+  const [step, setStep] = useState<
+    'credentials' | 'newPassword' | 'signUp' | 'confirmEmail' | 'forgot' | 'reset'
+  >('credentials');
   const [code, setCode] = useState('');
   const [notice, setNotice] = useState('');
   const [email, setEmail] = useState('');
@@ -52,7 +59,7 @@ export function LoginForm() {
   function advance(next: SignInStep) {
     if (next === 'newPasswordRequired') setStep('newPassword');
     else if (next === 'confirmEmail') setStep('confirmEmail');
-    else if (next === 'unsupported') {
+    else if (next === 'unsupported' && step !== 'forgot') {
       setError('This account needs a sign-in step this app does not support yet.');
     }
   }
@@ -126,6 +133,106 @@ export function LoginForm() {
           action="Sign in"
           onClick={() => go('credentials')}
         />
+      </form>
+    );
+  }
+
+  if (step === 'forgot') {
+    return (
+      <form
+        onSubmit={(event) =>
+          void submit(event, async () => {
+            await requestPasswordReset(email);
+            setCode('');
+            setNewPassword('');
+            setConfirmation('');
+            setStep('reset');
+            // Not signed in yet: the next screen asks for the code.
+            return 'unsupported';
+          })
+        }
+        className="grid gap-6"
+      >
+        <div className="grid gap-1.5">
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-2xl font-semibold tracking-tight outline-none"
+          >
+            Forgot your password?
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Enter your email and we will send you a code to choose a new one.
+          </p>
+        </div>
+        <EmailField value={email} onChange={setEmail} autoComplete="username" />
+        <FormError message={error} />
+        <SubmitButton pending={pending} label="Send code" pendingLabel="Sending" />
+        <SwitchLink text="Remembered it?" action="Sign in" onClick={() => go('credentials')} />
+      </form>
+    );
+  }
+
+  if (step === 'reset') {
+    return (
+      <form
+        onSubmit={(event) => {
+          if (mismatch) return event.preventDefault();
+          void submit(event, async () => {
+            await confirmPasswordReset(email, code.trim(), newPassword);
+            return signIn(email, newPassword);
+          });
+        }}
+        className="grid gap-6"
+      >
+        <div className="grid gap-1.5">
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-2xl font-semibold tracking-tight outline-none"
+          >
+            Choose a new password
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            If <span translate="no">{email}</span> has an account, we sent it a 6-digit code. It can
+            take a minute, and it may be in your spam folder.
+          </p>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="code">Code from the email</Label>
+          <Input
+            id="code"
+            name="code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            spellCheck={false}
+            maxLength={6}
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            required
+            className="h-11 text-base tracking-widest tabular-nums"
+          />
+        </div>
+        <PasswordField
+          id="new-password"
+          label="New password"
+          autoComplete="new-password"
+          value={newPassword}
+          onChange={setNewPassword}
+          minLength={MIN_PASSWORD_LENGTH}
+          hint={`At least ${MIN_PASSWORD_LENGTH} characters. A few random words work well.`}
+        />
+        <PasswordField
+          id="confirm-password"
+          label="Repeat new password"
+          autoComplete="new-password"
+          value={confirmation}
+          onChange={setConfirmation}
+          error={mismatch || undefined}
+        />
+        <FormError message={error} />
+        <SubmitButton pending={pending} label="Save and sign in" pendingLabel="Saving" />
+        <SwitchLink text="No email yet?" action="Send a new code" onClick={() => go('forgot')} />
       </form>
     );
   }
@@ -256,7 +363,14 @@ export function LoginForm() {
       />
       <FormError message={error} />
       <SubmitButton pending={pending} label="Sign in" pendingLabel="Signing in" />
-      <SwitchLink text="New here?" action="Create an account" onClick={() => go('signUp')} />
+      <div className="grid gap-2">
+        <SwitchLink
+          text="Can’t sign in?"
+          action="Reset your password"
+          onClick={() => go('forgot')}
+        />
+        <SwitchLink text="New here?" action="Create an account" onClick={() => go('signUp')} />
+      </div>
     </form>
   );
 }

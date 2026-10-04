@@ -1,9 +1,11 @@
 'use client';
 
-import type { StorageUsageResponse, VideoResponse } from '@cvp/shared';
+import type { EventResponse, StorageUsageResponse, VideoResponse } from '@cvp/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { DeleteVideoButton } from '@/components/video/delete-video-button';
+import { selectClassName } from '@/components/event/visibility-badge';
 import { StorageWidget } from '@/components/storage/storage-widget';
+import { Label } from '@/components/ui/label';
 import { VideoList } from '@/components/video/video-list';
 import { uploadApi } from '@/lib/api';
 import { useUploads } from '@/lib/upload/use-uploads';
@@ -15,6 +17,9 @@ export function UploadPanel({ userId }: { userId: string }) {
   const [usage, setUsage] = useState<StorageUsageResponse | null>(null);
   const [videos, setVideos] = useState<VideoResponse[] | null>(null);
   const [videosFailed, setVideosFailed] = useState(false);
+  /** Events the user may add videos to: their own and the ones they were invited to. */
+  const [events, setEvents] = useState<EventResponse[]>([]);
+  const [eventId, setEventId] = useState('');
   const [notice, setNotice] = useState('');
   const [deleteError, setDeleteError] = useState('');
 
@@ -31,6 +36,18 @@ export function UploadPanel({ userId }: { userId: string }) {
   }, []);
   useEffect(refresh, [refresh]);
 
+  useEffect(() => {
+    let active = true;
+    uploadApi.listEvents().then(
+      ({ mine, invited }) => active && setEvents([...mine, ...invited]),
+      // Uploading without an event still works.
+      () => {},
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // A video being prepared changes on the server without us doing anything: keep checking.
   const preparing = videos?.some(isBeingPrepared) ?? false;
   useEffect(() => {
@@ -44,7 +61,28 @@ export function UploadPanel({ userId }: { userId: string }) {
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_18rem] lg:items-start">
       <div className="grid gap-8">
-        <Dropzone onFiles={uploads.add} />
+        <div className="grid gap-3">
+          {events.length > 0 && (
+            <div className="grid max-w-sm gap-1.5">
+              <Label htmlFor="upload-event">Add the next uploads to an event (optional)</Label>
+              <select
+                id="upload-event"
+                name="upload-event"
+                value={eventId}
+                onChange={(change) => setEventId(change.target.value)}
+                className={selectClassName}
+              >
+                <option value="">No event</option>
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <Dropzone onFiles={(files) => uploads.add(files, eventId || undefined)} />
+        </div>
         <UploadList
           items={uploads.items}
           onPause={uploads.pause}

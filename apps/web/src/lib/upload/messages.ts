@@ -12,6 +12,10 @@ export function uploadErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.code === 'QUOTA_EXCEEDED') return 'Not enough storage left for this video.';
     if (error.code === 'UNSUPPORTED_FORMAT') return UNSUPPORTED_FORMAT_MESSAGE;
+    // Only starting an upload inside an event can answer "not found".
+    if (error.status === 404) {
+      return 'That event no longer exists, or you were removed from it. Choose another one.';
+    }
     if (error.status === 401) return 'Your session ended. Sign in again to continue.';
     return 'The server could not process this upload. Try again.';
   }

@@ -77,8 +77,7 @@ Slices, in order:
 
 1. **Events: done.** Create, rename, private/shared, delete; add and remove videos on the
    event page; reorder with the up arrow or in a temporary drag view (`@dnd-kit`, with arrow
-   buttons and keyboard dragging as alternatives). Not done yet: choosing an event while
-   uploading in the web app (the API accepts `eventId`; the upload screen does not send it).
+   buttons and keyboard dragging as alternatives).
 2. **Continuous play: done (web).** "Play all" on the event page opens
    `/events/{id}/play?v=<videoId>`: one `<video>` element whose source changes, so
    Picture-in-Picture and full screen survive; the next video's signed link is fetched ahead;
@@ -132,7 +131,12 @@ minute of CPU: give the user a cost estimate before building it.
   three `NEXT_PUBLIC_*` settings are environment variables of the Amplify app. Next.js 16
   runs there although Amplify's documentation lists versions 12 to 15: if a later upgrade
   breaks, the agreed fallback is to downgrade to Next.js 15.
-- Forgot password, Google sign-in, MFA at sign-in.
+- **Forgot password: done** ("Reset your password" on the sign-in page; Cognito emails a
+  code; the answer is the same whether or not the address has an account).
+- **Choosing an event while uploading: done** (a select above the drop zone on "Your videos",
+  listing the user's own events and the ones they were invited to).
+- Google sign-in (needs a Google Cloud OAuth client, created by the user, and a Cognito
+  domain), and MFA at sign-in.
 - A full pass with the `web-design-guidelines` skill.
 - The landing page (`landing-01` block, `design-taste-frontend` skill).
 - Playwright E2E tests in the repo (so far the browser checks were manual runs with

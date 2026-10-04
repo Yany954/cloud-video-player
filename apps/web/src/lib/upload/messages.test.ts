@@ -19,6 +19,12 @@ describe('uploadErrorMessage', () => {
     );
   });
 
+  it('explains an event that is gone', () => {
+    expect(uploadErrorMessage(new ApiError(404, 'NOT_FOUND', 'x'))).toMatch(
+      /event no longer exists/,
+    );
+  });
+
   it('explains an expired session', () => {
     expect(uploadErrorMessage(new ApiError(401, 'UNAUTHENTICATED', 'x'))).toMatch(/Sign in again/);
   });

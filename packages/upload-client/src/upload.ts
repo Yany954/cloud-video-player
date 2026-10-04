@@ -34,6 +34,8 @@ export interface UploadVideoOptions<TSource> {
   fileName: string;
   sizeBytes: number;
   title?: string;
+  /** Puts a new upload straight into one of the uploader's events. Ignored when resuming. */
+  eventId?: string;
   /** Resume this upload instead of starting a new one. */
   videoId?: string;
   /** Abort to pause. The upload stays on the server and can be resumed with `videoId`. */
@@ -66,6 +68,7 @@ export async function uploadVideo<TSource>(
       fileName: options.fileName,
       sizeBytes,
       title: options.title,
+      eventId: options.eventId,
     });
     videoId = started.videoId;
     options.onStarted?.(videoId);

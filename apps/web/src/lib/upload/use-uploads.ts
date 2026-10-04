@@ -41,6 +41,8 @@ interface Job {
   file: File;
   key: string;
   videoId?: string;
+  /** The event a new upload goes into. */
+  eventId?: string;
   controller?: AbortController;
 }
 
@@ -64,6 +66,7 @@ export function useUploads(userId: string, onUploaded: () => void) {
           fileName: job.file.name,
           sizeBytes: job.file.size,
           videoId: job.videoId,
+          eventId: job.eventId,
           signal: controller.signal,
           onStarted(videoId) {
             job.videoId = videoId;
@@ -109,7 +112,7 @@ export function useUploads(userId: string, onUploaded: () => void) {
   );
 
   const add = useCallback(
-    (files: File[]) => {
+    (files: File[], eventId?: string) => {
       for (const file of files) {
         const id = crypto.randomUUID();
         const item: UploadItem = {
@@ -129,7 +132,7 @@ export function useUploads(userId: string, onUploaded: () => void) {
           continue;
         }
         const key = fingerprint(userId, file);
-        jobs.current.set(id, { file, key, videoId: resumeStore.get(key) });
+        jobs.current.set(id, { file, key, videoId: resumeStore.get(key), eventId });
         dispatch({ type: 'add', item });
         run(id);
       }

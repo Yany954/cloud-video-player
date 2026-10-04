@@ -33,6 +33,25 @@ describe('authErrorMessage', () => {
     expect(authErrorMessage(named(name))).toMatch(expected);
   });
 
+  it('explains why an invited account cannot reset its password yet', () => {
+    expect(
+      authErrorMessage(
+        named('NotAuthorizedException', 'User password cannot be reset in the current state.'),
+      ),
+    ).toMatch(/temporary password/);
+  });
+
+  it('explains why an unconfirmed account cannot reset its password', () => {
+    expect(
+      authErrorMessage(
+        named(
+          'InvalidParameterException',
+          'Cannot reset password for the user as there is no registered/verified email or phone_number',
+        ),
+      ),
+    ).toMatch(/never confirmed/);
+  });
+
   it('explains a connection problem', () => {
     expect(authErrorMessage(named('NetworkError'))).toMatch(/Check your connection/);
   });
