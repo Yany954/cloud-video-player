@@ -27,12 +27,13 @@ import { VideoList } from '@/components/video/video-list';
 import { uploadApi } from '@/lib/api';
 import { moveUp, sameOrder } from '@/lib/event/order';
 import { isBeingPrepared, videoStatusLabel } from '@/lib/video/status';
-
-const TRY_AGAIN = 'Check your connection and try again.';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export default function EventPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const router = useRouter();
+  const { t } = useI18n();
+  const e = t.event;
   const [detail, setDetail] = useState<EventDetailResponse | null>(null);
   const [loadError, setLoadError] = useState('');
   const [notice, setNotice] = useState('');
@@ -49,11 +50,11 @@ export default function EventPage() {
         .then(setDetail, (caught: unknown) =>
           setLoadError(
             caught instanceof ApiError && caught.status === 404
-              ? 'This event does not exist, or it is private.'
-              : `The event could not be loaded. ${TRY_AGAIN}`,
+              ? e.notFound
+              : `${e.loadFailed} ${t.common.tryAgain}`,
           ),
         ),
-    [eventId],
+    [eventId, e.loadFailed, e.notFound, t.common.tryAgain],
   );
   useEffect(() => {
     void load();
@@ -70,7 +71,7 @@ export default function EventPage() {
       setNotice(done);
       return true;
     } catch {
-      setError(`${failed} ${TRY_AGAIN}`);
+      setError(`${failed} ${t.common.tryAgain}`);
       return false;
     } finally {
       setBusy(false);
@@ -83,7 +84,7 @@ export default function EventPage() {
       className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex w-fit items-center gap-1.5 rounded-lg text-sm outline-none focus-visible:ring-3"
     >
       <ArrowLeft aria-hidden className="size-4" />
-      Events
+      {e.back}
     </Link>
   );
 
@@ -99,7 +100,7 @@ export default function EventPage() {
   }
   if (!detail) {
     return (
-      <div className="grid gap-6" aria-busy="true" aria-label="Loading event">
+      <div className="grid gap-6" aria-busy="true" aria-label={e.loading}>
         {back}
         <div className="bg-muted h-8 w-72 animate-pulse rounded-lg motion-reduce:animate-none" />
         <div className="bg-muted h-40 animate-pulse rounded-3xl motion-reduce:animate-none" />
@@ -121,7 +122,7 @@ export default function EventPage() {
           ordered.map((video) => video.id),
         ),
       done,
-      'The new order could not be saved.',
+      e.orderNotSaved,
     );
     if (!saved) await load();
     return saved;
@@ -147,13 +148,13 @@ export default function EventPage() {
               if (renaming.trim().length === 0) return;
               void run(
                 () => uploadApi.updateEvent(eventId, { name: renaming }),
-                'The event was renamed.',
-                'The event could not be renamed.',
+                e.renamed,
+                e.renameFailed,
               ).then((saved) => saved && setRenaming(null));
             }}
           >
             <div className="grid min-w-0 flex-1 gap-1.5">
-              <Label htmlFor="rename-event">Event name</Label>
+              <Label htmlFor="rename-event">{e.nameLabel}</Label>
               <Input
                 id="rename-event"
                 name="rename-event"
@@ -168,21 +169,17 @@ export default function EventPage() {
               />
             </div>
             <Button type="submit" size="lg" disabled={busy}>
-              Save name
+              {e.saveName}
             </Button>
             <Button type="button" size="lg" variant="outline" onClick={() => setRenaming(null)}>
-              Cancel
+              {t.common.cancel}
             </Button>
           </form>
         )}
 
         {renaming === null && (
           <p className="text-muted-foreground text-sm">
-            {!isPrivate
-              ? 'Every user of this app can see this event.'
-              : event.isOwner
-                ? 'Private: only you and the people you invite can see this event and its videos.'
-                : 'Private: only the people invited to this event can see it and its videos.'}
+            {!isPrivate ? e.visibleToEveryone : event.isOwner ? e.privateOwner : e.privateGuest}
           </p>
         )}
 
@@ -191,7 +188,7 @@ export default function EventPage() {
             <Button asChild size="lg">
               <Link href={`/events/${event.id}/play`}>
                 <Play aria-hidden className="fill-current" />
-                Play all
+                {e.playAll}
               </Link>
             </Button>
           </div>
@@ -201,41 +198,38 @@ export default function EventPage() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRenaming(event.name)}>
               <Pencil aria-hidden />
-              Rename
+              {e.rename}
             </Button>
             {videos.length > 1 && (
               <Button variant="outline" onClick={() => setDraft(videos)}>
                 <ArrowUpDown aria-hidden />
-                Reorder
+                {e.reorder}
               </Button>
             )}
             {!isPrivate && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" disabled={busy}>
-                    Make private
+                    {e.makePrivate}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Make this event private?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Only you and the people you invite will see this event. Its videos will leave
-                      the Library.
-                    </AlertDialogDescription>
+                    <AlertDialogTitle>{e.makePrivateTitle}</AlertDialogTitle>
+                    <AlertDialogDescription>{e.makePrivateText}</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Keep as it is</AlertDialogCancel>
+                    <AlertDialogCancel>{t.common.keepAsItIs}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() =>
                         void run(
                           () => uploadApi.updateEvent(eventId, { visibility: 'private' }),
-                          'The event is now private.',
-                          'The event could not be changed.',
+                          e.nowPrivate,
+                          e.changeFailed,
                         )
                       }
                     >
-                      Make private
+                      {e.makePrivate}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -245,23 +239,21 @@ export default function EventPage() {
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" disabled={busy}>
                   <Trash2 aria-hidden />
-                  Delete event
+                  {e.delete}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
-                    {videos.length > 0 ? 'Take its videos out first' : 'Delete this event?'}
+                    {videos.length > 0 ? e.deleteNotEmptyTitle : e.deleteTitle}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    {videos.length > 0
-                      ? 'An event can be deleted only when it is empty. Remove each video from the event, then delete it. The videos themselves are kept.'
-                      : `“${event.name}” will be deleted. You cannot undo this.`}
+                    {videos.length > 0 ? e.deleteNotEmptyText : e.deleteText(event.name)}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>
-                    {videos.length > 0 ? 'Close' : 'Keep event'}
+                    {videos.length > 0 ? t.common.close : e.keep}
                   </AlertDialogCancel>
                   {videos.length === 0 && (
                     <AlertDialogAction
@@ -274,14 +266,14 @@ export default function EventPage() {
                             setBusy(false);
                             setError(
                               caught instanceof ApiError && caught.status === 409
-                                ? 'This event still holds videos from other people, so it cannot be deleted yet.'
-                                : `The event could not be deleted. ${TRY_AGAIN}`,
+                                ? e.deleteHasOthersVideos
+                                : `${e.deleteFailed} ${t.common.tryAgain}`,
                             );
                           },
                         );
                       }}
                     >
-                      Delete event
+                      {e.delete}
                     </AlertDialogAction>
                   )}
                 </AlertDialogFooter>
@@ -306,11 +298,9 @@ export default function EventPage() {
           <section aria-labelledby="reorder-title" className="grid gap-3">
             <div className="grid gap-1">
               <h2 id="reorder-title" className="text-base font-semibold tracking-tight">
-                Reorder videos
+                {e.reorderTitle}
               </h2>
-              <p className="text-muted-foreground text-sm">
-                Drag a video by its handle, or use its arrows. Nothing changes until you save.
-              </p>
+              <p className="text-muted-foreground text-sm">{e.reorderHint}</p>
             </div>
             <ReorderList videos={draft} onChange={setDraft} />
             <div className="flex flex-wrap gap-2">
@@ -325,30 +315,26 @@ export default function EventPage() {
                     )
                   )
                     return setDraft(null);
-                  void saveOrder(draft, 'The new order was saved.').then(
-                    (saved) => saved && setDraft(null),
-                  );
+                  void saveOrder(draft, e.orderSaved).then((saved) => saved && setDraft(null));
                 }}
               >
-                {busy ? 'Saving…' : 'Save order'}
+                {busy ? t.common.saving : e.saveOrder}
               </Button>
               <Button size="lg" variant="outline" disabled={busy} onClick={() => setDraft(null)}>
-                Cancel
+                {t.common.cancel}
               </Button>
             </div>
           </section>
         ) : (
           <VideoList
             id="event-videos-title"
-            title="Videos, in playing order"
+            title={e.videosTitle}
             videos={videos}
             failed={false}
             errorText=""
             empty={{
-              title: 'No videos in this event yet',
-              text: event.isMember
-                ? 'Add your videos below.'
-                : 'Its videos will be listed here once they are approved.',
+              title: e.emptyTitle,
+              text: event.isMember ? e.emptyMember : e.emptyVisitor,
             }}
             hrefFor={(video) => `/events/${event.id}/play?v=${video.id}`}
             showStatus
@@ -362,11 +348,9 @@ export default function EventPage() {
                       variant="ghost"
                       size="icon-lg"
                       disabled={busy}
-                      aria-label={`Move ${video.title} one place earlier`}
+                      aria-label={e.moveEarlier(video.title)}
                       className="text-muted-foreground"
-                      onClick={() =>
-                        void saveOrder(moveUp(videos, index), `“${video.title}” moved up.`)
-                      }
+                      onClick={() => void saveOrder(moveUp(videos, index), e.movedUp(video.title))}
                     >
                       <ArrowUp aria-hidden />
                     </Button>
@@ -378,7 +362,7 @@ export default function EventPage() {
                           variant="ghost"
                           size="icon-lg"
                           disabled={busy}
-                          aria-label={`Remove ${video.title} from this event`}
+                          aria-label={e.removeLabel(video.title)}
                           className="text-muted-foreground"
                         >
                           <X aria-hidden />
@@ -386,25 +370,24 @@ export default function EventPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Remove this video from the event?</AlertDialogTitle>
+                          <AlertDialogTitle>{e.removeTitle}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            “{video.title}” stays in Your videos; it is not deleted.
-                            {isPrivate &&
-                              ' Outside this private event, it will appear in the Library for everyone once it is approved.'}
+                            {e.removeText(video.title)}
+                            {isPrivate && e.removePrivateNote}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Keep in event</AlertDialogCancel>
+                          <AlertDialogCancel>{e.keepInEvent}</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() =>
                               void run(
                                 () => uploadApi.setVideoEvent(video.id, null),
-                                `“${video.title}” was removed from the event.`,
-                                `“${video.title}” could not be removed.`,
+                                e.removed(video.title),
+                                e.removeFailed(video.title),
                               )
                             }
                           >
-                            Remove from event
+                            {e.remove}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -433,8 +416,8 @@ export default function EventPage() {
           onAdd={(video) =>
             run(
               () => uploadApi.setVideoEvent(video.id, event.id),
-              `“${video.title}” was added to the event.`,
-              `“${video.title}” could not be added.`,
+              e.added(video.title),
+              e.addFailed(video.title),
             )
           }
         />
@@ -453,6 +436,8 @@ function AddVideos({
   busy: boolean;
   onAdd(video: VideoResponse): Promise<boolean>;
 }) {
+  const { t } = useI18n();
+  const e = t.event;
   const [candidates, setCandidates] = useState<VideoResponse[] | null>(null);
   const [selected, setSelected] = useState('');
 
@@ -489,14 +474,12 @@ function AddVideos({
   return (
     <section aria-labelledby="add-videos-title" className="grid gap-3 rounded-3xl border px-5 py-5">
       <h2 id="add-videos-title" className="text-base font-semibold tracking-tight">
-        Add your videos
+        {e.addTitle}
       </h2>
       {candidates === null ? (
         <div className="bg-muted h-9 animate-pulse rounded-lg motion-reduce:animate-none" />
       ) : candidates.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          You have no other videos to add. Upload more from Your videos.
-        </p>
+        <p className="text-muted-foreground text-sm">{e.addNone}</p>
       ) : (
         <form
           className="flex flex-wrap items-end gap-2"
@@ -511,7 +494,7 @@ function AddVideos({
           }}
         >
           <div className="grid min-w-0 flex-1 gap-1.5">
-            <Label htmlFor="add-video">Video</Label>
+            <Label htmlFor="add-video">{e.addVideoLabel}</Label>
             <select
               id="add-video"
               name="add-video"
@@ -519,14 +502,14 @@ function AddVideos({
               onChange={(change) => setSelected(change.target.value)}
               className={`${selectClassName} w-full`}
             >
-              <option value="">Choose one of your videos…</option>
+              <option value="">{e.addChoose}</option>
               {candidates.map((video) => (
                 <option key={video.id} value={video.id} disabled={!canMove(video)}>
                   {video.title}
                   {!canMove(video)
-                    ? ` (${videoStatusLabel(video).toLowerCase()}, not ready to add yet)`
+                    ? e.addNotReady(videoStatusLabel(video, t.videoStatus).toLowerCase())
                     : video.eventId
-                      ? ' (moves from another event)'
+                      ? e.addMoves
                       : ''}
                 </option>
               ))}
@@ -534,7 +517,7 @@ function AddVideos({
           </div>
           <Button type="submit" size="lg" disabled={busy || !chosen}>
             <Plus aria-hidden />
-            Add to event
+            {e.add}
           </Button>
         </form>
       )}

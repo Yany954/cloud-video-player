@@ -1,16 +1,18 @@
 import type { StorageUsageResponse } from '@cvp/shared';
 import { Cloud } from 'lucide-react';
-import { formatBytes } from '@/lib/format';
+import { useFormat, useI18n } from '@/lib/i18n/i18n-context';
 
 const SEGMENTS = 5;
 
 // Adapted from the watermelon-ui widget-2 block: segmented bar, large "used" figure.
 export function StorageWidget({ usage }: { usage: StorageUsageResponse | null }) {
+  const { t } = useI18n();
+  const fmt = useFormat();
   if (!usage) {
     return (
       <div
         aria-busy="true"
-        aria-label="Loading storage"
+        aria-label={t.storage.loading}
         className="bg-card grid gap-4 rounded-3xl border p-5"
       >
         <div className="bg-muted h-5 w-28 animate-pulse rounded-lg motion-reduce:animate-none" />
@@ -28,16 +30,16 @@ export function StorageWidget({ usage }: { usage: StorageUsageResponse | null })
       <div className="flex items-center gap-2">
         <Cloud aria-hidden className="text-primary size-4" />
         <h2 id="storage-title" className="text-base font-semibold tracking-tight">
-          Storage
+          {t.storage.title}
         </h2>
       </div>
       <div className="grid gap-2">
         <p className="flex items-baseline gap-1.5">
           <span className="text-3xl font-semibold tracking-tight tabular-nums">
-            {formatBytes(usage.bytesUsed)}
+            {fmt.bytes(usage.bytesUsed)}
           </span>
           <span className="text-muted-foreground text-sm tabular-nums">
-            of {formatBytes(usage.quotaBytes)}
+            {t.storage.ofTotal(fmt.bytes(usage.quotaBytes))}
           </span>
         </p>
         <div
@@ -46,7 +48,7 @@ export function StorageWidget({ usage }: { usage: StorageUsageResponse | null })
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(fraction * 100)}
-          aria-valuetext={`${formatBytes(usage.bytesUsed)} used of ${formatBytes(usage.quotaBytes)}`}
+          aria-valuetext={t.storage.usedOf(fmt.bytes(usage.bytesUsed), fmt.bytes(usage.quotaBytes))}
           className="flex h-2 gap-1.5"
         >
           {Array.from({ length: SEGMENTS }, (_, index) => {
@@ -61,7 +63,9 @@ export function StorageWidget({ usage }: { usage: StorageUsageResponse | null })
             );
           })}
         </div>
-        <p className="text-muted-foreground text-sm tabular-nums">{formatBytes(free)} free</p>
+        <p className="text-muted-foreground text-sm tabular-nums">
+          {t.storage.free(fmt.bytes(free))}
+        </p>
       </div>
     </section>
   );

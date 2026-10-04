@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { uploadApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 interface DeleteVideoButtonProps {
   video: { id: string; title: string };
@@ -28,6 +29,8 @@ interface DeleteVideoButtonProps {
 /** Deleting is permanent, so it always asks first. */
 export function DeleteVideoButton({ video, iconOnly, onDeleted, onError }: DeleteVideoButtonProps) {
   const [busy, setBusy] = useState(false);
+  const { t } = useI18n();
+  const d = t.deleteVideo;
 
   async function remove() {
     setBusy(true);
@@ -39,8 +42,8 @@ export function DeleteVideoButton({ video, iconOnly, onDeleted, onError }: Delet
       if (error instanceof ApiError && error.status === 404) return onDeleted();
       onError(
         error instanceof ApiError && error.status === 409
-          ? `“${video.title}” is still being prepared. Try again in a moment.`
-          : `“${video.title}” could not be deleted. Check your connection and try again.`,
+          ? d.stillPreparing(video.title)
+          : d.failed(video.title),
       );
     } finally {
       setBusy(false);
@@ -54,25 +57,22 @@ export function DeleteVideoButton({ video, iconOnly, onDeleted, onError }: Delet
           variant={iconOnly ? 'ghost' : 'destructive'}
           size={iconOnly ? 'icon-lg' : 'default'}
           disabled={busy}
-          aria-label={`Delete ${video.title}`}
+          aria-label={d.label(video.title)}
           className={iconOnly ? 'text-muted-foreground hover:text-destructive' : undefined}
         >
           <Trash2 aria-hidden />
-          {!iconOnly && (busy ? 'Deleting…' : 'Delete video')}
+          {!iconOnly && (busy ? d.deleting : d.button)}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this video?</AlertDialogTitle>
-          <AlertDialogDescription>
-            “{video.title}” and its original file will be deleted for everyone. You cannot undo
-            this.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{d.dialogTitle}</AlertDialogTitle>
+          <AlertDialogDescription>{d.dialogText(video.title)}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Keep video</AlertDialogCancel>
+          <AlertDialogCancel>{d.keep}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={() => void remove()}>
-            Delete video
+            {d.button}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

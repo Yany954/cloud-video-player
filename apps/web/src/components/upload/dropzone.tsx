@@ -4,10 +4,12 @@ import { UploadCloud } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export function Dropzone({ onFiles }: { onFiles(files: File[]): void }) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const { t } = useI18n();
 
   return (
     <div
@@ -28,14 +30,12 @@ export function Dropzone({ onFiles }: { onFiles(files: File[]): void }) {
     >
       <UploadCloud aria-hidden className="text-muted-foreground size-8" strokeWidth={1.5} />
       <div className="grid gap-1">
-        <p className="font-medium">Drop videos here</p>
-        <p className="text-muted-foreground text-sm">
-          MP4, MOV, MKV or AVI. They are stored in their original quality.
-        </p>
+        <p className="font-medium">{t.upload.dropTitle}</p>
+        <p className="text-muted-foreground text-sm">{t.upload.dropHint}</p>
       </div>
       {/* The button is the keyboard and screen-reader path; dragging is a shortcut. */}
       <Button size="lg" onClick={() => input.current?.click()}>
-        Choose videos
+        {t.upload.choose}
       </Button>
       <input
         ref={input}

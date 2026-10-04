@@ -22,14 +22,15 @@ import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
 import { changePassword } from '@/lib/auth/cognito';
 import { authErrorMessage } from '@/lib/auth/errors';
-import { useI18n } from '@/lib/i18n/i18n-context';
+import { useFormat, useI18n } from '@/lib/i18n/i18n-context';
 
 const MIN_PASSWORD_LENGTH = 12;
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 
 export default function ProfilePage() {
   const { state, signOut } = useAuth();
   const { t } = useI18n();
+  const fmt = useFormat();
+  const p = t.profile;
   const [blocks, setBlocks] = useState<BlockResponse[] | null>(null);
   const [blockNotice, setBlockNotice] = useState('');
   const [blockError, setBlockError] = useState('');
@@ -63,7 +64,7 @@ export default function ProfilePage() {
   if (state.status !== 'signedIn') return null;
 
   const mismatch =
-    confirmation.length > 0 && confirmation !== next ? 'The passwords do not match.' : '';
+    confirmation.length > 0 && confirmation !== next ? t.auth.passwordsDoNotMatch : '';
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -76,12 +77,12 @@ export default function ProfilePage() {
       setCurrent('');
       setNext('');
       setConfirmation('');
-      setNotice('Your password was changed.');
+      setNotice(p.passwordChanged);
     } catch (caught) {
       const name = caught instanceof Error ? caught.name : '';
       setError(
         name === 'NotAuthorizedException'
-          ? 'Your current password is not right.'
+          ? p.currentPasswordWrong
           : authErrorMessage(caught, t.authErrors),
       );
     } finally {
@@ -99,11 +100,7 @@ export default function ProfilePage() {
     } catch (caught) {
       const status = caught instanceof ApiError ? caught.status : 0;
       setDeleteError(
-        status === 403
-          ? 'Your password is not right.'
-          : status === 409
-            ? 'You are the only admin. Make someone else an admin first, on the Users page.'
-            : 'Your account could not be deleted. Check your connection and try again.',
+        status === 403 ? p.passwordWrong : status === 409 ? p.onlyAdmin : p.deleteFailed,
       );
       setDeleting(false);
     }
@@ -111,7 +108,7 @@ export default function ProfilePage() {
 
   return (
     <div className="grid gap-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-balance">Your profile</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-balance">{p.title}</h1>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_18rem] lg:items-start">
         <div className="grid gap-8">
@@ -120,19 +117,15 @@ export default function ProfilePage() {
             className="grid gap-3 rounded-3xl border px-5 py-5"
           >
             <h2 id="account-title" className="text-base font-semibold tracking-tight">
-              Account
+              {p.account}
             </h2>
             <dl className="grid gap-3 text-sm sm:grid-cols-[8rem_1fr]">
-              <dt className="text-muted-foreground">Email</dt>
+              <dt className="text-muted-foreground">{t.auth.email}</dt>
               <dd className="min-w-0 break-words" translate="no">
                 {state.user.email}
               </dd>
-              <dt className="text-muted-foreground">Role</dt>
-              <dd>
-                {state.user.isAdmin
-                  ? 'Admin: you review videos and manage users'
-                  : 'Member: you upload and watch'}
-              </dd>
+              <dt className="text-muted-foreground">{p.role}</dt>
+              <dd>{state.user.isAdmin ? p.roleAdmin : p.roleMember}</dd>
             </dl>
           </section>
 
@@ -141,7 +134,7 @@ export default function ProfilePage() {
             className="grid gap-3 rounded-3xl border px-5 py-5"
           >
             <h2 id="appearance-title" className="text-base font-semibold tracking-tight">
-              Appearance
+              {p.appearance}
             </h2>
             <ThemeChoiceGroup />
           </section>
@@ -152,28 +145,28 @@ export default function ProfilePage() {
             className="grid gap-5 rounded-3xl border px-5 py-5"
           >
             <h2 id="password-title" className="text-base font-semibold tracking-tight">
-              Change password
+              {p.changePassword}
             </h2>
             <div className="grid max-w-sm gap-5">
               <PasswordField
                 id="current-password"
-                label="Current password"
+                label={p.currentPassword}
                 autoComplete="current-password"
                 value={current}
                 onChange={setCurrent}
               />
               <PasswordField
                 id="new-password"
-                label="New password"
+                label={p.newPassword}
                 autoComplete="new-password"
                 value={next}
                 onChange={setNext}
                 minLength={MIN_PASSWORD_LENGTH}
-                hint={`At least ${MIN_PASSWORD_LENGTH} characters. A few random words work well.`}
+                hint={t.auth.passwordHint(MIN_PASSWORD_LENGTH)}
               />
               <PasswordField
                 id="confirm-password"
-                label="Repeat new password"
+                label={p.repeatNewPassword}
                 autoComplete="new-password"
                 value={confirmation}
                 onChange={setConfirmation}
@@ -191,7 +184,7 @@ export default function ProfilePage() {
             </p>
             <div>
               <Button type="submit" size="lg" disabled={pending}>
-                {pending ? 'Saving…' : 'Change password'}
+                {pending ? t.common.saving : p.changePassword}
               </Button>
             </div>
           </form>
@@ -203,29 +196,24 @@ export default function ProfilePage() {
             >
               <div className="grid gap-1">
                 <h2 id="blocked-title" className="text-base font-semibold tracking-tight">
-                  People you blocked
+                  {p.blockedTitle}
                 </h2>
-                <p className="text-muted-foreground text-sm">
-                  You do not see their videos. The app shows no names, so each person is listed by
-                  the video you blocked them from.
-                </p>
+                <p className="text-muted-foreground text-sm">{p.blockedIntro}</p>
               </div>
               <ul className="divide-y rounded-lg border">
                 {blocks.map((block) => (
                   <li key={block.id} className="flex items-center gap-3 px-3 py-2">
                     <span className="min-w-0 flex-1 text-sm">
-                      The person who uploaded{' '}
+                      {p.blockedPerson}{' '}
                       <span className="font-medium break-words">“{block.videoTitle}”</span>
                       <span className="text-muted-foreground">
-                        , blocked on{' '}
-                        <time dateTime={block.createdAt}>
-                          {dateFormat.format(new Date(block.createdAt))}
-                        </time>
+                        {p.blockedOn}{' '}
+                        <time dateTime={block.createdAt}>{fmt.date(block.createdAt)}</time>
                       </span>
                     </span>
                     <Button
                       variant="outline"
-                      aria-label={`Unblock the person who uploaded ${block.videoTitle}`}
+                      aria-label={p.unblockLabel(block.videoTitle)}
                       onClick={() => {
                         setBlockError('');
                         uploadApi.unblock(block.id).then(
@@ -233,16 +221,13 @@ export default function ProfilePage() {
                             setBlocks(
                               (current) => current?.filter((b) => b.id !== block.id) ?? null,
                             );
-                            setBlockNotice('Unblocked. You will see their videos again.');
+                            setBlockNotice(p.unblocked);
                           },
-                          () =>
-                            setBlockError(
-                              'The person could not be unblocked. Check your connection and try again.',
-                            ),
+                          () => setBlockError(p.unblockFailed),
                         );
                       }}
                     >
-                      Unblock
+                      {p.unblock}
                     </Button>
                   </li>
                 ))}
@@ -265,17 +250,14 @@ export default function ProfilePage() {
           >
             <div className="grid gap-1">
               <h2 id="delete-account-title" className="text-base font-semibold tracking-tight">
-                Delete your account
+                {p.deleteTitle}
               </h2>
-              <p className="text-muted-foreground text-sm">
-                This deletes all your videos and the events you created, and takes you out of the
-                events you were invited to. You cannot undo it.
-              </p>
+              <p className="text-muted-foreground text-sm">{p.deleteIntro}</p>
             </div>
             <div className="max-w-sm">
               <PasswordField
                 id="delete-password"
-                label="Your password, to confirm it is you"
+                label={p.deletePassword}
                 autoComplete="current-password"
                 value={deletePassword}
                 onChange={setDeletePassword}
@@ -294,21 +276,18 @@ export default function ProfilePage() {
                     size="lg"
                     disabled={deleting || deletePassword.length === 0}
                   >
-                    {deleting ? 'Deleting…' : 'Delete my account'}
+                    {deleting ? p.deleting : p.deleteButton}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete your account for good?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You will be signed out now. Your videos and events are deleted and cannot be
-                      recovered.
-                    </AlertDialogDescription>
+                    <AlertDialogTitle>{p.deleteDialogTitle}</AlertDialogTitle>
+                    <AlertDialogDescription>{p.deleteDialogText}</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Keep my account</AlertDialogCancel>
+                    <AlertDialogCancel>{p.keepAccount}</AlertDialogCancel>
                     <AlertDialogAction variant="destructive" onClick={() => void deleteAccount()}>
-                      Delete my account
+                      {p.deleteButton}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

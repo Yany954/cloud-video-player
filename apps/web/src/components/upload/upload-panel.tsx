@@ -12,8 +12,10 @@ import { useUploads } from '@/lib/upload/use-uploads';
 import { isBeingPrepared } from '@/lib/video/status';
 import { Dropzone } from './dropzone';
 import { UploadList } from './upload-list';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export function UploadPanel({ userId }: { userId: string }) {
+  const { t } = useI18n();
   const [usage, setUsage] = useState<StorageUsageResponse | null>(null);
   const [videos, setVideos] = useState<VideoResponse[] | null>(null);
   const [videosFailed, setVideosFailed] = useState(false);
@@ -64,7 +66,7 @@ export function UploadPanel({ userId }: { userId: string }) {
         <div className="grid gap-3">
           {events.length > 0 && (
             <div className="grid max-w-sm gap-1.5">
-              <Label htmlFor="upload-event">Add the next uploads to an event (optional)</Label>
+              <Label htmlFor="upload-event">{t.upload.eventLabel}</Label>
               <select
                 id="upload-event"
                 name="upload-event"
@@ -72,7 +74,7 @@ export function UploadPanel({ userId }: { userId: string }) {
                 onChange={(change) => setEventId(change.target.value)}
                 className={selectClassName}
               >
-                <option value="">No event</option>
+                <option value="">{t.upload.noEvent}</option>
                 {events.map((event) => (
                   <option key={event.id} value={event.id}>
                     {event.name}
@@ -103,11 +105,11 @@ export function UploadPanel({ userId }: { userId: string }) {
         </div>
         <VideoList
           id="my-videos-title"
-          title="My videos"
+          title={t.videos.myVideos}
           videos={videos}
           failed={videosFailed}
-          errorText="Your videos could not be loaded. Reload the page to try again."
-          empty={{ title: 'No videos yet', text: 'The videos you upload will be listed here.' }}
+          errorText={t.videos.loadError}
+          empty={{ title: t.videos.emptyTitle, text: t.videos.emptyText }}
           showStatus
           renderActions={(video) =>
             // Not while it is still uploading or being prepared: those are still changing.
@@ -117,7 +119,7 @@ export function UploadPanel({ userId }: { userId: string }) {
                 iconOnly
                 onDeleted={() => {
                   setDeleteError('');
-                  setNotice(`“${video.title}” was deleted.`);
+                  setNotice(t.videos.deleted(video.title));
                   setVideos((current) => current?.filter((item) => item.id !== video.id) ?? null);
                   refresh();
                 }}

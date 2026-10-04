@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { uploadApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 interface ReviewActionsProps {
   video: { id: string; title: string };
@@ -27,15 +28,15 @@ interface ReviewActionsProps {
 /** Approve and reject, for admins. Offers only the decisions that would change something. */
 export function ReviewActions({ video, status, onReviewed, onError }: ReviewActionsProps) {
   const [busy, setBusy] = useState<ReviewDecision | null>(null);
+  const { t } = useI18n();
+  const r = t.review;
 
   async function review(decision: ReviewDecision) {
     setBusy(decision);
     try {
       onReviewed(await uploadApi.reviewVideo(video.id, decision));
     } catch {
-      onError(
-        `“${video.title}” could not be ${decision === 'approve' ? 'approved' : 'rejected'}. Check your connection and try again.`,
-      );
+      onError(decision === 'approve' ? r.approveFailed(video.title) : r.rejectFailed(video.title));
     } finally {
       setBusy(null);
     }
@@ -49,10 +50,10 @@ export function ReviewActions({ video, status, onReviewed, onError }: ReviewActi
         <Button
           disabled={busy !== null}
           onClick={() => void review('approve')}
-          aria-label={`Approve ${video.title}`}
+          aria-label={r.approveLabel(video.title)}
         >
           <Check aria-hidden />
-          {busy === 'approve' ? 'Approving…' : 'Approve'}
+          {busy === 'approve' ? r.approving : r.approve}
         </Button>
       )}
       {status !== 'rejected' && (
@@ -61,28 +62,23 @@ export function ReviewActions({ video, status, onReviewed, onError }: ReviewActi
             <Button
               variant="destructive"
               disabled={busy !== null}
-              aria-label={`${live ? 'Take down' : 'Reject'} ${video.title}`}
+              aria-label={live ? r.takeDownLabel(video.title) : r.rejectLabel(video.title)}
             >
               <X aria-hidden />
-              {busy === 'reject' ? 'Rejecting…' : live ? 'Take down' : 'Reject'}
+              {busy === 'reject' ? r.rejecting : live ? r.takeDown : r.reject}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>
-                {live ? 'Take this video down?' : 'Reject this video?'}
-              </AlertDialogTitle>
+              <AlertDialogTitle>{live ? r.takeDownTitle : r.rejectTitle}</AlertDialogTitle>
               <AlertDialogDescription>
-                {live
-                  ? `“${video.title}” will leave the library. Only the person who uploaded it will still be able to watch it.`
-                  : `“${video.title}” will not appear in the library. Only the person who uploaded it will be able to watch it.`}{' '}
-                You can approve it later.
+                {live ? r.takeDownText(video.title) : r.rejectText(video.title)}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Keep as it is</AlertDialogCancel>
+              <AlertDialogCancel>{t.common.keepAsItIs}</AlertDialogCancel>
               <AlertDialogAction variant="destructive" onClick={() => void review('reject')}>
-                {live ? 'Take down' : 'Reject video'}
+                {live ? r.takeDown : r.rejectVideo}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

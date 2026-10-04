@@ -3,9 +3,10 @@
 import { ApiError, uploadVideo } from '@cvp/upload-client';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { uploadApi } from '@/lib/api';
-import { hasAcceptedExtension, UNSUPPORTED_FORMAT_MESSAGE, uploadErrorMessage } from './messages';
+import { hasAcceptedExtension, uploadErrorMessage } from './messages';
 import { putPartFromBrowser } from './put-part';
 import { fingerprint, resumeStore } from './resume-store';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export interface UploadItem {
   id: string;
@@ -49,6 +50,12 @@ interface Job {
 export function useUploads(userId: string, onUploaded: () => void) {
   const [items, dispatch] = useReducer(reducer, []);
   const jobs = useRef(new Map<string, Job>());
+  // The latest texts, read when an error happens, without restarting uploads on a language change.
+  const { t } = useI18n();
+  const errors = useRef(t.upload.errors);
+  useEffect(() => {
+    errors.current = t.upload.errors;
+  }, [t]);
 
   const run = useCallback(
     (id: string) => {
@@ -103,7 +110,7 @@ export function useUploads(userId: string, onUploaded: () => void) {
             dispatch({
               type: 'update',
               id,
-              changes: { status: 'error', error: uploadErrorMessage(error) },
+              changes: { status: 'error', error: uploadErrorMessage(error, errors.current) },
             });
           },
         );
@@ -127,7 +134,12 @@ export function useUploads(userId: string, onUploaded: () => void) {
         if (!hasAcceptedExtension(file.name)) {
           dispatch({
             type: 'add',
-            item: { ...item, status: 'error', error: UNSUPPORTED_FORMAT_MESSAGE, canResume: false },
+            item: {
+              ...item,
+              status: 'error',
+              error: errors.current.unsupportedFormat,
+              canResume: false,
+            },
           });
           continue;
         }

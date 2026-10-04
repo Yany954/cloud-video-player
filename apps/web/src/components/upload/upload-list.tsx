@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { formatBytes } from '@/lib/format';
+import { useFormat, useI18n } from '@/lib/i18n/i18n-context';
 import type { UploadItem } from '@/lib/upload/use-uploads';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +30,7 @@ export function UploadList({ items, onPause, ...rest }: UploadListProps) {
   const [pauseRequestId, setPauseRequestId] = useState<string | null>(null);
   const pausing = items.find((item) => item.id === pauseRequestId && item.status === 'uploading');
   const actions = { ...rest, onPause: setPauseRequestId };
+  const { t } = useI18n();
 
   if (items.length === 0) return null;
 
@@ -39,7 +40,7 @@ export function UploadList({ items, onPause, ...rest }: UploadListProps) {
   return (
     <section aria-labelledby="uploads-title" className="grid gap-3">
       <h2 id="uploads-title" className="text-base font-semibold tracking-tight">
-        Uploads
+        {t.upload.listTitle}
       </h2>
       <ul className="grid gap-3">
         {items.map((item) => (
@@ -54,40 +55,41 @@ export function UploadList({ items, onPause, ...rest }: UploadListProps) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Pause this upload?</AlertDialogTitle>
+            <AlertDialogTitle>{t.upload.pauseTitle}</AlertDialogTitle>
             <AlertDialogDescription>
               {pausing && <PauseWarning item={pausing} />}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep uploading</AlertDialogCancel>
+            <AlertDialogCancel>{t.upload.keepUploading}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (pausing) onPause(pausing.id);
               }}
             >
-              Pause
+              {t.upload.pause}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
       {/* Screen readers hear outcomes without a stream of percentage updates. */}
       <p aria-live="polite" className="sr-only">
-        {finished.length > 0 && `Uploaded: ${finished.join(', ')}. `}
-        {failed.length > 0 && `Failed: ${failed.join(', ')}.`}
+        {finished.length > 0 && t.upload.announceUploaded(finished.join(', '))}
+        {failed.length > 0 && t.upload.announceFailed(failed.join(', '))}
       </p>
     </section>
   );
 }
 
 function PauseWarning({ item }: { item: UploadItem }) {
+  const { t } = useI18n();
+  const fmt = useFormat();
   const unsaved = Math.max(item.uploadedBytes - item.savedBytes, 0);
-  if (unsaved === 0) return <>Everything sent so far is saved. You can resume at any time.</>;
+  if (unsaved === 0) return <>{t.upload.pauseAllSaved}</>;
   return (
     <>
-      A video is sent in parts, and a part is only saved once it has arrived completely. The parts
-      being sent right now ({formatBytes(unsaved)}) will be sent again when you resume.
-      {item.savedBytes > 0 && ` The ${formatBytes(item.savedBytes)} already saved are kept.`}
+      {t.upload.pauseWarning(fmt.bytes(unsaved))}
+      {item.savedBytes > 0 && t.upload.pauseKept(fmt.bytes(item.savedBytes))}
     </>
   );
 }
@@ -102,6 +104,8 @@ function UploadRow({
   const fraction = item.sizeBytes > 0 ? item.uploadedBytes / item.sizeBytes : 0;
   const percent = Math.floor(fraction * 100);
   const active = item.status === 'uploading' || item.status === 'paused';
+  const { t } = useI18n();
+  const fmt = useFormat();
 
   return (
     <li className="bg-card grid gap-3 rounded-3xl border p-4 sm:p-5">
@@ -112,8 +116,8 @@ function UploadRow({
           </p>
           <p className="text-muted-foreground text-sm tabular-nums">
             {active
-              ? `${formatBytes(item.uploadedBytes)} of ${formatBytes(item.sizeBytes)}`
-              : formatBytes(item.sizeBytes)}
+              ? t.upload.sentOf(fmt.bytes(item.uploadedBytes), fmt.bytes(item.sizeBytes))
+              : fmt.bytes(item.sizeBytes)}
           </p>
         </div>
         <div className="flex shrink-0 gap-1.5">
@@ -122,7 +126,7 @@ function UploadRow({
               variant="outline"
               size="icon"
               onClick={() => onPause(item.id)}
-              aria-label={`Pause ${item.fileName}`}
+              aria-label={t.upload.pauseItem(item.fileName)}
             >
               <Pause aria-hidden />
             </Button>
@@ -132,7 +136,7 @@ function UploadRow({
               variant="outline"
               size="icon"
               onClick={() => onResume(item.id)}
-              aria-label={`Resume ${item.fileName}`}
+              aria-label={t.upload.resumeItem(item.fileName)}
             >
               <Play aria-hidden />
             </Button>
@@ -142,7 +146,7 @@ function UploadRow({
               variant="ghost"
               size="icon"
               onClick={() => onDismiss(item.id)}
-              aria-label={`Dismiss ${item.fileName}`}
+              aria-label={t.upload.dismissItem(item.fileName)}
             >
               <X aria-hidden />
             </Button>
@@ -151,7 +155,7 @@ function UploadRow({
               variant="ghost"
               size="icon"
               onClick={() => onCancel(item.id)}
-              aria-label={`Cancel ${item.fileName}`}
+              aria-label={t.upload.cancelItem(item.fileName)}
             >
               <X aria-hidden />
             </Button>
@@ -162,7 +166,7 @@ function UploadRow({
       {active && (
         <div
           role="progressbar"
-          aria-label={`Upload progress of ${item.fileName}`}
+          aria-label={t.upload.progressOf(item.fileName)}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={percent}
@@ -180,15 +184,15 @@ function UploadRow({
 
       <p className="flex items-center gap-1.5 text-sm">
         {item.status === 'uploading' && (
-          <span className="text-muted-foreground tabular-nums">Uploading, {percent}%</span>
+          <span className="text-muted-foreground tabular-nums">{t.upload.uploading(percent)}</span>
         )}
         {item.status === 'paused' && (
-          <span className="text-muted-foreground tabular-nums">Paused at {percent}%</span>
+          <span className="text-muted-foreground tabular-nums">{t.upload.pausedAt(percent)}</span>
         )}
         {item.status === 'done' && (
           <>
             <CircleCheck aria-hidden className="text-primary size-4 shrink-0" />
-            <span>Uploaded. It will appear for others once it has been reviewed.</span>
+            <span>{t.upload.done}</span>
           </>
         )}
         {item.status === 'error' && (

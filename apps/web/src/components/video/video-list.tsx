@@ -3,7 +3,8 @@
 import type { VideoResponse } from '@cvp/shared';
 import { Film, Play } from 'lucide-react';
 import Link from 'next/link';
-import { formatBytes, formatDuration } from '@/lib/format';
+import { formatDuration } from '@/lib/format';
+import { useFormat, useI18n } from '@/lib/i18n/i18n-context';
 import { videoStatusLabel } from '@/lib/video/status';
 
 interface VideoListProps {
@@ -27,8 +28,6 @@ interface VideoListProps {
   renderDetails?: (video: VideoResponse) => React.ReactNode;
 }
 
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
-
 export function VideoList({
   id,
   title,
@@ -42,6 +41,7 @@ export function VideoList({
   renderActions,
   renderDetails,
 }: VideoListProps) {
+  const { t } = useI18n();
   return (
     <section aria-labelledby={id} className="grid gap-3">
       <h2 id={id} className="text-base font-semibold tracking-tight">
@@ -52,7 +52,7 @@ export function VideoList({
           {errorText}
         </p>
       ) : videos === null ? (
-        <div aria-busy="true" aria-label={`Loading: ${title}`} className="grid gap-3">
+        <div aria-busy="true" aria-label={t.videos.loadingList(title)} className="grid gap-3">
           <div className="bg-muted h-20 animate-pulse rounded-3xl motion-reduce:animate-none" />
           <div className="bg-muted h-20 animate-pulse rounded-3xl motion-reduce:animate-none" />
         </div>
@@ -94,6 +94,8 @@ function VideoRow({
   href: string;
   showStatus: boolean;
 }) {
+  const { t } = useI18n();
+  const fmt = useFormat();
   const playable = video.uploadStatus === 'ready';
   const content = (
     <>
@@ -123,13 +125,13 @@ function VideoRow({
         </span>
         <span className="text-muted-foreground text-sm tabular-nums">
           {video.durationSeconds !== null && `${formatDuration(video.durationSeconds)}, `}
-          {video.sizeBytes !== null && `${formatBytes(video.sizeBytes)}, `}
-          <time dateTime={video.createdAt}>{dateFormat.format(new Date(video.createdAt))}</time>
+          {video.sizeBytes !== null && `${fmt.bytes(video.sizeBytes)}, `}
+          <time dateTime={video.createdAt}>{fmt.date(video.createdAt)}</time>
         </span>
       </span>
       {showStatus && (
         <span className="bg-secondary text-secondary-foreground shrink-0 rounded-lg px-2.5 py-1 text-sm">
-          {videoStatusLabel(video)}
+          {videoStatusLabel(video, t.videoStatus)}
         </span>
       )}
     </>
@@ -139,7 +141,7 @@ function VideoRow({
   return playable ? (
     <Link
       href={href}
-      aria-label={`Play ${video.title}`}
+      aria-label={t.videos.play(video.title)}
       className={`${layout} group hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-ring/50 outline-none focus-visible:ring-3 focus-visible:ring-inset`}
     >
       {content}

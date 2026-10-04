@@ -28,3 +28,10 @@ describe('formatDuration', () => {
     expect(formatDuration(seconds)).toBe(expected);
   });
 });
+
+describe('formatBytes in Spanish', () => {
+  it('uses a decimal comma', () => {
+    expect(formatBytes(1536, 'es')).toBe('1,5 KB');
+    expect(formatBytes(53_687_091_200, 'es')).toBe('50 GB');
+  });
+});

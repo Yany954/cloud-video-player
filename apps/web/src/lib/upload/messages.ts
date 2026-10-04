@@ -1,23 +1,22 @@
 import { ApiError } from '@cvp/upload-client';
+import type { Messages } from '../i18n/messages/en';
 
 export const ACCEPTED_EXTENSIONS = ['mp4', 'mov', 'mkv', 'avi'];
-export const UNSUPPORTED_FORMAT_MESSAGE = 'Only MP4, MOV, MKV and AVI videos can be uploaded.';
-
 export function hasAcceptedExtension(fileName: string): boolean {
   const extension = fileName.includes('.') ? fileName.split('.').pop()!.toLowerCase() : '';
   return ACCEPTED_EXTENSIONS.includes(extension);
 }
 
-export function uploadErrorMessage(error: unknown): string {
+type UploadErrors = Messages['upload']['errors'];
+
+export function uploadErrorMessage(error: unknown, m: UploadErrors): string {
   if (error instanceof ApiError) {
-    if (error.code === 'QUOTA_EXCEEDED') return 'Not enough storage left for this video.';
-    if (error.code === 'UNSUPPORTED_FORMAT') return UNSUPPORTED_FORMAT_MESSAGE;
+    if (error.code === 'QUOTA_EXCEEDED') return m.quota;
+    if (error.code === 'UNSUPPORTED_FORMAT') return m.unsupportedFormat;
     // Only starting an upload inside an event can answer "not found".
-    if (error.status === 404) {
-      return 'That event no longer exists, or you were removed from it. Choose another one.';
-    }
-    if (error.status === 401) return 'Your session ended. Sign in again to continue.';
-    return 'The server could not process this upload. Try again.';
+    if (error.status === 404) return m.eventGone;
+    if (error.status === 401) return m.sessionEnded;
+    return m.server;
   }
-  return 'Connection lost. Your progress is saved, so you can resume.';
+  return m.connection;
 }

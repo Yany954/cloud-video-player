@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { uploadApi } from '@/lib/api';
 import { nextId, previousId, readAutoplay, startingId, writeAutoplay } from '@/lib/event/playlist';
 import { formatDuration } from '@/lib/format';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 /**
  * Plays an event from one video to the next. There is a single <video> element for the whole
@@ -18,13 +19,16 @@ import { formatDuration } from '@/lib/format';
  */
 export default function PlayEventPage() {
   const { eventId } = useParams<{ eventId: string }>();
+  const { t } = useI18n();
+  const p = t.playlist;
   const player = useRef<HTMLVideoElement>(null);
   /** True when the next source should start by itself (autoplay, or the viewer pressed Next). */
   const startWhenLoaded = useRef(false);
   const requested = useRef(new Set<string>());
 
   const [detail, setDetail] = useState<EventDetailResponse | null>(null);
-  const [loadError, setLoadError] = useState('');
+  /** Which problem it was; the text is chosen when shown, in the current language. */
+  const [loadError, setLoadError] = useState<'' | 'notFound' | 'loadFailed'>('');
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [playbacks, setPlaybacks] = useState<Record<string, PlaybackResponse | 'failed'>>({});
   // This page only renders in the browser, after sign-in, so reading storage here is safe.
@@ -56,9 +60,7 @@ export default function PlayEventPage() {
       (caught: unknown) =>
         active &&
         setLoadError(
-          caught instanceof ApiError && caught.status === 404
-            ? 'This event does not exist, or you were not invited to it.'
-            : 'The event could not be loaded. Check your connection and reload the page.',
+          caught instanceof ApiError && caught.status === 404 ? 'notFound' : 'loadFailed',
         ),
     );
     return () => {
@@ -125,7 +127,7 @@ export default function PlayEventPage() {
       className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex w-fit items-center gap-1.5 rounded-lg text-sm outline-none focus-visible:ring-3"
     >
       <ArrowLeft aria-hidden className="size-4" />
-      {detail?.event.name ?? 'Event'}
+      {detail?.event.name ?? p.eventFallback}
     </Link>
   );
 
@@ -134,14 +136,14 @@ export default function PlayEventPage() {
       <div className="grid gap-6">
         {back}
         <p role="alert" className="text-destructive">
-          {loadError}
+          {p[loadError]}
         </p>
       </div>
     );
   }
   if (!detail) {
     return (
-      <div className="grid gap-6" aria-busy="true" aria-label="Loading event">
+      <div className="grid gap-6" aria-busy="true" aria-label={t.event.loading}>
         {back}
         <div className="bg-muted aspect-video animate-pulse rounded-3xl motion-reduce:animate-none" />
       </div>
@@ -151,9 +153,7 @@ export default function PlayEventPage() {
     return (
       <div className="grid gap-6">
         {back}
-        <p className="text-muted-foreground">
-          This event has no videos that are ready to play yet.
-        </p>
+        <p className="text-muted-foreground">{p.empty}</p>
       </div>
     );
   }
@@ -183,13 +183,12 @@ export default function PlayEventPage() {
       </div>
       {current === 'failed' && (
         <p role="alert" className="text-destructive text-sm">
-          This video could not be loaded. Choose another one below.
+          {p.videoFailed}
         </p>
       )}
       {cannotPlay && (
         <p role="alert" className="text-destructive text-sm">
-          This browser could not play the video. Some phone recordings use a format (HEVC) that not
-          every browser supports. Try Safari, or a recent version of Chrome or Edge.
+          {t.player.cannotPlay}
         </p>
       )}
 
@@ -199,7 +198,7 @@ export default function PlayEventPage() {
             {title}
           </h1>
           <p className="text-muted-foreground text-sm tabular-nums" aria-live="polite">
-            Video {position} of {ids.length}
+            {p.position(position, ids.length)}
             {source && `, ${formatDuration(source.durationSeconds)}`}
           </p>
         </div>
@@ -211,7 +210,7 @@ export default function PlayEventPage() {
             onClick={() => go(before, true)}
           >
             <SkipBack aria-hidden />
-            Previous
+            {p.previous}
           </Button>
           <Button
             variant="outline"
@@ -219,7 +218,7 @@ export default function PlayEventPage() {
             disabled={upNext === null}
             onClick={() => go(upNext, true)}
           >
-            Next
+            {p.next}
             <SkipForward aria-hidden />
           </Button>
         </div>
@@ -229,7 +228,7 @@ export default function PlayEventPage() {
         href={`/videos/${currentId}?from=event-${eventId}`}
         className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 w-fit rounded-lg text-sm underline underline-offset-4 outline-none focus-visible:ring-3"
       >
-        Report or manage this video
+        {p.manage}
       </Link>
 
       <AutoplaySwitch
@@ -242,7 +241,7 @@ export default function PlayEventPage() {
 
       <section aria-labelledby="playlist-title" className="grid gap-3">
         <h2 id="playlist-title" className="text-base font-semibold tracking-tight">
-          In this event
+          {p.listTitle}
         </h2>
         <ol className="bg-card divide-y overflow-hidden rounded-3xl border">
           {videos.map((video, index) => {
@@ -264,7 +263,7 @@ export default function PlayEventPage() {
                     {video.title}
                   </span>
                   {playing && (
-                    <span className="text-primary shrink-0 text-sm font-medium">Playing</span>
+                    <span className="text-primary shrink-0 text-sm font-medium">{p.playing}</span>
                   )}
                   {video.durationSeconds !== null && (
                     <span className="text-muted-foreground shrink-0 text-sm tabular-nums">
@@ -282,6 +281,7 @@ export default function PlayEventPage() {
 }
 
 function AutoplaySwitch({ on, onChange }: { on: boolean; onChange(on: boolean): void }) {
+  const p = useI18n().t.playlist;
   return (
     <div className="flex items-center gap-3">
       <button
@@ -304,12 +304,10 @@ function AutoplaySwitch({ on, onChange }: { on: boolean; onChange(on: boolean): 
       </button>
       <div className="grid">
         <label htmlFor="autoplay-next" className="text-sm font-medium">
-          Autoplay next video
+          {p.autoplay}
         </label>
         <span id="autoplay-next-hint" className="text-muted-foreground text-sm">
-          {on
-            ? 'On: when a video ends, the next one starts by itself.'
-            : 'Off: playback stops when a video ends.'}
+          {on ? p.autoplayOn : p.autoplayOff}
         </span>
       </div>
     </div>

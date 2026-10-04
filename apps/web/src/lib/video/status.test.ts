@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isBeingPrepared, videoStatusLabel } from './status';
+import { en } from '../i18n/messages/en';
+import { es } from '../i18n/messages/es';
+import { isBeingPrepared, videoStatusLabel as translated } from './status';
+
+const videoStatusLabel = (video: Parameters<typeof translated>[0]) =>
+  translated(video, en.videoStatus);
 
 describe('videoStatusLabel', () => {
   it.each([
@@ -24,6 +29,17 @@ describe('videoStatusLabel', () => {
     expect(
       videoStatusLabel({ uploadStatus: 'failed', moderationStatus: 'pending', failureReason }),
     ).toBe(label);
+  });
+});
+
+describe('videoStatusLabel in Spanish', () => {
+  it('answers in the language it is given', () => {
+    expect(
+      translated(
+        { uploadStatus: 'ready', moderationStatus: 'pending', failureReason: null },
+        es.videoStatus,
+      ),
+    ).toBe('Esperando revisión');
   });
 });
 

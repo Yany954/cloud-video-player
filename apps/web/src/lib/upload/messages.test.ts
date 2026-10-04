@@ -1,6 +1,9 @@
 import { ApiError } from '@cvp/upload-client';
 import { describe, expect, it } from 'vitest';
-import { hasAcceptedExtension, uploadErrorMessage } from './messages';
+import { en } from '../i18n/messages/en';
+import { hasAcceptedExtension, uploadErrorMessage as translated } from './messages';
+
+const uploadErrorMessage = (error: unknown) => translated(error, en.upload.errors);
 
 describe('hasAcceptedExtension', () => {
   it.each(['a.mp4', 'a.MOV', 'my.concert.mkv', 'x.avi'])('accepts %s', (name) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ModerationStatus, PlaybackResponse } from '@cvp/shared';
+import type { PlaybackResponse } from '@cvp/shared';
 import { ApiError } from '@cvp/upload-client';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -12,31 +12,24 @@ import { ReviewActions } from '@/components/moderation/review-actions';
 import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatDuration } from '@/lib/format';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 type State =
   | { status: 'loading' }
   | { status: 'ready'; playback: PlaybackResponse }
-  | { status: 'error'; message: string };
+  | { status: 'error'; kind: ReturnType<typeof loadErrorKind> };
 
-function loadErrorMessage(error: unknown): string {
-  if (error instanceof ApiError && error.status === 404) return 'This video does not exist.';
-  if (error instanceof ApiError && error.status === 409) {
-    return 'This video is still being prepared. Try again in a moment.';
-  }
-  return 'The video could not be loaded. Check your connection and reload the page.';
+/** Which problem it was; the text is chosen when it is shown, in the current language. */
+function loadErrorKind(error: unknown): 'notFound' | 'stillPreparing' | 'loadFailed' {
+  if (error instanceof ApiError && error.status === 404) return 'notFound';
+  if (error instanceof ApiError && error.status === 409) return 'stillPreparing';
+  return 'loadFailed';
 }
 
 // Where the viewer came from, so "back" returns to the same list.
-const BACK_LINKS: Record<string, { href: string; label: string }> = {
-  library: { href: '/library', label: 'Library' },
-  review: { href: '/review', label: 'Review' },
-};
-
-const REVIEW_STATUS_TEXT: Record<ModerationStatus, string> = {
-  pending: 'Waiting for review. Only you and the person who uploaded it can watch it.',
-  flagged: 'Reported and waiting for review.',
-  approved: 'Approved. Everyone in the group can watch it in the library.',
-  rejected: 'Not approved. Only the person who uploaded it can watch it.',
+const BACK_LINKS: Record<string, { href: string; label: 'library' | 'review' }> = {
+  library: { href: '/library', label: 'library' },
+  review: { href: '/review', label: 'review' },
 };
 
 export default function WatchPage() {
@@ -50,11 +43,18 @@ export default function WatchPage() {
 
 function Watch() {
   const { videoId } = useParams<{ videoId: string }>();
+  const { t } = useI18n();
   const from = useSearchParams().get('from') ?? '';
   // "event-<id>" returns to that event's page.
+  const known = BACK_LINKS[from];
   const back = from.startsWith('event-')
-    ? { href: `/events/${encodeURIComponent(from.slice('event-'.length))}`, label: 'Event' }
-    : (BACK_LINKS[from] ?? { href: '/', label: 'Your videos' });
+    ? {
+        href: `/events/${encodeURIComponent(from.slice('event-'.length))}`,
+        label: t.player.backEvent,
+      }
+    : known
+      ? { href: known.href, label: t.nav[known.label] }
+      : { href: '/', label: t.nav.yourVideos };
   const auth = useAuth().state;
   const isAdmin = auth.status === 'signedIn' && auth.user.isAdmin;
   const [state, setState] = useState<State>({ status: 'loading' });
@@ -67,7 +67,7 @@ function Watch() {
     let active = true;
     uploadApi.getPlayback(videoId).then(
       (playback) => active && setState({ status: 'ready', playback }),
-      (error: unknown) => active && setState({ status: 'error', message: loadErrorMessage(error) }),
+      (error: unknown) => active && setState({ status: 'error', kind: loadErrorKind(error) }),
     );
     return () => {
       active = false;
@@ -85,7 +85,7 @@ function Watch() {
       </Link>
 
       {state.status === 'loading' && (
-        <div aria-busy="true" aria-label="Loading video" className="grid gap-4">
+        <div aria-busy="true" aria-label={t.player.loading} className="grid gap-4">
           <div className="bg-muted aspect-video animate-pulse rounded-3xl motion-reduce:animate-none" />
           <div className="bg-muted h-7 w-64 animate-pulse rounded-lg motion-reduce:animate-none" />
         </div>
@@ -93,7 +93,7 @@ function Watch() {
 
       {state.status === 'error' && (
         <p role="alert" className="text-destructive">
-          {state.message}
+          {t.player[state.kind]}
         </p>
       )}
 
@@ -115,8 +115,7 @@ function Watch() {
           </div>
           {cannotPlay && (
             <p role="alert" className="text-destructive text-sm">
-              This browser could not play the video. Some phone recordings use a format (HEVC) that
-              not every browser supports. Try Safari, or a recent version of Chrome or Edge.
+              {t.player.cannotPlay}
             </p>
           )}
           <div className="grid gap-1">
@@ -155,10 +154,10 @@ function Watch() {
             >
               <div className="grid gap-1">
                 <h2 id="review-heading" className="text-base font-semibold tracking-tight">
-                  Review
+                  {t.review.title}
                 </h2>
                 <p role="status" className="text-muted-foreground text-sm">
-                  {REVIEW_STATUS_TEXT[state.playback.moderationStatus]}
+                  {t.review.status[state.playback.moderationStatus]}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">

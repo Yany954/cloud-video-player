@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { createContext, use, useCallback, useMemo, useState } from 'react';
+import { formatBytes } from '../format';
 import { LOCALE_COOKIE, type Locale } from './config';
 import { en, type Messages } from './messages/en';
 import { es } from './messages/es';
@@ -52,4 +53,17 @@ export function useI18n(): I18nValue {
   const value = use(I18nContext);
   if (!value) throw new Error('useI18n must be used inside <I18nProvider>');
   return value;
+}
+
+/** Sizes and dates written the way the current language writes them. */
+export function useFormat() {
+  const { locale } = useI18n();
+  return useMemo(() => {
+    const dates = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
+    return {
+      bytes: (bytes: number) => formatBytes(bytes, locale),
+      /** An ISO date-time, as a date. */
+      date: (iso: string) => dates.format(new Date(iso)),
+    };
+  }, [locale]);
 }

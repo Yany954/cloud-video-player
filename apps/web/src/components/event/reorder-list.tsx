@@ -23,6 +23,7 @@ import { ArrowDown, ArrowUp, GripVertical } from 'lucide-react';
 import { useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { moveDown, moveItem, moveUp } from '@/lib/event/order';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 interface ReorderListProps {
   videos: VideoResponse[];
@@ -93,6 +94,7 @@ function Row({
     transition,
     isDragging,
   } = useSortable({ id: video.id });
+  const { t } = useI18n();
 
   return (
     <li
@@ -107,7 +109,7 @@ function Row({
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        aria-label={`Drag ${video.title}, position ${position} of ${total}`}
+        aria-label={t.event.drag(video.title, position, total)}
         className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex size-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg outline-none focus-visible:ring-3 active:cursor-grabbing"
       >
         <GripVertical aria-hidden className="size-5" />
@@ -134,7 +136,7 @@ function Row({
         size="icon-lg"
         disabled={position === 1}
         onClick={onUp}
-        aria-label={`Move ${video.title} up`}
+        aria-label={t.event.moveUp(video.title)}
       >
         <ArrowUp aria-hidden />
       </Button>
@@ -143,7 +145,7 @@ function Row({
         size="icon-lg"
         disabled={position === total}
         onClick={onDown}
-        aria-label={`Move ${video.title} down`}
+        aria-label={t.event.moveDown(video.title)}
       >
         <ArrowDown aria-hidden />
       </Button>

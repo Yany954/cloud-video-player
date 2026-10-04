@@ -56,25 +56,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             href="/"
             className="focus-visible:ring-ring/50 rounded-lg outline-none focus-visible:ring-3"
           >
-            <Brand />
+            {/* On a phone the header holds five controls: the name gives way to them. */}
+            <Brand compact />
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <Link
               href="/profile"
               aria-label={t.nav.profileOf(state.user.email)}
-              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex h-8 max-w-56 items-center gap-1.5 rounded-lg px-1 text-sm outline-none focus-visible:ring-3"
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex h-8 max-w-56 min-w-8 items-center justify-center gap-1.5 rounded-lg px-1 text-sm outline-none focus-visible:ring-3"
             >
               <CircleUser aria-hidden className="size-4 shrink-0" />
               <span className="hidden truncate sm:block" translate="no">
                 {state.user.email}
               </span>
-              <span className="sm:hidden">{t.nav.profile}</span>
             </Link>
             <LanguageSwitch />
             <ThemeToggle />
-            <Button variant="outline" onClick={() => void signOut()}>
+            <Button
+              variant="outline"
+              onClick={() => void signOut()}
+              // Icon only on a phone; the name is always there for screen readers.
+              aria-label={t.nav.signOut}
+              className="max-sm:size-8 max-sm:px-0"
+            >
               <LogOut aria-hidden />
-              {t.nav.signOut}
+              <span className="max-sm:hidden">{t.nav.signOut}</span>
             </Button>
           </div>
         </div>

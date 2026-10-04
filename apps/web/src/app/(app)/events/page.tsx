@@ -10,9 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export default function EventsPage() {
   const router = useRouter();
+  const { t } = useI18n();
+  const e = t.events;
   const [events, setEvents] = useState<ListEventsResponse | null>(null);
   const [failed, setFailed] = useState(false);
   const [name, setName] = useState('');
@@ -33,7 +36,7 @@ export default function EventsPage() {
   async function create(submit: React.FormEvent) {
     submit.preventDefault();
     if (name.trim().length === 0) {
-      setCreateError('Give the event a name, for example “Concert, October 2026”.');
+      setCreateError(e.nameMissing);
       return;
     }
     setCreating(true);
@@ -42,7 +45,7 @@ export default function EventsPage() {
       const event = await uploadApi.createEvent({ name });
       router.push(`/events/${event.id}`);
     } catch {
-      setCreateError('The event could not be created. Check your connection and try again.');
+      setCreateError(e.createFailed);
       setCreating(false);
     }
   }
@@ -50,11 +53,8 @@ export default function EventsPage() {
   return (
     <div className="grid gap-8">
       <div className="grid gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">Events</h1>
-        <p className="text-muted-foreground text-sm">
-          Group the videos of one day, such as a concert, and play them one after another. An event
-          is private: only you and the people you invite can see it.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-balance">{e.title}</h1>
+        <p className="text-muted-foreground text-sm">{e.intro}</p>
       </div>
 
       <form
@@ -64,11 +64,11 @@ export default function EventsPage() {
         className="grid gap-4 rounded-3xl border px-5 py-5"
       >
         <h2 id="new-event-title" className="text-base font-semibold tracking-tight">
-          New event
+          {e.newEvent}
         </h2>
         <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <div className="grid gap-1.5">
-            <Label htmlFor="event-name">Name</Label>
+            <Label htmlFor="event-name">{e.name}</Label>
             <Input
               id="event-name"
               name="event-name"
@@ -78,13 +78,13 @@ export default function EventsPage() {
               onChange={(change) => setName(change.target.value)}
               aria-invalid={createError ? true : undefined}
               aria-describedby={createError ? 'event-name-error' : undefined}
-              placeholder="Concert Twenty One Pilots, October 2026…"
+              placeholder={e.namePlaceholder}
               className="h-9"
             />
           </div>
           <Button type="submit" size="lg" disabled={creating}>
             <Plus aria-hidden />
-            {creating ? 'Creating…' : 'Create event'}
+            {creating ? e.creating : e.create}
           </Button>
         </div>
         {createError && (
@@ -96,10 +96,10 @@ export default function EventsPage() {
 
       {failed ? (
         <p role="alert" className="text-destructive text-sm">
-          Your events could not be loaded. Reload the page to try again.
+          {e.loadError}
         </p>
       ) : events === null ? (
-        <div aria-busy="true" aria-label="Loading events" className="grid gap-3">
+        <div aria-busy="true" aria-label={e.loading} className="grid gap-3">
           <div className="bg-muted h-16 animate-pulse rounded-3xl motion-reduce:animate-none" />
           <div className="bg-muted h-16 animate-pulse rounded-3xl motion-reduce:animate-none" />
         </div>
@@ -107,14 +107,14 @@ export default function EventsPage() {
         <>
           <EventList
             id="my-events-title"
-            title="My events"
+            title={e.mine}
             events={events.mine}
-            emptyText="You have no events yet. Create one above, then add your videos to it."
+            emptyText={e.mineEmpty}
           />
           {events.invited.length > 0 && (
             <EventList
               id="invited-events-title"
-              title="Events I was invited to"
+              title={e.invited}
               events={events.invited}
               emptyText=""
             />
@@ -122,7 +122,7 @@ export default function EventsPage() {
           {events.shared.length > 0 && (
             <EventList
               id="shared-events-title"
-              title="Shared by others"
+              title={e.shared}
               events={events.shared}
               emptyText=""
             />

@@ -154,18 +154,18 @@ Decided by the user on 2026-10-04 for the three items below:
 
 Asked by the user on 2026-10-04, in this order (agree each plan before coding):
 
-1. **English and Spanish (in progress).** Built so far: the mechanism and the first screens
-   (sign-in, sign-up, password reset, navigation, theme labels). Still English only: every
-   signed-in page (your videos, events, library, review, users, profile, player) and the
-   Cognito emails. How it works: texts live in `apps/web/src/lib/i18n/messages/en.ts` (the
-   source) and `es.ts` (same shape, checked by a test); texts with values are functions.
-   The language is the `cvp.lang` cookie if set, else the browser's `Accept-Language`, read
-   on the server in the root layout, so every page is now rendered per request and the first
-   paint is already in the right language. `useI18n()` gives `t` in client components,
-   `messagesFor(await getLocale())` in server ones. Helper functions that return text
-   (`authErrorMessage`) take the messages as an argument.
-   The user has family in Colombia. Every screen, error message,
-   dialog and email in both languages; a language switch; dates and numbers per language.
+1. **English and Spanish: done for the whole web app.** Every screen, dialog, error message,
+   label for screen readers, date and number. Still English only: the emails Cognito sends
+   (confirmation code, invitation, password reset), to be made bilingual in the auth stack.
+   How it works: texts live in `apps/web/src/lib/i18n/messages/en.ts` (the source) and
+   `es.ts` (same shape, checked by a test); texts with values are functions. The language is
+   the `cvp.lang` cookie if set, else the browser's `Accept-Language`, read on the server in
+   the root layout, so every page is rendered per request and the first paint is already in
+   the right language. `useI18n()` gives `t` in client components, `useFormat()` gives
+   language-aware sizes and dates, `messagesFor(await getLocale())` serves server components.
+   Helpers that return text (`authErrorMessage`, `uploadErrorMessage`, `videoStatusLabel`)
+   take the messages as an argument. New screens must add their texts to both files.
+   Spanish is neutral Latin American with "tú" and «» quotes. The user has family in Colombia.
 2. **Legal pages, in both languages:** privacy policy, terms of service (with the prohibited
    content), cookie policy; a cookie banner only if something beyond strictly necessary
    storage is used (today nothing is); consent at sign-up; business details; minimum age. No

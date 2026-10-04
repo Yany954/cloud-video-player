@@ -1,6 +1,6 @@
 'use client';
 
-import type { UpdateUserRequest, UserResponse, UserStatus } from '@cvp/shared';
+import type { UpdateUserRequest, UserResponse } from '@cvp/shared';
 import { ApiError } from '@cvp/upload-client';
 import { Mail, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -20,22 +20,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatBytes } from '@/lib/format';
+import { useFormat, useI18n } from '@/lib/i18n/i18n-context';
 
 const GIB = 1024 ** 3;
-const TRY_AGAIN = 'Check your connection and try again.';
-
-const STATUS_LABELS: Record<UserStatus, string> = {
-  active: 'Active',
-  invited: 'Invited, has not signed in yet',
-  unconfirmed: 'Has not confirmed their email',
-  suspended: 'Suspended',
-};
-
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
-
 export default function UsersPage() {
   const { state } = useAuth();
+  const { t } = useI18n();
+  const u = t.users;
   const isAdmin = state.status === 'signedIn' && state.user.isAdmin;
   const [users, setUsers] = useState<UserResponse[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -60,8 +51,8 @@ export default function UsersPage() {
   if (!isAdmin) {
     return (
       <div className="grid gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-        <p className="text-muted-foreground">Only admins can manage users.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{u.title}</h1>
+        <p className="text-muted-foreground">{u.adminsOnly}</p>
       </div>
     );
   }
@@ -78,15 +69,15 @@ export default function UsersPage() {
       const user = await uploadApi.inviteUser(email);
       setUsers((current) => [...(current ?? []), user]);
       setEmail('');
-      report(`An invitation was emailed to ${user.email}.`);
+      report(u.invited(user.email));
     } catch (caught) {
       report(
         '',
         caught instanceof ApiError && caught.code === 'USER_EXISTS'
-          ? 'That email already has an account. Find it in the list below.'
+          ? u.alreadyExists
           : caught instanceof ApiError && caught.status === 400
-            ? 'Enter a valid email address, like name@example.com.'
-            : `The invitation could not be sent. ${TRY_AGAIN}`,
+            ? t.authErrors.invalidEmail
+            : `${u.inviteFailed} ${t.common.tryAgain}`,
       );
     } finally {
       setBusy(false);
@@ -98,13 +89,13 @@ export default function UsersPage() {
     try {
       await uploadApi.deleteUser(user.id);
       setUsers((current) => current?.filter((item) => item.id !== user.id) ?? null);
-      report(`${user.email} can no longer sign in. Their videos and events are being deleted.`);
+      report(u.deleted(user.email));
     } catch (caught) {
       report(
         '',
         caught instanceof ApiError && caught.status === 409
-          ? `${user.email} is the only admin and cannot be deleted.`
-          : `${user.email} could not be deleted. ${TRY_AGAIN}`,
+          ? u.onlyAdmin(user.email)
+          : `${u.deleteFailed(user.email)} ${t.common.tryAgain}`,
       );
     } finally {
       setBusy(false);
@@ -121,7 +112,7 @@ export default function UsersPage() {
       report(done);
       return true;
     } catch {
-      report('', `${user.email} could not be changed. ${TRY_AGAIN}`);
+      report('', `${u.changeFailed(user.email)} ${t.common.tryAgain}`);
       return false;
     } finally {
       setBusy(false);
@@ -131,10 +122,8 @@ export default function UsersPage() {
   return (
     <div className="grid gap-8">
       <div className="grid gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">Users</h1>
-        <p className="text-muted-foreground text-sm">
-          Everyone with an account. People can also create their own account from the sign-in page.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-balance">{u.title}</h1>
+        <p className="text-muted-foreground text-sm">{u.intro}</p>
       </div>
 
       <form
@@ -144,15 +133,13 @@ export default function UsersPage() {
       >
         <div className="grid gap-1">
           <h2 id="invite-user-title" className="text-base font-semibold tracking-tight">
-            Invite someone
+            {u.inviteTitle}
           </h2>
-          <p className="text-muted-foreground text-sm">
-            They get an email with a temporary password and choose their own at first sign-in.
-          </p>
+          <p className="text-muted-foreground text-sm">{u.inviteIntro}</p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <div className="grid min-w-0 flex-1 gap-1.5">
-            <Label htmlFor="invite-email">Email</Label>
+            <Label htmlFor="invite-email">{t.auth.email}</Label>
             <div className="relative">
               <Mail
                 aria-hidden
@@ -168,21 +155,21 @@ export default function UsersPage() {
                 required
                 value={email}
                 onChange={(input) => setEmail(input.target.value)}
-                placeholder="name@example.com…"
+                placeholder={u.emailPlaceholder}
                 className="h-9 pl-9"
               />
             </div>
           </div>
           <Button type="submit" size="lg" disabled={busy}>
             <UserPlus aria-hidden />
-            Send invitation
+            {u.sendInvitation}
           </Button>
         </div>
       </form>
 
       <section aria-labelledby="users-title" className="grid gap-3">
         <h2 id="users-title" className="text-base font-semibold tracking-tight">
-          Accounts{users ? ` (${users.length})` : ''}
+          {u.accounts(users ? users.length : null)}
         </h2>
         {/* Always rendered, never display:none, so screen readers announce each change. */}
         <p role="status" className="text-sm empty:sr-only">
@@ -195,10 +182,10 @@ export default function UsersPage() {
         )}
         {failed ? (
           <p role="alert" className="text-destructive text-sm">
-            The users could not be loaded. Reload the page to try again.
+            {u.loadError}
           </p>
         ) : users === null ? (
-          <div aria-busy="true" aria-label="Loading users" className="grid gap-3">
+          <div aria-busy="true" aria-label={u.loading} className="grid gap-3">
             <div className="bg-muted h-24 animate-pulse rounded-3xl motion-reduce:animate-none" />
             <div className="bg-muted h-24 animate-pulse rounded-3xl motion-reduce:animate-none" />
           </div>
@@ -225,6 +212,10 @@ function UserRow({
   onChange(user: UserResponse, request: UpdateUserRequest, done: string): Promise<boolean>;
   onDelete(user: UserResponse): Promise<void>;
 }) {
+  const { t } = useI18n();
+  const fmt = useFormat();
+  const u = t.users;
+  const email = user.email;
   const savedGb = Math.round(user.quotaBytes / GIB);
   const [quotaGb, setQuotaGb] = useState(String(savedGb));
   const parsed = Number(quotaGb);
@@ -238,9 +229,9 @@ function UserRow({
         <span className="min-w-0 truncate font-medium" title={user.email} translate="no">
           {user.email}
         </span>
-        {user.isSelf && <span className="text-muted-foreground text-sm">(you)</span>}
+        {user.isSelf && <span className="text-muted-foreground text-sm">{u.you}</span>}
         <span className="bg-secondary text-secondary-foreground rounded-lg px-2.5 py-1 text-sm">
-          {admin ? 'Admin' : 'Member'}
+          {admin ? u.admin : u.member}
         </span>
         <span
           className={`rounded-lg px-2.5 py-1 text-sm ${
@@ -249,12 +240,12 @@ function UserRow({
               : 'bg-secondary text-secondary-foreground'
           }`}
         >
-          {STATUS_LABELS[user.status]}
+          {u.status[user.status]}
         </span>
       </div>
       <p className="text-muted-foreground text-sm tabular-nums">
-        Uses {formatBytes(user.bytesUsed)} of {formatBytes(user.quotaBytes)}. Joined{' '}
-        <time dateTime={user.createdAt}>{dateFormat.format(new Date(user.createdAt))}</time>.
+        {u.usage(fmt.bytes(user.bytesUsed), fmt.bytes(user.quotaBytes))}{' '}
+        <time dateTime={user.createdAt}>{fmt.date(user.createdAt)}</time>.
       </p>
       <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
         <form
@@ -262,15 +253,11 @@ function UserRow({
           onSubmit={(submit) => {
             submit.preventDefault();
             if (!validQuota || parsed === savedGb) return;
-            void onChange(
-              user,
-              { quotaGb: parsed },
-              `${user.email} can now store up to ${parsed} GB.`,
-            );
+            void onChange(user, { quotaGb: parsed }, u.quotaSaved(email, parsed));
           }}
         >
           <div className="grid gap-1.5">
-            <Label htmlFor={`quota-${user.id}`}>Storage limit (GB)</Label>
+            <Label htmlFor={`quota-${user.id}`}>{u.quotaLabel}</Label>
             <Input
               id={`quota-${user.id}`}
               name={`quota-${user.id}`}
@@ -292,59 +279,51 @@ function UserRow({
             size="lg"
             variant="outline"
             disabled={busy || !validQuota || parsed === savedGb}
-            aria-label={`Save storage limit of ${user.email}`}
+            aria-label={u.quotaSaveLabel(email)}
           >
-            Save limit
+            {u.quotaSave}
           </Button>
         </form>
         {/* Admins cannot lock themselves out, so these are not offered on their own row. */}
         {!user.isSelf && (
           <div className="flex flex-wrap gap-2">
             <ConfirmChange
-              label={admin ? 'Remove admin' : 'Make admin'}
-              ariaLabel={`${admin ? 'Remove admin role from' : 'Make admin:'} ${user.email}`}
-              title={admin ? 'Remove the admin role?' : 'Make this person an admin?'}
-              description={
-                admin
-                  ? `${user.email} will no longer review videos or manage users. It can take up to an hour to apply.`
-                  : `${user.email} will be able to watch every uploaded video to review it, delete any video, and manage users, including you. It can take up to an hour to apply.`
-              }
-              confirm={admin ? 'Remove admin' : 'Make admin'}
+              label={admin ? u.removeAdmin : u.makeAdmin}
+              ariaLabel={admin ? u.removeAdminLabel(email) : u.makeAdminLabel(email)}
+              title={admin ? u.removeAdminTitle : u.makeAdminTitle}
+              description={admin ? u.removeAdminText(email) : u.makeAdminText(email)}
+              confirm={admin ? u.removeAdmin : u.makeAdmin}
               disabled={busy}
               onConfirm={() =>
                 void onChange(
                   user,
                   { role: admin ? 'user' : 'admin' },
-                  admin ? `${user.email} is no longer an admin.` : `${user.email} is now an admin.`,
+                  admin ? u.noLongerAdmin(email) : u.nowAdmin(email),
                 )
               }
             />
             <ConfirmChange
-              label={suspended ? 'Reactivate' : 'Suspend'}
-              ariaLabel={`${suspended ? 'Reactivate' : 'Suspend'} ${user.email}`}
-              title={suspended ? 'Reactivate this account?' : 'Suspend this account?'}
-              description={
-                suspended
-                  ? `${user.email} will be able to sign in again.`
-                  : `${user.email} will not be able to sign in. Their videos stay. If they are signed in now, it can take up to an hour before they lose access.`
-              }
-              confirm={suspended ? 'Reactivate' : 'Suspend account'}
+              label={suspended ? u.reactivate : u.suspend}
+              ariaLabel={suspended ? u.reactivateLabel(email) : u.suspendLabel(email)}
+              title={suspended ? u.reactivateTitle : u.suspendTitle}
+              description={suspended ? u.reactivateText(email) : u.suspendText(email)}
+              confirm={suspended ? u.reactivate : u.suspendConfirm}
               destructive={!suspended}
               disabled={busy}
               onConfirm={() =>
                 void onChange(
                   user,
                   { suspended: !suspended },
-                  suspended ? `${user.email} can sign in again.` : `${user.email} is suspended.`,
+                  suspended ? u.reactivated(email) : u.suspended(email),
                 )
               }
             />
             <ConfirmChange
-              label="Delete account"
-              ariaLabel={`Delete the account of ${user.email}`}
-              title="Delete this account?"
-              description={`${user.email} will be signed out for good. All their videos and the events they own will be deleted, and they will leave the events they were invited to. Other people’s videos in their events are kept, private to whoever uploaded them. You cannot undo this.`}
-              confirm="Delete account"
+              label={u.delete}
+              ariaLabel={u.deleteLabel(email)}
+              title={u.deleteTitle}
+              description={u.deleteText(email)}
+              confirm={u.delete}
               destructive
               disabled={busy}
               onConfirm={() => void onDelete(user)}
@@ -354,7 +333,7 @@ function UserRow({
       </div>
       {!validQuota && (
         <p id={`quota-${user.id}-error`} role="alert" className="text-destructive text-sm">
-          Enter a whole number of gigabytes from 1 to 1000.
+          {u.quotaInvalid}
         </p>
       )}
     </li>
@@ -371,6 +350,7 @@ function ConfirmChange(props: {
   disabled: boolean;
   onConfirm(): void;
 }) {
+  const { t } = useI18n();
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -389,7 +369,7 @@ function ConfirmChange(props: {
           <AlertDialogDescription>{props.description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Keep as it is</AlertDialogCancel>
+          <AlertDialogCancel>{t.common.keepAsItIs}</AlertDialogCancel>
           <AlertDialogAction
             variant={props.destructive ? 'destructive' : 'default'}
             onClick={props.onConfirm}

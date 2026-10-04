@@ -18,17 +18,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { uploadApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 const MAX_NOTE_LENGTH = 500;
-const TRY_AGAIN = 'Check your connection and try again.';
-
-const REASON_LABELS: Record<ReportReason, string> = {
-  violence: 'Violence',
-  sexual: 'Sexual content',
-  harassment: 'Harassment or hate',
-  other: 'Something else',
-};
-
 interface ReportPanelProps {
   video: { id: string; title: string };
   /** Called once the video is hidden from the viewer (reported, or its uploader blocked). */
@@ -37,6 +29,8 @@ interface ReportPanelProps {
 
 /** For other people's videos: report it to the admins, or stop seeing its uploader's videos. */
 export function ReportPanel({ video, onHidden }: ReportPanelProps) {
+  const { t } = useI18n();
+  const r = t.report;
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<ReportReason | ''>('');
   const [note, setNote] = useState('');
@@ -46,7 +40,7 @@ export function ReportPanel({ video, onHidden }: ReportPanelProps) {
   async function report(submit: React.FormEvent) {
     submit.preventDefault();
     if (reason === '') {
-      setError('Choose what is wrong with the video.');
+      setError(r.reasonMissing);
       return;
     }
     setBusy(true);
@@ -55,7 +49,7 @@ export function ReportPanel({ video, onHidden }: ReportPanelProps) {
       await uploadApi.reportVideo(video.id, { reason, note: note.trim() || undefined });
       onHidden();
     } catch {
-      setError(`The report could not be sent. ${TRY_AGAIN}`);
+      setError(`${r.sendFailed} ${t.common.tryAgain}`);
       setBusy(false);
     }
   }
@@ -67,7 +61,7 @@ export function ReportPanel({ video, onHidden }: ReportPanelProps) {
       await uploadApi.blockUploader(video.id);
       onHidden();
     } catch {
-      setError(`The person could not be blocked. ${TRY_AGAIN}`);
+      setError(`${r.blockFailed} ${t.common.tryAgain}`);
       setBusy(false);
     }
   }
@@ -76,18 +70,15 @@ export function ReportPanel({ video, onHidden }: ReportPanelProps) {
     <section aria-labelledby="report-title" className="grid gap-3 rounded-3xl border px-5 py-4">
       <div className="grid gap-1">
         <h2 id="report-title" className="text-base font-semibold tracking-tight">
-          Something wrong with this video?
+          {r.title}
         </h2>
-        <p className="text-muted-foreground text-sm">
-          Violent or sexual content is not allowed here. A reported video is hidden until an admin
-          has looked at it.
-        </p>
+        <p className="text-muted-foreground text-sm">{r.intro}</p>
       </div>
 
       {open ? (
         <form onSubmit={(submit) => void report(submit)} noValidate className="grid gap-4">
           <div className="grid max-w-sm gap-1.5">
-            <Label htmlFor="report-reason">What is wrong?</Label>
+            <Label htmlFor="report-reason">{r.reasonLabel}</Label>
             <select
               id="report-reason"
               name="report-reason"
@@ -98,16 +89,16 @@ export function ReportPanel({ video, onHidden }: ReportPanelProps) {
               aria-invalid={error && reason === '' ? true : undefined}
               className={selectClassName}
             >
-              <option value="">Choose a reason…</option>
+              <option value="">{r.reasonChoose}</option>
               {REPORT_REASONS.map((value) => (
                 <option key={value} value={value}>
-                  {REASON_LABELS[value]}
+                  {r.reasons[value]}
                 </option>
               ))}
             </select>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="report-note">Anything the admins should know (optional)</Label>
+            <Label htmlFor="report-note">{r.noteLabel}</Label>
             <textarea
               id="report-note"
               name="report-note"
@@ -119,16 +110,15 @@ export function ReportPanel({ video, onHidden }: ReportPanelProps) {
               className="border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-w-0 rounded-lg border px-2.5 py-2 text-base outline-none focus-visible:ring-3 md:text-sm"
             />
             <p id="report-note-hint" className="text-muted-foreground text-sm tabular-nums">
-              {note.length} of {MAX_NOTE_LENGTH} characters. The admins see your email with the
-              report; the uploader does not.
+              {r.noteHint(note.length, MAX_NOTE_LENGTH)}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="submit" size="lg" variant="destructive" disabled={busy}>
-              {busy ? 'Sending…' : 'Send report'}
+              {busy ? r.sending : r.send}
             </Button>
             <Button type="button" size="lg" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              {t.common.cancel}
             </Button>
           </div>
         </form>
@@ -136,29 +126,23 @@ export function ReportPanel({ video, onHidden }: ReportPanelProps) {
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" disabled={busy} onClick={() => setOpen(true)}>
             <Flag aria-hidden />
-            Report this video
+            {r.open}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" disabled={busy}>
                 <EyeOff aria-hidden />
-                Hide videos from this person
+                {r.hide}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Hide all videos from this person?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  You will no longer see videos uploaded by the person who uploaded “{video.title}”,
-                  and they are removed from the events you own. They are not told. You can undo this
-                  in your profile.
-                </AlertDialogDescription>
+                <AlertDialogTitle>{r.hideTitle}</AlertDialogTitle>
+                <AlertDialogDescription>{r.hideText(video.title)}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Keep seeing them</AlertDialogCancel>
-                <AlertDialogAction onClick={() => void block()}>
-                  Hide their videos
-                </AlertDialogAction>
+                <AlertDialogCancel>{r.keepSeeing}</AlertDialogCancel>
+                <AlertDialogAction onClick={() => void block()}>{r.hideConfirm}</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

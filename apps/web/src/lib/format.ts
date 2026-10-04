@@ -1,7 +1,7 @@
 const UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
 
 /** 1536 -> "1.5 KB". Whole numbers drop the decimal: 53687091200 -> "50 GB". */
-export function formatBytes(bytes: number): string {
+export function formatBytes(bytes: number, locale = 'en'): string {
   let value = Math.max(0, bytes);
   let unit = 0;
   while (value >= 1024 && unit < UNITS.length - 1) {
@@ -9,7 +9,8 @@ export function formatBytes(bytes: number): string {
     unit++;
   }
   const rounded = unit === 0 ? Math.round(value) : Math.round(value * 10) / 10;
-  return `${rounded} ${UNITS[unit]}`;
+  // The decimal mark follows the language: "1.5 GB" in English, "1,5 GB" in Spanish.
+  return `${rounded.toLocaleString(locale, { useGrouping: false })} ${UNITS[unit]}`;
 }
 
 /** 7.5 -> "0:07", 3723 -> "1:02:03". */

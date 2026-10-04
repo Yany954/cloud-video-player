@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { I18nProvider } from '@/lib/i18n/i18n-context';
-import { getLocale } from '@/lib/i18n/server';
+import { getLocale, messagesFor } from '@/lib/i18n/server';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
@@ -16,10 +16,10 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-export const metadata: Metadata = {
-  title: 'Cloud Video Player',
-  description: 'Store and stream your live event videos privately.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { common } = messagesFor(await getLocale());
+  return { title: common.appName, description: common.description };
+}
 
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
   // Read per request, so the very first paint is already in the visitor's language.

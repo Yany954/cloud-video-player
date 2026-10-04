@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 interface InvitePanelProps {
   detail: EventDetailResponse;
@@ -35,6 +36,7 @@ const inviteLink = (eventId: string, token: string) =>
 /** For the owner: the invite link and who joined. For a collaborator: a way to leave. */
 export function InvitePanel({ detail, busy, run, onLeft }: InvitePanelProps) {
   const { state } = useAuth();
+  const i = useI18n().t.invite;
   const { event, inviteToken, collaborators } = detail;
   const [copied, setCopied] = useState(false);
 
@@ -43,32 +45,26 @@ export function InvitePanel({ detail, busy, run, onLeft }: InvitePanelProps) {
     return (
       <section aria-labelledby="invite-title" className="grid gap-3 rounded-3xl border px-5 py-5">
         <h2 id="invite-title" className="text-base font-semibold tracking-tight">
-          You were invited to this event
+          {i.guestTitle}
         </h2>
-        <p className="text-muted-foreground text-sm">
-          You can watch its approved videos and add your own recordings.
-        </p>
+        <p className="text-muted-foreground text-sm">{i.guestIntro}</p>
         <div>
           <Confirm
             trigger={
               <Button variant="outline" disabled={busy}>
                 <LogOut aria-hidden />
-                Leave event
+                {i.leave}
               </Button>
             }
-            title="Leave this event?"
-            description="You will no longer see this event or other people’s videos in it. Videos you added stay in the event: remove them first if you do not want that."
-            cancel="Stay"
-            confirm="Leave event"
+            title={i.leaveTitle}
+            description={i.leaveText}
+            cancel={i.stay}
+            confirm={i.leave}
             onConfirm={() =>
               void uploadApi
                 .removeCollaborator(event.id, userId)
                 .then(onLeft, () =>
-                  run(
-                    () => Promise.reject(new Error('leave failed')),
-                    '',
-                    'You could not leave the event.',
-                  ),
+                  run(() => Promise.reject(new Error('leave failed')), '', i.leaveFailed),
                 )
             }
           />
@@ -83,19 +79,16 @@ export function InvitePanel({ detail, busy, run, onLeft }: InvitePanelProps) {
     <section aria-labelledby="invite-title" className="grid gap-4 rounded-3xl border px-5 py-5">
       <div className="grid gap-1">
         <h2 id="invite-title" className="text-base font-semibold tracking-tight">
-          Invite people
+          {i.title}
         </h2>
-        <p className="text-muted-foreground text-sm">
-          Anyone who opens the link and signs in can watch this event’s approved videos and add
-          their own recordings. Send it only to people you trust.
-        </p>
+        <p className="text-muted-foreground text-sm">{i.intro}</p>
       </div>
 
       {inviteToken ? (
         <div className="grid gap-3">
           <div className="flex flex-wrap items-end gap-2">
             <div className="grid min-w-0 flex-1 gap-1.5">
-              <Label htmlFor="invite-link">Invite link</Label>
+              <Label htmlFor="invite-link">{i.link}</Label>
               <Input
                 id="invite-link"
                 name="invite-link"
@@ -115,47 +108,39 @@ export function InvitePanel({ detail, busy, run, onLeft }: InvitePanelProps) {
               }
             >
               {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
-              {copied ? 'Copied' : 'Copy link'}
+              {copied ? i.copied : i.copy}
             </Button>
           </div>
           <p role="status" className="sr-only">
-            {copied ? 'Invite link copied.' : ''}
+            {copied ? i.copiedNotice : ''}
           </p>
           <div className="flex flex-wrap gap-2">
             <Confirm
               trigger={
                 <Button variant="outline" disabled={busy}>
-                  Make a new link
+                  {i.newLink}
                 </Button>
               }
-              title="Make a new invite link?"
-              description="The current link stops working at once. People who already joined stay in the event."
-              cancel="Keep current link"
-              confirm="Make new link"
+              title={i.newLinkTitle}
+              description={i.newLinkText}
+              cancel={i.keepLink}
+              confirm={i.newLinkConfirm}
               onConfirm={() =>
-                void run(
-                  () => uploadApi.openInvite(event.id),
-                  'A new invite link is ready. The old one no longer works.',
-                  'A new link could not be made.',
-                )
+                void run(() => uploadApi.openInvite(event.id), i.newLinkReady, i.newLinkFailed)
               }
             />
             <Confirm
               trigger={
                 <Button variant="outline" disabled={busy}>
-                  Turn link off
+                  {i.turnOff}
                 </Button>
               }
-              title="Turn the invite link off?"
-              description="Nobody else will be able to join with it. People who already joined stay in the event."
-              cancel="Keep link on"
-              confirm="Turn link off"
+              title={i.turnOffTitle}
+              description={i.turnOffText}
+              cancel={i.keepOn}
+              confirm={i.turnOff}
               onConfirm={() =>
-                void run(
-                  () => uploadApi.closeInvite(event.id),
-                  'The invite link is off.',
-                  'The link could not be turned off.',
-                )
+                void run(() => uploadApi.closeInvite(event.id), i.turnedOff, i.turnOffFailed)
               }
             />
           </div>
@@ -165,27 +150,21 @@ export function InvitePanel({ detail, busy, run, onLeft }: InvitePanelProps) {
           <Button
             disabled={busy}
             onClick={() =>
-              void run(
-                () => uploadApi.openInvite(event.id),
-                'The invite link is ready to copy.',
-                'The invite link could not be made.',
-              )
+              void run(() => uploadApi.openInvite(event.id), i.created, i.createFailed)
             }
           >
             <Link2 aria-hidden />
-            Create invite link
+            {i.create}
           </Button>
         </div>
       )}
 
       <div className="grid gap-2">
-        <h3 className="text-sm font-medium">
-          {collaborators.length === 0 ? 'Nobody has joined yet' : 'People who joined'}
-        </h3>
+        <h3 className="text-sm font-medium">{collaborators.length === 0 ? i.nobody : i.joined}</h3>
         {collaborators.length > 0 && (
           <ul className="divide-y rounded-lg border">
             {collaborators.map((person) => {
-              const name = person.email ?? 'A deleted account';
+              const name = person.email ?? i.deletedAccount;
               return (
                 <li key={person.userId} className="flex items-center gap-3 px-3 py-2">
                   <span className="min-w-0 flex-1 truncate text-sm" title={name} translate="no">
@@ -197,21 +176,21 @@ export function InvitePanel({ detail, busy, run, onLeft }: InvitePanelProps) {
                         variant="ghost"
                         size="icon-lg"
                         disabled={busy}
-                        aria-label={`Remove ${name} from this event`}
+                        aria-label={i.removeLabel(name)}
                         className="text-muted-foreground"
                       >
                         <UserMinus aria-hidden />
                       </Button>
                     }
-                    title="Remove this person?"
-                    description={`${name} will no longer see this event. Videos they added stay in the event. If the invite link is still on, they can join again with it: make a new link to prevent that.`}
-                    cancel="Keep in event"
-                    confirm="Remove person"
+                    title={i.removeTitle}
+                    description={i.removeText(name)}
+                    cancel={i.keepPerson}
+                    confirm={i.removeConfirm}
                     onConfirm={() =>
                       void run(
                         () => uploadApi.removeCollaborator(event.id, person.userId),
-                        `${name} was removed from the event.`,
-                        `${name} could not be removed.`,
+                        i.removed(name),
+                        i.removeFailed(name),
                       )
                     }
                   />

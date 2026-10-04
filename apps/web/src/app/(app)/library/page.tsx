@@ -4,10 +4,12 @@ import type { VideoResponse } from '@cvp/shared';
 import { useEffect, useState } from 'react';
 import { VideoList } from '@/components/video/video-list';
 import { uploadApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export default function LibraryPage() {
   const [videos, setVideos] = useState<VideoResponse[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     let active = true;
@@ -23,20 +25,18 @@ export default function LibraryPage() {
   return (
     <div className="grid gap-8">
       <div className="grid gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">Library</h1>
-        <p className="text-muted-foreground text-sm">
-          Videos from everyone in the group, once an admin has approved them.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-balance">{t.library.title}</h1>
+        <p className="text-muted-foreground text-sm">{t.library.intro}</p>
       </div>
       <VideoList
         id="library-title"
-        title="Approved videos"
+        title={t.library.listTitle}
         videos={videos}
         failed={failed}
-        errorText="The library could not be loaded. Reload the page to try again."
+        errorText={t.library.loadError}
         empty={{
-          title: 'Nothing here yet',
-          text: 'Approved videos from you and the rest of the group will be listed here.',
+          title: t.library.emptyTitle,
+          text: t.library.emptyText,
         }}
         from="library"
       />
