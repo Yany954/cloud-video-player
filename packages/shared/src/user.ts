@@ -30,6 +30,12 @@ export const updateUserRequestSchema = z
   });
 export type UpdateUserRequest = z.infer<typeof updateUserRequestSchema>;
 
+export const deleteAccountRequestSchema = z.object({
+  /** Proves it is the account's owner asking. Checked, never stored. */
+  password: z.string().min(1).max(256),
+});
+export type DeleteAccountRequest = z.infer<typeof deleteAccountRequestSchema>;
+
 export interface UserResponse {
   id: string;
   email: string;

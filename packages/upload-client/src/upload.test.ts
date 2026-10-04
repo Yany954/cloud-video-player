@@ -87,6 +87,8 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
     listUsers: unused,
     inviteUser: unused,
     updateUser: unused,
+    deleteUser: unused,
+    deleteMyAccount: unused,
   };
 
   const putPart: PutPart<string> = async ({ partNumber, start, end, onProgress }) => {

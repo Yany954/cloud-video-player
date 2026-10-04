@@ -93,6 +93,24 @@ export default function UsersPage() {
     }
   }
 
+  async function remove(user: UserResponse) {
+    setBusy(true);
+    try {
+      await uploadApi.deleteUser(user.id);
+      setUsers((current) => current?.filter((item) => item.id !== user.id) ?? null);
+      report(`${user.email} can no longer sign in. Their videos and events are being deleted.`);
+    } catch (caught) {
+      report(
+        '',
+        caught instanceof ApiError && caught.status === 409
+          ? `${user.email} is the only admin and cannot be deleted.`
+          : `${user.email} could not be deleted. ${TRY_AGAIN}`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function change(user: UserResponse, request: UpdateUserRequest, done: string) {
     setBusy(true);
     try {
@@ -187,7 +205,7 @@ export default function UsersPage() {
         ) : (
           <ul className="bg-card divide-y overflow-hidden rounded-3xl border">
             {users.map((user) => (
-              <UserRow key={user.id} user={user} busy={busy} onChange={change} />
+              <UserRow key={user.id} user={user} busy={busy} onChange={change} onDelete={remove} />
             ))}
           </ul>
         )}
@@ -200,10 +218,12 @@ function UserRow({
   user,
   busy,
   onChange,
+  onDelete,
 }: {
   user: UserResponse;
   busy: boolean;
   onChange(user: UserResponse, request: UpdateUserRequest, done: string): Promise<boolean>;
+  onDelete(user: UserResponse): Promise<void>;
 }) {
   const savedGb = Math.round(user.quotaBytes / GIB);
   const [quotaGb, setQuotaGb] = useState(String(savedGb));
@@ -318,6 +338,16 @@ function UserRow({
                   suspended ? `${user.email} can sign in again.` : `${user.email} is suspended.`,
                 )
               }
+            />
+            <ConfirmChange
+              label="Delete account"
+              ariaLabel={`Delete the account of ${user.email}`}
+              title="Delete this account?"
+              description={`${user.email} will be signed out for good. All their videos and the events they own will be deleted, and they will leave the events they were invited to. Other people’s videos in their events are kept, private to whoever uploaded them. You cannot undo this.`}
+              confirm="Delete account"
+              destructive
+              disabled={busy}
+              onConfirm={() => void onDelete(user)}
             />
           </div>
         )}

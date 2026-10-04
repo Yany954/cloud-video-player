@@ -26,6 +26,7 @@ describe('ApiStack', () => {
       table: data.table,
       uploadsBucket: storage.uploadsBucket,
       mediaBucket: storage.mediaBucket,
+      userPool: auth.userPool,
       allowMissingFfmpeg: true,
     });
     const api = new ApiStack(app, 'TestApi', {
@@ -37,6 +38,7 @@ describe('ApiStack', () => {
       uploadsBucket: storage.uploadsBucket,
       mediaBucket: storage.mediaBucket,
       processingQueue: processing.queue,
+      deletionQueue: processing.deletionQueue,
       playbackDomain: storage.mediaDistribution.distributionDomainName,
       playbackKeyPairId: storage.playbackKeyPairId,
       playbackKeyParameter: '/test/playback/private-key',
@@ -65,6 +67,7 @@ describe('ApiStack', () => {
     const routes = Object.values(template.findResources('AWS::ApiGatewayV2::Route'));
 
     expect(routes.map((route) => route.Properties.RouteKey).sort()).toEqual([
+      'DELETE /admin/users/{userId}',
       'DELETE /events/{eventId}',
       'DELETE /events/{eventId}/collaborators/{userId}',
       'DELETE /events/{eventId}/invite',
@@ -86,6 +89,7 @@ describe('ApiStack', () => {
       'POST /admin/videos/{videoId}/review',
       'POST /events',
       'POST /events/{eventId}/join',
+      'POST /me/deletion',
       'POST /uploads',
       'POST /uploads/{videoId}/complete',
       'PUT /events/{eventId}/invite',
@@ -110,12 +114,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(26);
+    expect(functions).toHaveLength(28);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(26);
+    expect(logGroups).toHaveLength(28);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -183,7 +187,13 @@ describe('ApiStack', () => {
 
     it('lets only "complete" put jobs on the processing queue', () => {
       expect(actionsOf('CompleteUpload')).toContain('sqs:SendMessage');
-      for (const name of ['InitiateUpload', 'GetPartUrls', 'AbortUpload', 'ListVideos']) {
+      for (const name of [
+        'InitiateUpload',
+        'GetPartUrls',
+        'AbortUpload',
+        'ListVideos',
+        'ReviewVideo',
+      ]) {
         expect(actionsOf(name).filter((action) => action.startsWith('sqs:'))).toEqual([]);
       }
     });
@@ -236,7 +246,7 @@ describe('ApiStack', () => {
       ]);
     });
 
-    it('gives user-pool access only to four routes, each only what it does, in our pool', () => {
+    it('gives user-pool access only to six routes, each only what it does, in our pool', () => {
       const cognito = Object.entries(template.findResources('AWS::IAM::Policy')).flatMap(
         ([id, policy]) =>
           (policy.Properties.PolicyDocument.Statement as Statement[])
@@ -252,6 +262,21 @@ describe('ApiStack', () => {
         GetEvent: ['cognito-idp:ListUsers'],
         ListUsers: ['cognito-idp:ListUsers', 'cognito-idp:ListUsersInGroup'],
         InviteUser: ['cognito-idp:AdminCreateUser'],
+        DeleteMyAccount: [
+          'cognito-idp:AdminDisableUser',
+          'cognito-idp:AdminInitiateAuth',
+          'cognito-idp:AdminListGroupsForUser',
+          'cognito-idp:AdminUserGlobalSignOut',
+          'cognito-idp:ListUsers',
+          'cognito-idp:ListUsersInGroup',
+        ],
+        DeleteUser: [
+          'cognito-idp:AdminDisableUser',
+          'cognito-idp:AdminListGroupsForUser',
+          'cognito-idp:AdminUserGlobalSignOut',
+          'cognito-idp:ListUsers',
+          'cognito-idp:ListUsersInGroup',
+        ],
         UpdateUser: [
           'cognito-idp:AdminAddUserToGroup',
           'cognito-idp:AdminDisableUser',
@@ -263,6 +288,14 @@ describe('ApiStack', () => {
         ],
       });
       for (const { resource } of cognito) expect(resource).toContain('UserPool');
+    });
+
+    it('lets the two deletion routes only suspend and queue: no table, no files', () => {
+      for (const name of ['DeleteMyAccount', 'DeleteUser']) {
+        const actions = actionsOf(name);
+        expect(actions).toContain('sqs:SendMessage');
+        expect(actions.filter((action) => /^(dynamodb|s3):/.test(action))).toEqual([]);
+      }
     });
 
     it('never lets a route delete a user or read or set a password', () => {

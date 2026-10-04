@@ -78,7 +78,7 @@ Explicitly out of scope: watch party.
 17. Age requirements / parental consent for minors' data
 18. Unsubscribe link in every marketing email
 19. Licensed fonts, images, music and AI-generated assets
-20. Data deletion requests: users can delete their account and data (also required in-app by Apple for apps with account creation)
+20. Data deletion requests: users can delete their account and data (also required in-app by Apple for apps with account creation) — built for the web (Profile page); the mobile app must offer it too
 
 ## Web framework & hosting
 - **Next.js** (DECIDED) for landing, pricing, admin and Stripe checkout.

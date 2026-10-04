@@ -61,6 +61,10 @@ export interface UploadApi {
   inviteUser(email: string): Promise<UserResponse>;
   /** Admins only. Changes the quota, the role, or whether the account can sign in. */
   updateUser(userId: string, change: UpdateUserRequest): Promise<UserResponse>;
+  /** Admins only, and never their own account. Permanent: removes the person's data too. */
+  deleteUser(userId: string): Promise<void>;
+  /** Permanent. The password proves it is the account's owner asking. */
+  deleteMyAccount(password: string): Promise<void>;
 }
 
 /** The API answered with an error. `code` is the server's error code, e.g. QUOTA_EXCEEDED. */
@@ -108,7 +112,9 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
         payload?.error?.message ?? `Request failed with status ${response.status}`,
       );
     }
-    return (response.status === 204 ? undefined : await response.json()) as T;
+    // 202 (accepted, work continues in the background) and 204 carry no body.
+    const empty = response.status === 204 || response.status === 202;
+    return (empty ? undefined : await response.json()) as T;
   }
 
   const id = encodeURIComponent;
@@ -142,5 +148,7 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
     listUsers: () => request('GET', '/admin/users'),
     inviteUser: (email) => request('POST', '/admin/users', { email }),
     updateUser: (userId, change) => request('PATCH', `/admin/users/${id(userId)}`, change),
+    deleteUser: (userId) => request('DELETE', `/admin/users/${id(userId)}`),
+    deleteMyAccount: (password) => request('POST', '/me/deletion', { password }),
   };
 }

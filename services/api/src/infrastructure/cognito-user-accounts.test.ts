@@ -1,4 +1,5 @@
 import {
+  NotAuthorizedException,
   UsernameExistsException,
   type CognitoIdentityProviderClient,
 } from '@aws-sdk/client-cognito-identity-provider';
@@ -29,7 +30,7 @@ function setup(answers: Record<string, (input: Record<string, unknown>) => unkno
   });
   const cognito = { send } as unknown as CognitoIdentityProviderClient;
   const sent = () => send.mock.calls.map(([command]) => command.constructor.name);
-  return { send, sent, accounts: new CognitoUserAccounts(cognito, 'pool-1') };
+  return { send, sent, accounts: new CognitoUserAccounts(cognito, 'pool-1', 'client-1') };
 }
 
 describe('CognitoUserAccounts', () => {
@@ -149,5 +150,46 @@ describe('CognitoUserAccounts', () => {
       Username: BEN,
       GroupName: 'admin',
     });
+  });
+
+  it('checks a password by trying to sign in with it, as that user', async () => {
+    const { send, accounts } = setup({
+      ListUsersCommand: () => ({ Users: [cognitoUser(BEN, 'ben@example.com')] }),
+      AdminInitiateAuthCommand: (input) => {
+        if ((input.AuthParameters as { PASSWORD: string }).PASSWORD !== 'right') {
+          throw new NotAuthorizedException({ message: 'no', $metadata: {} });
+        }
+        return { ChallengeName: 'SOFTWARE_TOKEN_MFA' };
+      },
+    });
+
+    expect(await accounts.verifyPassword(BEN, 'right')).toBe(true);
+    expect(await accounts.verifyPassword(BEN, 'wrong')).toBe(false);
+    expect(send.mock.calls[1]![0].input).toMatchObject({
+      ClientId: 'client-1',
+      AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
+      AuthParameters: { USERNAME: BEN },
+    });
+  });
+
+  it('deletes the account, and does nothing when it is already gone', async () => {
+    const present = setup({
+      ListUsersCommand: () => ({ Users: [cognitoUser(BEN, 'ben@example.com')] }),
+      AdminDeleteUserCommand: () => ({}),
+    });
+    await present.accounts.delete(BEN);
+    expect(present.sent()).toEqual(['ListUsersCommand', 'AdminDeleteUserCommand']);
+
+    const gone = setup({ ListUsersCommand: () => ({ Users: [] }) });
+    await gone.accounts.delete(BEN);
+    expect(gone.sent()).toEqual(['ListUsersCommand']);
+  });
+
+  it('counts the admins', async () => {
+    const { accounts } = setup({
+      ListUsersInGroupCommand: () => ({ Users: [{ Username: ANA }, { Username: BEN }] }),
+    });
+
+    expect(await accounts.countAdmins()).toBe(2);
   });
 });

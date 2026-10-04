@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { AuthStack } from '../lib/auth-stack';
 import { DataStack } from '../lib/data-stack';
 import { ProcessingStack } from '../lib/processing-stack';
 import { StorageStack } from '../lib/storage-stack';
@@ -26,15 +27,17 @@ describe('ProcessingStack', () => {
         table: data.table,
         uploadsBucket: storage.uploadsBucket,
         mediaBucket: storage.mediaBucket,
+        userPool: new AuthStack(app, 'TestAuth', { prefix: 'test' }).userPool,
         allowMissingFfmpeg: true,
       }),
     );
   }, 120_000);
 
-  const statements = () =>
-    Object.values(template.findResources('AWS::IAM::Policy')).flatMap(
-      (policy) => policy.Properties.PolicyDocument.Statement as Statement[],
-    );
+  /** Statements of the function whose role's logical id starts with `name`; all if omitted. */
+  const statements = (name = '') =>
+    Object.entries(template.findResources('AWS::IAM::Policy'))
+      .filter(([id]) => id.startsWith(name))
+      .flatMap(([, policy]) => policy.Properties.PolicyDocument.Statement as Statement[]);
 
   it('retries a failing job 3 times, then parks it in the dead-letter queue for 14 days', () => {
     template.hasResourceProperties('AWS::SQS::Queue', {
@@ -77,7 +80,7 @@ describe('ProcessingStack', () => {
   });
 
   it('can read originals and write media, and nothing else in S3', () => {
-    const s3 = statements().filter((statement) =>
+    const s3 = statements('Processor').filter((statement) =>
       [statement.Action].flat().some((action) => action.startsWith('s3:')),
     );
 
@@ -89,11 +92,61 @@ describe('ProcessingStack', () => {
     expect(JSON.stringify(s3[1]!.Resource)).toContain('/media/*');
   });
 
-  it('never grants wildcard actions, and cannot delete videos or records', () => {
+  it('never grants wildcard actions, and the video processor cannot delete videos or records', () => {
     for (const action of statements().flatMap((statement) => statement.Action)) {
       expect(action).not.toContain('*');
-      expect(action).not.toMatch(/^(s3|dynamodb):Delete/);
     }
+    for (const action of statements('Processor').flatMap((statement) => statement.Action)) {
+      expect(action).not.toMatch(/^(s3|dynamodb):Delete/);
+      expect(action).not.toMatch(/^cognito/);
+    }
+  });
+
+  describe('account deletion', () => {
+    const actions = () =>
+      statements('AccountDeleter')
+        .flatMap((statement) => statement.Action)
+        .sort();
+
+    it('has its own queue: 3 attempts, 11 minutes apart, then a dead-letter queue', () => {
+      template.hasResourceProperties('AWS::SQS::Queue', {
+        QueueName: 'test-account-deletion',
+        VisibilityTimeout: 11 * 60,
+        RedrivePolicy: Match.objectLike({ maxReceiveCount: 3 }),
+      });
+      template.hasResourceProperties('AWS::SQS::Queue', {
+        QueueName: 'test-account-deletion-dlq',
+        MessageRetentionPeriod: 14 * 24 * 60 * 60,
+      });
+    });
+
+    it('may delete records, files and the sign-in account, and nothing more', () => {
+      expect(actions().filter((action) => !action.startsWith('sqs:'))).toEqual([
+        'cognito-idp:AdminDeleteUser',
+        'cognito-idp:ListUsers',
+        'dynamodb:BatchGetItem',
+        'dynamodb:DeleteItem',
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+        'dynamodb:Query',
+        'dynamodb:UpdateItem',
+        's3:AbortMultipartUpload',
+        's3:DeleteObject',
+        's3:DeleteObject',
+      ]);
+    });
+
+    it('can never read a video file', () => {
+      expect(actions()).not.toContain('s3:GetObject');
+    });
+
+    it('limits its file access to the uploads/ and media/ prefixes', () => {
+      for (const statement of statements('AccountDeleter')) {
+        if ([statement.Action].flat().some((action) => action.startsWith('s3:'))) {
+          expect(JSON.stringify(statement.Resource)).toMatch(/\/(uploads|media)\/\*/);
+        }
+      }
+    });
   });
 
   it('refuses to build an empty layer when the ffmpeg binaries are missing', () => {
@@ -108,6 +161,7 @@ describe('ProcessingStack', () => {
           table: data.table,
           uploadsBucket: storage.uploadsBucket,
           mediaBucket: storage.mediaBucket,
+          userPool: new AuthStack(app, 'TestAuth2', { prefix: 'test' }).userPool,
           ffmpegLayerDir: mkdtempSync(join(tmpdir(), 'no-ffmpeg-')),
         }),
     ).toThrow(/fetch:ffmpeg/);

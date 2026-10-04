@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { CfnOutput, Duration, Size, Stack, type StackProps } from 'aws-cdk-lib';
+import type { IUserPool } from 'aws-cdk-lib/aws-cognito';
 import type { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
@@ -15,6 +16,7 @@ export interface ProcessingStackProps extends StackProps {
   table: ITableV2;
   uploadsBucket: IBucket;
   mediaBucket: IBucket;
+  userPool: IUserPool;
   /** Tests build the template without the ~100 MB ffmpeg binaries. Never set when deploying. */
   allowMissingFfmpeg?: boolean;
   /** Folder holding bin/ffmpeg and bin/ffprobe. Defaults to infra/layers/ffmpeg. */
@@ -28,6 +30,8 @@ const PROCESSING_TIMEOUT = Duration.minutes(15);
 /** Turns uploaded originals into playable MP4s, one queue message per video. */
 export class ProcessingStack extends Stack {
   readonly queue: Queue;
+  /** One message per account to delete, with everything it owns. */
+  readonly deletionQueue: Queue;
 
   constructor(scope: Construct, id: string, props: ProcessingStackProps) {
     super(scope, id, props);
@@ -100,6 +104,67 @@ export class ProcessingStack extends Stack {
       }),
     );
 
+    // Deleting an account: every video, file, event and record of one person, then the
+    // sign-in account. Runs here, not in the API, because it can take minutes.
+    const deletionTimeout = Duration.minutes(10);
+    const deletionDeadLetterQueue = new Queue(this, 'DeletionDeadLetterQueue', {
+      queueName: `${props.prefix}-account-deletion-dlq`,
+      retentionPeriod: Duration.days(14),
+      encryption: QueueEncryption.SQS_MANAGED,
+      enforceSSL: true,
+    });
+    this.deletionQueue = new Queue(this, 'DeletionQueue', {
+      queueName: `${props.prefix}-account-deletion`,
+      // Also the wait before a retry, e.g. for a video that was still being processed.
+      visibilityTimeout: deletionTimeout.plus(Duration.minutes(1)),
+      deadLetterQueue: { queue: deletionDeadLetterQueue, maxReceiveCount: MAX_ATTEMPTS },
+      encryption: QueueEncryption.SQS_MANAGED,
+      enforceSSL: true,
+    });
+
+    const deleter = nodeLambda(this, 'AccountDeleter', {
+      entry: 'interfaces/queue/delete-account.ts',
+      timeout: deletionTimeout,
+      environment: {
+        TABLE_NAME: props.table.tableName,
+        UPLOADS_BUCKET: props.uploadsBucket.bucketName,
+        MEDIA_BUCKET: props.mediaBucket.bucketName,
+        USER_POOL_ID: props.userPool.userPoolId,
+      },
+    });
+    deleter.addEventSource(
+      new SqsEventSource(this.deletionQueue, { batchSize: 1, reportBatchItemFailures: true }),
+    );
+    props.table.grant(
+      deleter,
+      'dynamodb:GetItem',
+      'dynamodb:BatchGetItem',
+      'dynamodb:Query',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+      'dynamodb:DeleteItem',
+    );
+    deleter.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['s3:DeleteObject', 's3:AbortMultipartUpload'],
+        resources: [props.uploadsBucket.arnForObjects('uploads/*')],
+      }),
+    );
+    deleter.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['s3:DeleteObject'],
+        resources: [props.mediaBucket.arnForObjects('media/*')],
+      }),
+    );
+    deleter.addToRolePolicy(
+      new PolicyStatement({
+        // The only function anywhere that may delete a sign-in account.
+        actions: ['cognito-idp:ListUsers', 'cognito-idp:AdminDeleteUser'],
+        resources: [props.userPool.userPoolArn],
+      }),
+    );
+
+    new CfnOutput(this, 'DeletionQueueUrl', { value: this.deletionQueue.queueUrl });
     new CfnOutput(this, 'QueueUrl', { value: this.queue.queueUrl });
     new CfnOutput(this, 'DeadLetterQueueUrl', { value: deadLetterQueue.queueUrl });
   }

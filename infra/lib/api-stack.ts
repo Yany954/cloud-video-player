@@ -19,6 +19,8 @@ export interface ApiStackProps extends StackProps {
   uploadsBucket: IBucket;
   mediaBucket: IBucket;
   processingQueue: IQueue;
+  /** Receives one message per account to delete. */
+  deletionQueue: IQueue;
   /** CloudFront domain that serves processed videos. */
   playbackDomain: string;
   playbackKeyPairId: string;
@@ -36,6 +38,8 @@ interface RouteProps {
   uploadActions?: string[];
   /** May remove a video's playable version and poster from the media bucket. */
   deletesMedia?: boolean;
+  /** May ask for an account to be deleted, in the background. */
+  startsAccountDeletion?: boolean;
   /** May put jobs on the processing queue. */
   startsProcessing?: boolean;
   /** Actions this handler may perform on the user pool, and on that pool only. */
@@ -242,6 +246,29 @@ export class ApiStack extends Stack {
         'cognito-idp:AdminUserGlobalSignOut',
       ],
     });
+    // Deleting an account only suspends it here; the deletion queue's function removes the data.
+    const suspendActions = [
+      'cognito-idp:ListUsers',
+      'cognito-idp:AdminListGroupsForUser',
+      'cognito-idp:ListUsersInGroup',
+      'cognito-idp:AdminDisableUser',
+      'cognito-idp:AdminUserGlobalSignOut',
+    ];
+    this.route('DeleteMyAccount', {
+      method: HttpMethod.POST,
+      path: '/me/deletion',
+      file: 'delete-my-account.ts',
+      // Checks the caller's password by signing in with it.
+      userPoolActions: [...suspendActions, 'cognito-idp:AdminInitiateAuth'],
+      startsAccountDeletion: true,
+    });
+    this.route('DeleteUser', {
+      method: HttpMethod.DELETE,
+      path: '/admin/users/{userId}',
+      file: 'delete-user.ts',
+      userPoolActions: suspendActions,
+      startsAccountDeletion: true,
+    });
     this.route('InitiateUpload', {
       method: HttpMethod.POST,
       path: '/uploads',
@@ -301,6 +328,8 @@ export class ApiStack extends Stack {
         UPLOADS_BUCKET: uploadsBucket.bucketName,
         MEDIA_BUCKET: mediaBucket.bucketName,
         USER_POOL_ID: this.props.userPool.userPoolId,
+        APP_CLIENT_ID: this.props.appClient.userPoolClientId,
+        DELETION_QUEUE_URL: this.props.deletionQueue.queueUrl,
         PROCESSING_QUEUE_URL: processingQueue.queueUrl,
         PLAYBACK_DOMAIN: this.props.playbackDomain,
         PLAYBACK_KEY_PAIR_ID: this.props.playbackKeyPairId,
@@ -333,6 +362,7 @@ export class ApiStack extends Stack {
         }),
       );
     }
+    if (route.startsAccountDeletion) this.props.deletionQueue.grantSendMessages(fn);
     if (route.startsProcessing) processingQueue.grantSendMessages(fn);
     if (route.signsPlaybackUrls) {
       fn.addToRolePolicy(

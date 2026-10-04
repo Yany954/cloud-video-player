@@ -70,6 +70,18 @@ describe('createHttpUploadApi', () => {
     expect(fetchMock.mock.calls[0]![1]).toMatchObject({ method: 'PUT', body: '{"eventId":null}' });
   });
 
+  it('accepts an empty 202 answer when an account deletion is queued', async () => {
+    const { api, fetchMock } = setup(new Response(null, { status: 202 }));
+
+    await expect(api.deleteMyAccount('secret')).resolves.toBeUndefined();
+
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://api.test/me/deletion');
+    expect(fetchMock.mock.calls[0]![1]).toMatchObject({
+      method: 'POST',
+      body: '{"password":"secret"}',
+    });
+  });
+
   it("turns the API's error body into an ApiError with its code", async () => {
     const { api } = setup(
       json(413, { error: { code: 'QUOTA_EXCEEDED', message: 'Not enough free storage' } }),

@@ -92,15 +92,20 @@ Slices, in order:
   suspend/reactivate. Admins cannot suspend themselves or drop their own admin role.
 - **Profile** page for everyone (the email in the header links to it): email, role, storage,
   change password.
-- Routes: `GET /admin/users`, `POST /admin/users`, `PATCH /admin/users/{userId}`. No Lambda may
+- Routes: `GET /admin/users`, `POST /admin/users`, `PATCH` and `DELETE /admin/users/{userId}`, `POST /me/deletion`. No Lambda may
   delete a user or read or set a password (a CDK test enforces it).
 
-### 3e. Delete an account and its data (next; design to agree with the user first)
+### 3e. Delete an account and its data: done
 
-Item 20 of the legal checklist, and required in-app by Apple. It must remove the person's
-videos (rows and files), the events they own, their memberships in other people's events,
-their profile row and the Cognito user. Open question: what happens to other people's videos
-inside an event that gets deleted (taking them out would put approved ones in the library).
+- `POST /me/deletion` (own account; the server checks the password by signing in with it) and
+  `DELETE /admin/users/{userId}` (admins, never their own). Both only suspend the account and
+  put a message on the `account-deletion` queue.
+- The `AccountDeleter` function (processing stack) then removes the person's videos and files,
+  the events they own, their memberships, their storage record and, last, the Cognito user.
+  It retries 3 times, 11 minutes apart, then parks the message in the dead-letter queue.
+- The last admin cannot be deleted.
+- Other people's videos in a deleted event are kept with `categoryId: null, private: true`
+  (the user's choice): visible only to their uploader, out of the library.
 
 ### 3c. Fargate re-encoding
 
@@ -297,6 +302,9 @@ pnpm --filter @cvp/infra cdk:deploy --all
 - The web app sends basic security headers (HSTS, no framing, no MIME sniffing, referrer
   policy) but no Content-Security-Policy yet.
 - Amplify builds on every push to `main`, including pushes that do not touch the web app.
+- A video kept private after its event was deleted has no button to make it public again
+  (its owner can add it to one of their own events, or delete it).
+- The last-admin guard is unit-tested only: the real pool always has the owner as an admin.
 - Suspending a user or changing a role fully applies only when their current token expires
   (up to 1 hour).
 - HEVC, audio conversion, large files and Safari/phone playback are unit-tested only.

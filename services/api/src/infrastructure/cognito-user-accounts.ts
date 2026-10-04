@@ -1,13 +1,16 @@
 import {
   AdminAddUserToGroupCommand,
   AdminCreateUserCommand,
+  AdminDeleteUserCommand,
   AdminDisableUserCommand,
   AdminEnableUserCommand,
+  AdminInitiateAuthCommand,
   AdminListGroupsForUserCommand,
   AdminRemoveUserFromGroupCommand,
   AdminUserGlobalSignOutCommand,
   ListUsersCommand,
   ListUsersInGroupCommand,
+  NotAuthorizedException,
   UsernameExistsException,
   type CognitoIdentityProviderClient,
   type UserType,
@@ -46,6 +49,8 @@ export class CognitoUserAccounts implements UserAccounts {
   constructor(
     private readonly cognito: CognitoIdentityProviderClient,
     private readonly userPoolId: string,
+    /** Only needed to check a password. */
+    private readonly appClientId?: string,
   ) {}
 
   async list(limit: number): Promise<UserAccount[]> {
@@ -121,6 +126,40 @@ export class CognitoUserAccounts implements UserAccounts {
     await this.cognito.send(new AdminDisableUserCommand(target));
     // Ends their sessions: no new tokens. A token already issued still works until it expires.
     await this.cognito.send(new AdminUserGlobalSignOutCommand(target));
+  }
+
+  async countAdmins(): Promise<number> {
+    return (await this.adminUsernames()).size;
+  }
+
+  async verifyPassword(userId: string, password: string): Promise<boolean> {
+    const username = (await this.find(userId))?.Username;
+    if (!username || !this.appClientId) return false;
+    try {
+      // Tokens, or a second-factor challenge: either way the password was right. The result is
+      // never used for anything else.
+      await this.cognito.send(
+        new AdminInitiateAuthCommand({
+          UserPoolId: this.userPoolId,
+          ClientId: this.appClientId,
+          AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
+          AuthParameters: { USERNAME: username, PASSWORD: password },
+        }),
+      );
+      return true;
+    } catch (error) {
+      if (error instanceof NotAuthorizedException) return false;
+      throw error;
+    }
+  }
+
+  async delete(userId: string): Promise<void> {
+    const username = (await this.find(userId))?.Username;
+    // Already gone: a repeated job has nothing left to do.
+    if (!username) return;
+    await this.cognito.send(
+      new AdminDeleteUserCommand({ UserPoolId: this.userPoolId, Username: username }),
+    );
   }
 
   private async find(userId: string): Promise<UserType | null> {

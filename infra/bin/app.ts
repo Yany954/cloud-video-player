@@ -23,6 +23,7 @@ const processing = new ProcessingStack(app, `${prefix}-processing`, {
   table: data.table,
   uploadsBucket: storage.uploadsBucket,
   mediaBucket: storage.mediaBucket,
+  userPool: auth.userPool,
 });
 new ApiStack(app, `${prefix}-api`, {
   env,
@@ -34,6 +35,7 @@ new ApiStack(app, `${prefix}-api`, {
   uploadsBucket: storage.uploadsBucket,
   mediaBucket: storage.mediaBucket,
   processingQueue: processing.queue,
+  deletionQueue: processing.deletionQueue,
   playbackDomain: storage.mediaDistribution.distributionDomainName,
   playbackKeyPairId: storage.playbackKeyPairId,
   playbackKeyParameter: `/${prefix}/playback/private-key`,

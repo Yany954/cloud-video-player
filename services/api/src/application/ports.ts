@@ -80,6 +80,13 @@ export interface StorageAccountAdmin extends StorageAccountRepository {
   getUsages(userIds: readonly string[]): Promise<Map<string, StorageUsage>>;
   /** Changes how much one user may store. Works for a user who never uploaded. */
   setQuota(userId: string, quotaBytes: number): Promise<void>;
+  /** Forgets the user's storage record. */
+  deleteAccount(userId: string): Promise<void>;
+}
+
+export interface AccountDeletionQueue {
+  /** Asks for everything the user owns to be removed, in the background. */
+  enqueue(userId: string): Promise<void>;
 }
 
 /** The accounts themselves (Cognito), as the admin Users view needs them. */
@@ -95,6 +102,11 @@ export interface UserAccounts {
   setRole(userId: string, role: UserRole): Promise<void>;
   /** Suspending also signs the person out of every device. */
   setSuspended(userId: string, suspended: boolean): Promise<void>;
+  countAdmins(): Promise<number>;
+  /** True if this is the user's current password. */
+  verifyPassword(userId: string, password: string): Promise<boolean>;
+  /** Removes the sign-in account itself. Fine if it is already gone. */
+  delete(userId: string): Promise<void>;
 }
 
 export interface UploadedPart {

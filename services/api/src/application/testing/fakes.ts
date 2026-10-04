@@ -2,6 +2,7 @@ import type { Category } from '../../domain/category';
 import { DomainError } from '../../domain/errors';
 import { awaitsReview, isInLibrary } from '../../domain/moderation';
 import { DEFAULT_QUOTA_BYTES, fits, type StorageUsage } from '../../domain/quota';
+import type { UserAccount, UserRole } from '../../domain/user';
 import type { Video } from '../../domain/video';
 import type {
   CategoryRepository,
@@ -9,6 +10,7 @@ import type {
   PartUrl,
   ProcessingQueue,
   StorageAccountAdmin,
+  UserAccounts,
   UploadedPart,
   VideoRepository,
 } from '../ports';
@@ -146,6 +148,10 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountAdmin {
     );
   }
 
+  async deleteAccount(userId: string) {
+    this.usage.delete(userId);
+  }
+
   async setQuota(userId: string, quotaBytes: number) {
     this.usage.set(userId, { ...(await this.getUsage(userId)), quotaBytes });
   }
@@ -214,5 +220,59 @@ export class InMemoryProcessingQueue implements ProcessingQueue {
 
   async enqueue(videoId: string) {
     this.videoIds.push(videoId);
+  }
+}
+
+/** Stands in for Cognito. The only password it accepts is "correct-password". */
+export class InMemoryUserAccounts implements UserAccounts {
+  readonly users = new Map<string, UserAccount>();
+  private nextId = 1;
+
+  add(id: string, email: string, role: UserRole = 'user') {
+    this.users.set(id, {
+      id,
+      email,
+      role,
+      status: 'active',
+      createdAt: `2026-10-0${this.nextId++}`,
+    });
+  }
+  async list(limit: number) {
+    return [...this.users.values()].slice(0, limit);
+  }
+  async findById(userId: string) {
+    return this.users.get(userId) ?? null;
+  }
+  async invite(email: string) {
+    if ([...this.users.values()].some((user) => user.email === email)) {
+      throw new DomainError('USER_EXISTS', 'An account with this email already exists');
+    }
+    const user: UserAccount = {
+      id: `new-${this.nextId++}`,
+      email,
+      role: 'user',
+      status: 'invited',
+      createdAt: '2026-10-04',
+    };
+    this.users.set(user.id, user);
+    return user;
+  }
+  async setRole(userId: string, role: UserRole) {
+    this.users.set(userId, { ...this.users.get(userId)!, role });
+  }
+  async countAdmins() {
+    return [...this.users.values()].filter((user) => user.role === 'admin').length;
+  }
+  async verifyPassword(_userId: string, password: string) {
+    return password === 'correct-password';
+  }
+  async delete(userId: string) {
+    this.users.delete(userId);
+  }
+  async setSuspended(userId: string, suspended: boolean) {
+    this.users.set(userId, {
+      ...this.users.get(userId)!,
+      status: suspended ? 'suspended' : 'active',
+    });
   }
 }

@@ -1,57 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DomainError } from '../../domain/errors';
 import { DEFAULT_QUOTA_BYTES } from '../../domain/quota';
-import type { UserAccount, UserRole } from '../../domain/user';
 import { ForbiddenError, NotFoundError } from '../errors';
-import type { UserAccounts } from '../ports';
-import { InMemoryDatabase } from '../testing/fakes';
+import { InMemoryDatabase, InMemoryUserAccounts } from '../testing/fakes';
 import { InviteUser, ListUsers, UpdateUser } from './users';
 
 const GIB = 1024 ** 3;
-
-class InMemoryUserAccounts implements UserAccounts {
-  readonly users = new Map<string, UserAccount>();
-  private nextId = 1;
-
-  add(id: string, email: string, role: UserRole = 'user') {
-    this.users.set(id, {
-      id,
-      email,
-      role,
-      status: 'active',
-      createdAt: `2026-10-0${this.nextId++}`,
-    });
-  }
-  async list(limit: number) {
-    return [...this.users.values()].slice(0, limit);
-  }
-  async findById(userId: string) {
-    return this.users.get(userId) ?? null;
-  }
-  async invite(email: string) {
-    if ([...this.users.values()].some((user) => user.email === email)) {
-      throw new DomainError('USER_EXISTS', 'An account with this email already exists');
-    }
-    const user: UserAccount = {
-      id: `new-${this.nextId++}`,
-      email,
-      role: 'user',
-      status: 'invited',
-      createdAt: '2026-10-04',
-    };
-    this.users.set(user.id, user);
-    return user;
-  }
-  async setRole(userId: string, role: UserRole) {
-    this.users.set(userId, { ...this.users.get(userId)!, role });
-  }
-  async setSuspended(userId: string, suspended: boolean) {
-    this.users.set(userId, {
-      ...this.users.get(userId)!,
-      status: suspended ? 'suspended' : 'active',
-    });
-  }
-}
 
 const admin = { userId: 'admin-1', isAdmin: true };
 const ben = { userId: 'ben', isAdmin: false };

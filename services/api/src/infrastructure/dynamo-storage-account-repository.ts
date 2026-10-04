@@ -1,5 +1,6 @@
 import {
   BatchGetCommand,
+  DeleteCommand,
   GetCommand,
   UpdateCommand,
   type DynamoDBDocumentClient,
@@ -47,6 +48,10 @@ export class DynamoStorageAccountRepository implements StorageAccountAdmin {
       }
     }
     return usages;
+  }
+
+  async deleteAccount(userId: string): Promise<void> {
+    await this.doc.send(new DeleteCommand({ TableName: this.tableName, Key: userKey(userId) }));
   }
 
   async setQuota(userId: string, quotaBytes: number): Promise<void> {

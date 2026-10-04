@@ -2,7 +2,19 @@
 
 import type { StorageUsageResponse } from '@cvp/shared';
 import { useEffect, useState } from 'react';
+import { ApiError } from '@cvp/upload-client';
 import { PasswordField } from '@/components/auth/password-field';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { StorageWidget } from '@/components/storage/storage-widget';
 import { Button } from '@/components/ui/button';
 import { uploadApi } from '@/lib/api';
@@ -13,7 +25,10 @@ import { authErrorMessage } from '@/lib/auth/errors';
 const MIN_PASSWORD_LENGTH = 12;
 
 export default function ProfilePage() {
-  const { state } = useAuth();
+  const { state, signOut } = useAuth();
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [usage, setUsage] = useState<StorageUsageResponse | null>(null);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -60,6 +75,26 @@ export default function ProfilePage() {
       );
     } finally {
       setPending(false);
+    }
+  }
+
+  async function deleteAccount() {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await uploadApi.deleteMyAccount(deletePassword);
+      // The account is already closed on the server; this clears the browser's session.
+      await signOut().catch(() => {});
+    } catch (caught) {
+      const status = caught instanceof ApiError ? caught.status : 0;
+      setDeleteError(
+        status === 403
+          ? 'Your password is not right.'
+          : status === 409
+            ? 'You are the only admin. Make someone else an admin first, on the Users page.'
+            : 'Your account could not be deleted. Check your connection and try again.',
+      );
+      setDeleting(false);
     }
   }
 
@@ -139,6 +174,63 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
+
+          <section
+            aria-labelledby="delete-account-title"
+            className="grid gap-4 rounded-3xl border px-5 py-5"
+          >
+            <div className="grid gap-1">
+              <h2 id="delete-account-title" className="text-base font-semibold tracking-tight">
+                Delete your account
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                This deletes all your videos and the events you created, and takes you out of the
+                events you were invited to. You cannot undo it.
+              </p>
+            </div>
+            <div className="max-w-sm">
+              <PasswordField
+                id="delete-password"
+                label="Your password, to confirm it is you"
+                autoComplete="current-password"
+                value={deletePassword}
+                onChange={setDeletePassword}
+              />
+            </div>
+            {deleteError && (
+              <p role="alert" className="text-destructive text-sm">
+                {deleteError}
+              </p>
+            )}
+            <div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    disabled={deleting || deletePassword.length === 0}
+                  >
+                    {deleting ? 'Deleting…' : 'Delete my account'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete your account for good?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You will be signed out now. Your videos and events are deleted and cannot be
+                      recovered.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep my account</AlertDialogCancel>
+                    <AlertDialogAction variant="destructive" onClick={() => void deleteAccount()}>
+                      Delete my account
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </section>
         </div>
         <StorageWidget usage={usage} />
       </div>

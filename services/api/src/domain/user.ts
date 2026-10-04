@@ -45,6 +45,13 @@ export function assertAllowedChange(actorId: string, targetId: string, change: U
   }
 }
 
+/** The app must always keep one admin, or nobody could review videos or manage users. */
+export function assertDeletable(target: UserAccount, adminCount: number): void {
+  if (target.role === 'admin' && adminCount <= 1) {
+    throw new DomainError('INVALID_STATE', 'The only admin cannot be deleted');
+  }
+}
+
 /** Same address, however it was typed. */
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();

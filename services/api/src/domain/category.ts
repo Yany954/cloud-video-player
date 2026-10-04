@@ -150,6 +150,14 @@ export function assignToCategory(video: Video, category: Category | null): Video
   };
 }
 
+/**
+ * Takes a video out of an event that is being deleted by someone else (its owner closed their
+ * account). It stays private to its uploader instead of landing in the library unasked.
+ */
+export function detachPrivately(video: Video): Video {
+  return { ...video, categoryId: null, private: true };
+}
+
 /** Replaces the playing order. The ids come from the client, so they are checked first. */
 export function reorderCategory(category: Category, videoIds: readonly string[]): Category {
   if (videoIds.length > MAX_ORDERED_VIDEOS) {
