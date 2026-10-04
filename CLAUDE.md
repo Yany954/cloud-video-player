@@ -82,7 +82,7 @@ Explicitly out of scope: watch party.
 
 ## Web framework & hosting
 - **Next.js** (DECIDED) for landing, pricing, admin and Stripe checkout.
-- **Hosting: AWS Amplify Hosting** for the MVP (simplest: git push -> deploy). Avoid relying on advanced Next.js features with spotty Amplify support (on-demand ISR, streaming, i18n auto-detection). Fallback if Amplify causes problems: SST/OpenNext (deploys Next.js to Lambda + CloudFront + S3 in our AWS account).
+- **Hosting: AWS Amplify Hosting** for the MVP (simplest: git push -> deploy). Live at https://main.d1fywgy7g1rdyk.amplifyapp.com. Avoid relying on advanced Next.js features with spotty Amplify support (on-demand ISR, streaming, i18n auto-detection). Fallback if Amplify causes problems: SST/OpenNext (deploys Next.js to Lambda + CloudFront + S3 in our AWS account).
 
 ## Future phase (ONLY after everything above works and is tested)
 - **Physical CD / vinyl orders**: order a whole category (e.g., "Concierto Rosalía") as a CD or vinyl, with a custom AI-generated cover. Keep the data model flexible so a category can later become an "album" (ordered tracks, audio extraction, cover image).

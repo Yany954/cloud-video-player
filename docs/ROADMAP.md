@@ -1,20 +1,20 @@
 # Roadmap and project state
 
-Last updated: 2026-10-03 (moderation and delete video done). This file is the hand-off between work sessions: what is done, what
+Last updated: 2026-10-04 (web app deployed; events, invites and open sign-up done).
 is next, and the decisions and habits that are not obvious from the code. `CLAUDE.md` holds the
 product goals; this file holds the progress.
 
 ## Where we are
 
-| Phase                   | State                                                     |
-| ----------------------- | --------------------------------------------------------- |
-| 0. Monorepo             | Done                                                      |
-| 1. Secure AWS account   | Done                                                      |
-| 2. Infrastructure (CDK) | Done                                                      |
-| 3. Backend              | Upload to playback, moderation, delete. **Next: events**  |
-| 4. Web app              | Sign-in, upload, lists, player, review done. Not deployed |
-| 5. Mobile app (Expo)    | Not started                                               |
-| After the MVP           | README for GitHub, differentiating features               |
+| Phase                   | State                                                    |
+| ----------------------- | -------------------------------------------------------- |
+| 0. Monorepo             | Done                                                     |
+| 1. Secure AWS account   | Done                                                     |
+| 2. Infrastructure (CDK) | Done                                                     |
+| 3. Backend              | Upload to playback, moderation, delete. **Next: events** |
+| 4. Web app              | Deployed on Amplify: sign-in/up, upload, player, events  |
+| 5. Mobile app (Expo)    | Not started                                              |
+| After the MVP           | README for GitHub, differentiating features              |
 
 ## What to do next, in order
 
@@ -99,8 +99,13 @@ minute of CPU: give the user a cost estimate before building it.
 
 ### 4. Finish the web app
 
-- Step 6: deploy to AWS Amplify Hosting; add its domain to `webOrigins` in `infra/bin/app.ts`
-  (API CORS + uploads bucket CORS). Small cost: warn first.
+- **Deployed on AWS Amplify Hosting: done.** https://main.d1fywgy7g1rdyk.amplifyapp.com
+  (app `cvp-web`, created in the console and connected to the GitHub repo; every push to
+  `main` builds and deploys, about 4 minutes and $0.04; put `[skip-cd]` in a commit message
+  to skip the build, e.g. for docs-only commits). Build settings are in `amplify.yml`; the
+  three `NEXT_PUBLIC_*` settings are environment variables of the Amplify app. Next.js 16
+  runs there although Amplify's documentation lists versions 12 to 15: if a later upgrade
+  breaks, the agreed fallback is to downgrade to Next.js 15.
 - Forgot password, Google sign-in, MFA at sign-in.
 - A full pass with the `web-design-guidelines` skill.
 - The landing page (`landing-01` block, `design-taste-frontend` skill).
@@ -139,7 +144,7 @@ API routes: `GET /health`, `GET /me/storage`, `POST /uploads`, `GET /uploads/{id
 `DELETE /events/{id}/collaborators/{userId}`. `POST /uploads` takes an optional `eventId`. The `/admin` routes check the `admin` group in the handler
 and answer 403 otherwise.
 
-Outside CDK: the playback private key in SSM (`/cvp-dev/playback/private-key`), the budget
+Outside CDK: the Amplify app `cvp-web` (hosting for `apps/web`), the playback private key in SSM (`/cvp-dev/playback/private-key`), the budget
 `cvp-monthly`, Free Tier alerts and Cost Anomaly Detection.
 
 ### Repository
@@ -189,6 +194,9 @@ infra                    CDK stacks, tests, scripts (smoke tests, ffmpeg and key
   being processed. The web app offers it only for ready or failed videos.
 - **A decision can be changed later** (take down an approved video, approve a rejected one);
   the video records who decided and when.
+- **New accounts get 5 GiB** (`DEFAULT_QUOTA_BYTES`); the owner's account keeps the 50 GiB
+  stored in its profile row. Raising someone's quota means changing `quotaBytes` on their
+  `USER#{sub}` / `PROFILE` row (a button for it belongs to the admin Users view).
 - **Sign-up is open to anyone** (the user chose this over sign-up restricted to invite
   links, knowing the trade-off). Consequence: any stranger who finds the login page can create
   an account and upload up to 50 GiB, which the owner pays for. Not built yet, and worth
@@ -230,6 +238,9 @@ pnpm --filter @cvp/infra cdk:deploy --all
 
 ## Known gaps
 
+- The web app sends basic security headers (HSTS, no framing, no MIME sniffing, referrer
+  policy) but no Content-Security-Policy yet.
+- Amplify builds on every push to `main`, including pushes that do not touch the web app.
 - HEVC, audio conversion, large files and Safari/phone playback are unit-tested only.
 - No captions on the player (WCAG 1.2.2); expected with the transcription feature.
 - `GET /videos`, the library and the review queue return at most 100 videos, with no paging.
