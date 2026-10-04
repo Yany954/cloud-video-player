@@ -69,8 +69,12 @@ Slices, in order:
    event page; reorder with the up arrow or in a temporary drag view (`@dnd-kit`, with arrow
    buttons and keyboard dragging as alternatives). Not done yet: choosing an event while
    uploading in the web app (the API accepts `eventId`; the upload screen does not send it).
-2. **Continuous play**: "Play all", next video starts by itself in the same `<video>` element
-   (so web PiP survives), autoplay switch remembered per browser.
+2. **Continuous play: done (web).** "Play all" on the event page opens
+   `/events/{id}/play?v=<videoId>`: one `<video>` element whose source changes, so
+   Picture-in-Picture and full screen survive; the next video's signed link is fetched ahead;
+   Previous/Next buttons; an "Autoplay next video" switch remembered in `localStorage`; the
+   Media Session API gives the lock screen, media keys and PiP window a title and
+   previous/next. Not verified: real Picture-in-Picture, a phone, and Safari.
 3. **Collaborators: done, through an invite link.** The owner creates a link on the event
    page (`/events/{id}/join#<secret>`); whoever opens it while signed in becomes a
    collaborator. A signed-out visitor goes to the login page and returns to the event after

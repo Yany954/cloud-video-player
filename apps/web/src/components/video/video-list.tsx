@@ -17,6 +17,8 @@ interface VideoListProps {
   empty: { title: string; text: string };
   /** Which list the player's "back" link returns to. */
   from?: string;
+  /** Where a playable row leads, when it is not the single-video player. */
+  hrefFor?: (video: VideoResponse) => string;
   /** Where each video is in its life. Pointless in a list where all share one status. */
   showStatus?: boolean;
   /** Extra controls at the end of each row. */
@@ -33,6 +35,7 @@ export function VideoList({
   errorText,
   empty,
   from,
+  hrefFor,
   showStatus = false,
   renderActions,
 }: VideoListProps) {
@@ -60,7 +63,11 @@ export function VideoList({
         <ul className="bg-card divide-y overflow-hidden rounded-3xl border">
           {videos.map((video) => (
             <li key={video.id} className="flex flex-wrap items-center">
-              <VideoRow video={video} from={from} showStatus={showStatus} />
+              <VideoRow
+                video={video}
+                href={hrefFor?.(video) ?? `/videos/${video.id}${from ? `?from=${from}` : ''}`}
+                showStatus={showStatus}
+              />
               {renderActions && (
                 <div className="flex w-full gap-2 px-4 pb-3 sm:w-auto sm:py-3 sm:pr-5 sm:pl-0">
                   {renderActions(video)}
@@ -76,11 +83,11 @@ export function VideoList({
 
 function VideoRow({
   video,
-  from,
+  href,
   showStatus,
 }: {
   video: VideoResponse;
-  from?: string;
+  href: string;
   showStatus: boolean;
 }) {
   const playable = video.uploadStatus === 'ready';
@@ -127,7 +134,7 @@ function VideoRow({
 
   return playable ? (
     <Link
-      href={`/videos/${video.id}${from ? `?from=${from}` : ''}`}
+      href={href}
       aria-label={`Play ${video.title}`}
       className={`${layout} group hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-ring/50 outline-none focus-visible:ring-3 focus-visible:ring-inset`}
     >

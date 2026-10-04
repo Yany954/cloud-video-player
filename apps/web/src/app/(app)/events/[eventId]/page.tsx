@@ -2,7 +2,7 @@
 
 import type { EventDetailResponse, VideoResponse } from '@cvp/shared';
 import { ApiError } from '@cvp/upload-client';
-import { ArrowLeft, ArrowUp, ArrowUpDown, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowUp, ArrowUpDown, Pencil, Play, Plus, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -186,6 +186,17 @@ export default function EventPage() {
           </p>
         )}
 
+        {renaming === null && draft === null && videos.some((v) => v.uploadStatus === 'ready') && (
+          <div>
+            <Button asChild size="lg">
+              <Link href={`/events/${event.id}/play`}>
+                <Play aria-hidden className="fill-current" />
+                Play all
+              </Link>
+            </Button>
+          </div>
+        )}
+
         {event.isOwner && renaming === null && draft === null && (
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRenaming(event.name)}>
@@ -339,7 +350,7 @@ export default function EventPage() {
                 ? 'Add your videos below.'
                 : 'Its videos will be listed here once they are approved.',
             }}
-            from={`event-${event.id}`}
+            hrefFor={(video) => `/events/${event.id}/play?v=${video.id}`}
             showStatus
             renderActions={(video) => {
               const index = ids.indexOf(video.id);
