@@ -10,8 +10,9 @@ const app = new App();
 // Account comes from the CLI profile (--profile cvp-dev), so it is never hardcoded in the repo.
 const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'us-east-1' };
 const prefix = 'cvp-dev';
-// Add the Amplify domain here once the web app is deployed (Phase 4).
-const webOrigins = ['http://localhost:3000'];
+// The browser origins allowed to call the API and to upload to the bucket: local development
+// and the web app on Amplify Hosting.
+const webOrigins = ['http://localhost:3000', 'https://main.d1fywgy7g1rdyk.amplifyapp.com'];
 
 const auth = new AuthStack(app, `${prefix}-auth`, { env, prefix });
 const data = new DataStack(app, `${prefix}-data`, { env, prefix });
