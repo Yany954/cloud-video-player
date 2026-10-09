@@ -87,6 +87,7 @@ describe('ApiStack', () => {
       'GET /videos/{videoId}/playback',
       'PATCH /admin/users/{userId}',
       'PATCH /events/{eventId}',
+      'PATCH /videos/{videoId}',
       'POST /admin/users',
       'POST /admin/videos/{videoId}/review',
       'POST /events',
@@ -118,12 +119,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(32);
+    expect(functions).toHaveLength(33);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(32);
+    expect(logGroups).toHaveLength(33);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -262,6 +263,7 @@ describe('ApiStack', () => {
         'dynamodb:Query',
       ]);
       expect(actionsOf('SetVideoEvent')).toEqual(['dynamodb:GetItem', 'dynamodb:UpdateItem']);
+      expect(actionsOf('RenameVideo')).toEqual(['dynamodb:GetItem', 'dynamodb:UpdateItem']);
     });
 
     it('gives the invite routes only the table writes they perform', () => {

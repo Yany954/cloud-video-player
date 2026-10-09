@@ -187,6 +187,13 @@ export const es: Messages = {
       connection: 'Se perdió la conexión. Tu avance está guardado, así que puedes continuar.',
     },
   },
+  renameVideo: {
+    button: (title: string) => `Cambiar el nombre de ${title}`,
+    label: 'Título del video',
+    save: 'Guardar título',
+    failed: 'No se pudo guardar el título.',
+    renamed: (title: string) => `El video ahora se llama «${title}».`,
+  },
   videos: {
     pageTitle: 'Tus videos',
     myVideos: 'Mis videos',

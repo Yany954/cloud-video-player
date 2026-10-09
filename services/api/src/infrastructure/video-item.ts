@@ -42,6 +42,9 @@ function categoryKeys(video: Video) {
 /** The attributes that change when a video moves between categories. */
 export const CATEGORY_ATTRIBUTES = ['categoryId', 'private', 'GSI2PK', 'GSI2SK'] as const;
 
+/** The attribute that changes when a video is renamed. */
+export const TITLE_ATTRIBUTES = ['title'] as const;
+
 /** The attributes that change when a video is reviewed or reported. */
 export const MODERATION_ATTRIBUTES = ['moderationStatus', 'review', 'GSI3PK', 'GSI3SK'] as const;
 

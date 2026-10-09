@@ -183,6 +183,13 @@ export const en = {
       connection: 'Connection lost. Your progress is saved, so you can resume.',
     },
   },
+  renameVideo: {
+    button: (title: string) => `Rename ${title}`,
+    label: 'Video title',
+    save: 'Save title',
+    failed: 'The title could not be saved.',
+    renamed: (title: string) => `The video is now called “${title}”.`,
+  },
   videos: {
     pageTitle: 'Your videos',
     myVideos: 'My videos',

@@ -51,6 +51,8 @@ export interface UploadApi {
   deleteEvent(eventId: string): Promise<void>;
   /** Moves one of the caller's videos into an event, or out with `null`. */
   setVideoEvent(videoId: string, eventId: string | null): Promise<VideoResponse>;
+  /** Only the owner can rename a video. */
+  renameVideo(videoId: string, title: string): Promise<VideoResponse>;
   /** Owner only. Makes a new invite link; any earlier one stops working. */
   openInvite(eventId: string): Promise<EventInviteResponse>;
   /** Owner only. Turns the invite link off. */
@@ -148,6 +150,7 @@ export function createHttpUploadApi(options: HttpUploadApiOptions): UploadApi {
     reorderEvent: (eventId, videoIds) =>
       request('PUT', `/events/${id(eventId)}/order`, { videoIds }),
     deleteEvent: (eventId) => request('DELETE', `/events/${id(eventId)}`),
+    renameVideo: (videoId, title) => request('PATCH', `/videos/${id(videoId)}`, { title }),
     setVideoEvent: (videoId, eventId) =>
       request('PUT', `/videos/${id(videoId)}/event`, { eventId }),
     openInvite: (eventId) => request('PUT', `/events/${id(eventId)}/invite`),

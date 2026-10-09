@@ -29,6 +29,7 @@ import { InitiateUpload } from '../../application/upload/initiate-upload';
 import { DeleteVideo } from '../../application/video/delete-video';
 import { GetPlayback } from '../../application/video/get-playback';
 import { ListSharedWithMe } from '../../application/video/list-shared-with-me';
+import { RenameVideo } from '../../application/video/rename-video';
 import { ListMyVideos } from '../../application/video/list-my-videos';
 import { documentClient, s3Client, sqsClient, ssmClient } from '../../infrastructure/aws-clients';
 import { CloudFrontPlaybackSigner } from '../../infrastructure/cloudfront-playback-signer';
@@ -88,6 +89,7 @@ export const getCategory = new GetCategory(categories, videos, blocks);
 export const updateCategory = new UpdateCategory(categories, videos);
 export const reorderCategory = new ReorderCategory(categories);
 export const deleteCategory = new DeleteCategory(categories, videos);
+export const renameVideo = new RenameVideo(videos);
 export const setVideoCategory = new SetVideoCategory(categories, videos);
 // 32 random bytes: an invite link cannot be guessed.
 export const openInvite = new OpenInvite(categories, () => randomBytes(32).toString('base64url'));

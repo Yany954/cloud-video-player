@@ -15,6 +15,7 @@ import type { Video } from '../domain/video';
 import {
   CATEGORY_ATTRIBUTES,
   MODERATION_ATTRIBUTES,
+  TITLE_ATTRIBUTES,
   categoryIndex,
   fromVideoItem,
   moderationIndex,
@@ -112,6 +113,10 @@ export class DynamoVideoRepository implements VideoRepository {
 
   saveModeration(video: Video): Promise<void> {
     return this.updateAttributes(video, MODERATION_ATTRIBUTES);
+  }
+
+  saveTitle(video: Video): Promise<void> {
+    return this.updateAttributes(video, TITLE_ATTRIBUTES);
   }
 
   /** Writes only `attributes`, taken from `video`; the rest of the row is left as stored. */

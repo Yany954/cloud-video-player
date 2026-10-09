@@ -106,6 +106,13 @@ export class ApiStack extends Stack {
       tableActions: ['dynamodb:GetItem', 'dynamodb:Query'],
       signsPlaybackUrls: true,
     });
+    this.route('RenameVideo', {
+      method: HttpMethod.PATCH,
+      path: '/videos/{videoId}',
+      file: 'rename-video.ts',
+      // Updates the title only.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:UpdateItem'],
+    });
     this.route('DeleteVideo', {
       method: HttpMethod.DELETE,
       path: '/videos/{videoId}',

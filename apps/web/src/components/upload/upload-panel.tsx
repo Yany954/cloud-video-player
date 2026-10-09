@@ -1,10 +1,12 @@
 'use client';
 
 import type { EventResponse, StorageUsageResponse, VideoResponse } from '@cvp/shared';
-import { ShieldCheck } from 'lucide-react';
+import { Pencil, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { DeleteVideoButton } from '@/components/video/delete-video-button';
+import { RenameVideoForm } from '@/components/video/rename-video-form';
+import { Button } from '@/components/ui/button';
 import { selectClassName } from '@/components/event/visibility-badge';
 import { StorageWidget } from '@/components/storage/storage-widget';
 import { Label } from '@/components/ui/label';
@@ -26,6 +28,8 @@ export function UploadPanel({ userId }: { userId: string }) {
   const [eventId, setEventId] = useState('');
   const [notice, setNotice] = useState('');
   const [deleteError, setDeleteError] = useState('');
+  /** The video whose title is being edited, if any. */
+  const [renamingId, setRenamingId] = useState<string | null>(null);
 
   // Runs on load and again after every finished upload.
   const refresh = useCallback(() => {
@@ -129,20 +133,53 @@ export function UploadPanel({ userId }: { userId: string }) {
           renderActions={(video) =>
             // Not while it is still uploading or being prepared: those are still changing.
             (video.uploadStatus === 'ready' || video.uploadStatus === 'failed') && (
-              <DeleteVideoButton
-                video={video}
-                iconOnly
-                onDeleted={() => {
-                  setDeleteError('');
-                  setNotice(t.videos.deleted(video.title));
-                  setVideos((current) => current?.filter((item) => item.id !== video.id) ?? null);
-                  refresh();
-                }}
-                onError={(message) => {
-                  setNotice('');
-                  setDeleteError(message);
-                }}
-              />
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon-lg"
+                  aria-label={t.renameVideo.button(video.title)}
+                  aria-expanded={renamingId === video.id}
+                  className="text-muted-foreground"
+                  onClick={() => setRenamingId(renamingId === video.id ? null : video.id)}
+                >
+                  <Pencil aria-hidden />
+                </Button>
+                <DeleteVideoButton
+                  video={video}
+                  iconOnly
+                  onDeleted={() => {
+                    setDeleteError('');
+                    setNotice(t.videos.deleted(video.title));
+                    setVideos((current) => current?.filter((item) => item.id !== video.id) ?? null);
+                    refresh();
+                  }}
+                  onError={(message) => {
+                    setNotice('');
+                    setDeleteError(message);
+                  }}
+                />
+              </>
+            )
+          }
+          renderDetails={(video) =>
+            renamingId === video.id && (
+              <div className="px-4 pb-4 sm:px-5">
+                <RenameVideoForm
+                  video={video}
+                  onCancel={() => setRenamingId(null)}
+                  onRenamed={(title) => {
+                    setRenamingId(null);
+                    setDeleteError('');
+                    setNotice(t.renameVideo.renamed(title));
+                    setVideos(
+                      (current) =>
+                        current?.map((item) =>
+                          item.id === video.id ? { ...item, title } : item,
+                        ) ?? null,
+                    );
+                  }}
+                />
+              </div>
             )
           }
         />

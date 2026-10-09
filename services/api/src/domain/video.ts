@@ -64,10 +64,7 @@ export function startUpload(input: StartUploadInput): Video {
   const format = videoFormatOf(input.fileName);
   planUpload(input.sizeBytes);
 
-  const title = (input.title ?? input.fileName.replace(/\.[^.]+$/, '')).trim();
-  if (title.length === 0 || title.length > MAX_TITLE_LENGTH) {
-    throw new DomainError('INVALID_TITLE', `Title must be 1 to ${MAX_TITLE_LENGTH} characters`);
-  }
+  const title = validTitle(input.title ?? input.fileName.replace(/\.[^.]+$/, ''));
 
   return {
     id: input.id,
@@ -87,6 +84,20 @@ export function startUpload(input: StartUploadInput): Video {
     review: null,
     createdAt: input.now.toISOString(),
   };
+}
+
+/** Trims a title and checks its length; one rule for a new upload and for a rename. */
+function validTitle(raw: string): string {
+  const title = raw.trim();
+  if (title.length === 0 || title.length > MAX_TITLE_LENGTH) {
+    throw new DomainError('INVALID_TITLE', `Title must be 1 to ${MAX_TITLE_LENGTH} characters`);
+  }
+  return title;
+}
+
+/** The title is only a label: it can change in any state, and the file name is kept. */
+export function renameVideo(video: Video, title: string): Video {
+  return { ...video, title: validTitle(title) };
 }
 
 export function isOwnedBy(video: Video, userId: string): boolean {

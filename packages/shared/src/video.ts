@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 // Contracts shared by api, web and mobile. Types only — business rules live in services/api/src/domain.
 
 export const MODERATION_STATUSES = ['pending', 'approved', 'flagged', 'rejected'] as const;
@@ -47,6 +49,13 @@ export interface PlaybackResponse {
   /** The caller uploaded it: reporting and blocking are for other people's videos. */
   isMine: boolean;
 }
+
+export const VIDEO_TITLE_MAX_LENGTH = 200;
+
+export const renameVideoRequestSchema = z.object({
+  title: z.string().trim().min(1).max(VIDEO_TITLE_MAX_LENGTH),
+});
+export type RenameVideoRequest = z.infer<typeof renameVideoRequestSchema>;
 
 export interface ListVideosResponse {
   videos: VideoResponse[];

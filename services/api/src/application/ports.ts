@@ -34,6 +34,8 @@ export interface VideoRepository {
    * what happened to the video meanwhile, such as being moved to another category.
    */
   saveModeration(video: Video): Promise<void>;
+  /** Stores only the title, so a rename cannot undo an upload, a review or a move. */
+  saveTitle(video: Video): Promise<void>;
   delete(id: string): Promise<void>;
   /**
    * One atomic write: removes a video whose bytes were counted and gives them back to its

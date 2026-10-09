@@ -2,12 +2,14 @@
 
 import type { PlaybackResponse } from '@cvp/shared';
 import { ApiError } from '@cvp/upload-client';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { DeleteVideoButton } from '@/components/video/delete-video-button';
+import { RenameVideoForm } from '@/components/video/rename-video-form';
 import { ReportPanel } from '@/components/video/report-panel';
+import { Button } from '@/components/ui/button';
 import { ReviewActions } from '@/components/moderation/review-actions';
 import { uploadApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -62,6 +64,7 @@ function Watch() {
   const [cannotPlay, setCannotPlay] = useState(false);
   const [reviewError, setReviewError] = useState('');
   const [deleteError, setDeleteError] = useState('');
+  const [renaming, setRenaming] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -120,7 +123,33 @@ function Watch() {
             </p>
           )}
           <div className="grid gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight">{state.playback.title}</h1>
+            {renaming ? (
+              <RenameVideoForm
+                video={{ id: videoId, title: state.playback.title }}
+                onCancel={() => setRenaming(false)}
+                onRenamed={(title) => {
+                  setRenaming(false);
+                  setState({ status: 'ready', playback: { ...state.playback, title } });
+                }}
+              />
+            ) : (
+              <div className="flex items-start gap-2">
+                <h1 className="min-w-0 text-2xl font-semibold tracking-tight wrap-anywhere">
+                  {state.playback.title}
+                </h1>
+                {state.playback.isMine && (
+                  <Button
+                    variant="ghost"
+                    size="icon-lg"
+                    aria-label={t.renameVideo.button(state.playback.title)}
+                    className="text-muted-foreground -mt-1 shrink-0"
+                    onClick={() => setRenaming(true)}
+                  >
+                    <Pencil aria-hidden />
+                  </Button>
+                )}
+              </div>
+            )}
             <p className="text-muted-foreground text-sm tabular-nums">
               {formatDuration(state.playback.durationSeconds)}, {state.playback.width} x{' '}
               {state.playback.height}

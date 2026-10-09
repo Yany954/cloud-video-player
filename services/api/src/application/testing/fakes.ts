@@ -50,6 +50,12 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountAdmin {
     this.videos.set(video.id, { ...stored, categoryId: video.categoryId, private: video.private });
   }
 
+  async saveTitle(video: Video) {
+    const stored = this.videos.get(video.id);
+    if (!stored) throw new Error('No such video');
+    this.videos.set(video.id, { ...stored, title: video.title });
+  }
+
   async saveModeration(video: Video) {
     const stored = this.videos.get(video.id);
     if (!stored) throw new Error('No such video');
