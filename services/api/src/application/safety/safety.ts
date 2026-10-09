@@ -29,8 +29,7 @@ async function findVisible(
 ): Promise<Video> {
   const video = await videos.findById(videoId);
   if (!video) throw new NotFoundError();
-  const category =
-    video.private && video.categoryId ? await categories.findById(video.categoryId) : null;
+  const category = video.categoryId ? await categories.findById(video.categoryId) : null;
   if (!canView(video, viewer, category)) throw new NotFoundError();
   return video;
 }

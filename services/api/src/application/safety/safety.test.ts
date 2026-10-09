@@ -13,7 +13,7 @@ import {
 } from '../testing/fakes';
 import { DeleteVideo } from '../video/delete-video';
 import { GetPlayback } from '../video/get-playback';
-import { ListLibrary } from '../video/list-library';
+import { ListSharedWithMe } from '../video/list-shared-with-me';
 import {
   BlockUploader,
   ListBlocks,
@@ -36,8 +36,13 @@ const ready = (id: string, ownerId: string) =>
     ),
     { durationSeconds: 60, width: 1920, height: 1080 },
   );
+// Other people's videos are only reachable through an event, so the three meet in one.
+const party = {
+  ...createCategory({ id: 'party', ownerId: 'host', name: 'Party', now: now() }),
+  collaboratorIds: ['ana', 'ben', 'carla'],
+};
 const approved = (id: string, ownerId: string) =>
-  reviewVideo(ready(id, ownerId), 'approve', 'admin-1', now());
+  assignToCategory(reviewVideo(ready(id, ownerId), 'approve', 'admin-1', now()), party);
 
 const viewer = (userId: string, isAdmin = false) => ({ userId, isAdmin });
 const signer = { sign: async () => ({ video: 'video-url', poster: 'poster-url' }) };
@@ -47,20 +52,22 @@ let reports: InMemoryReports;
 let blocks: InMemoryBlocks;
 let report: ReportVideo;
 let block: BlockUploader;
-let library: ListLibrary;
+let shared: ListSharedWithMe;
 let playback: GetPlayback;
 
-beforeEach(() => {
+beforeEach(async () => {
   db = new InMemoryDatabase();
+  await db.categories.create(party);
   reports = new InMemoryReports();
   blocks = new InMemoryBlocks();
   report = new ReportVideo(db, db.categories, reports, now);
   block = new BlockUploader(db, db.categories, blocks, now);
-  library = new ListLibrary(db, blocks);
+  shared = new ListSharedWithMe(db, db.categories, blocks);
   playback = new GetPlayback(db, signer, now, db.categories, blocks);
 });
 
 const ids = (videos: { id: string }[]) => videos.map((video) => video.id);
+const sharedWith = (userId: string) => shared.execute({ viewer: viewer(userId) });
 
 describe('ReportVideo', () => {
   it('hides an approved video from everyone at once and puts it in the review queue', async () => {
@@ -73,7 +80,7 @@ describe('ReportVideo', () => {
       note: 'a fight',
     });
 
-    expect(await library.execute({ userId: 'carla' })).toEqual([]);
+    expect(await sharedWith('carla')).toEqual([]);
     await expect(playback.execute({ viewer: viewer('carla'), videoId: 'v1' })).rejects.toThrow(
       NotFoundError,
     );
@@ -108,7 +115,7 @@ describe('ReportVideo', () => {
 
     await report.execute({ viewer: viewer('ben'), videoId: 'v1', reason: 'violence' });
 
-    expect(ids(await library.execute({ userId: 'carla' }))).toEqual(['v1']);
+    expect(ids(await sharedWith('carla'))).toEqual(['v1']);
     expect(reports.items).toHaveLength(1);
   });
 
@@ -159,8 +166,8 @@ describe('BlockUploader', () => {
   it('hides the blocked person’s videos from the blocker only', async () => {
     await block.execute({ viewer: viewer('ben'), videoId: 'anas' });
 
-    expect(ids(await library.execute({ userId: 'ben' }))).toEqual(['carlas']);
-    expect(ids(await library.execute({ userId: 'carla' })).sort()).toEqual(['anas', 'carlas']);
+    expect(ids(await sharedWith('ben'))).toEqual(['carlas']);
+    expect(ids(await sharedWith('carla'))).toEqual(['anas']);
     await expect(playback.execute({ viewer: viewer('ben'), videoId: 'anas' })).rejects.toThrow(
       NotFoundError,
     );
@@ -170,7 +177,7 @@ describe('BlockUploader', () => {
     await db.create(approved('bens', 'ben'));
     await block.execute({ viewer: viewer('ben'), videoId: 'anas' });
 
-    expect(ids(await library.execute({ userId: 'ana' }))).toContain('bens');
+    expect(ids(await sharedWith('ana'))).toContain('bens');
   });
 
   it('removes the blocked person from the blocker’s events and keeps them out', async () => {
@@ -219,7 +226,7 @@ describe('BlockUploader', () => {
     ]);
 
     await new Unblock(blocks).execute({ userId: 'ben', blockedId: 'ana' });
-    expect(ids(await library.execute({ userId: 'ben' })).sort()).toEqual(['anas', 'carlas']);
+    expect(ids(await sharedWith('ben')).sort()).toEqual(['anas', 'carlas']);
   });
 
   it('refuses blocking yourself, and a video the caller cannot see', async () => {

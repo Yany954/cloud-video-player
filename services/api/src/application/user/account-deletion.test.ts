@@ -4,7 +4,6 @@ import { reviewVideo } from '../../domain/moderation';
 import { completeUpload, markReady, startProcessing, startUpload } from '../../domain/video';
 import { ForbiddenError, NotFoundError } from '../errors';
 import { InMemoryDatabase, InMemoryObjectStorage, InMemoryUserAccounts } from '../testing/fakes';
-import { ListLibrary } from '../video/list-library';
 import { DeleteAccountData, RequestAccountDeletion } from './account-deletion';
 
 const now = new Date('2026-10-04T12:00:00.000Z');
@@ -143,17 +142,15 @@ describe('DeleteAccountData', () => {
     expect((await db.categories.findById('bens'))?.collaboratorIds).toEqual([]);
   });
 
-  it('keeps a guest’s video from a deleted event, private to its uploader, out of the library', async () => {
+  it('keeps a guest’s video from a deleted event, with its uploader alone', async () => {
     await scenario();
 
     await job.execute({ userId: 'ana' });
 
     expect(await db.findById('ben-in-anas')).toMatchObject({
       categoryId: null,
-      private: true,
       moderationStatus: 'approved',
     });
-    expect((await new ListLibrary(db).execute()).map((video) => video.id)).toEqual(['ben-loose']);
   });
 
   it('leaves everyone else untouched', async () => {

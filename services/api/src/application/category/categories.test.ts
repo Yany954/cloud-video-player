@@ -6,7 +6,6 @@ import { NotFoundError } from '../errors';
 import { InMemoryDatabase, InMemoryObjectStorage } from '../testing/fakes';
 import { InitiateUpload } from '../upload/initiate-upload';
 import { GetPlayback } from '../video/get-playback';
-import { ListLibrary } from '../video/list-library';
 import {
   CloseInvite,
   CreateCategory,
@@ -46,6 +45,7 @@ const approved = (id: string, ownerId = 'ana', createdAt?: string) =>
   reviewVideo(ready(id, ownerId, createdAt), 'approve', 'admin-1', now());
 
 const viewer = (userId: string, isAdmin = false) => ({ userId, isAdmin });
+const signer = { sign: async () => ({ video: 'video-url', poster: 'poster-url' }) };
 const ids = (items: { id: string }[]) => items.map((item) => item.id);
 
 let db: InMemoryDatabase;
@@ -92,24 +92,30 @@ describe('CreateCategory and ListCategories', () => {
 });
 
 describe('SetVideoCategory', () => {
-  it('puts my video in my private event, which takes it out of the library', async () => {
+  it('puts my video in my private event', async () => {
     await concert();
     await db.create(approved('v1'));
 
     await setVideoCategory.execute({ userId: 'ana', videoId: 'v1', categoryId: 'cat-1' });
 
     expect(await db.findById('v1')).toMatchObject({ categoryId: 'cat-1', private: true });
-    expect(await new ListLibrary(db).execute()).toEqual([]);
   });
 
-  it('takes it out again with null, back into the library', async () => {
+  it('takes it out again with null, and then nobody else can play it', async () => {
     await concert();
-    await db.create(assignToCategory(approved('v1'), (await db.categories.findById('cat-1'))!));
+    const stored = { ...(await db.categories.findById('cat-1'))!, collaboratorIds: ['ben'] };
+    await db.categories.save(stored);
+    await db.create(assignToCategory(approved('v1'), stored));
 
     await setVideoCategory.execute({ userId: 'ana', videoId: 'v1', categoryId: null });
 
     expect(await db.findById('v1')).toMatchObject({ categoryId: null, private: false });
-    expect(ids(await new ListLibrary(db).execute())).toEqual(['v1']);
+    await expect(
+      new GetPlayback(db, signer, now, db.categories).execute({
+        viewer: viewer('ben'),
+        videoId: 'v1',
+      }),
+    ).rejects.toThrow(NotFoundError);
   });
 
   it('changes only the category, not what another job stored meanwhile', async () => {
@@ -209,8 +215,6 @@ describe('GetCategory', () => {
 });
 
 describe('playback of a video in a private event', () => {
-  const signer = { sign: async () => ({ video: 'video-url', poster: 'poster-url' }) };
-
   it('is allowed for a collaborator and refused to everyone else', async () => {
     const category = await concert();
     const stored = { ...category, collaboratorIds: ['ben'] };
@@ -239,16 +243,20 @@ describe('UpdateCategory', () => {
     expect((await db.categories.findById('cat-1'))?.name).toBe('Concert 2026');
   });
 
-  it('sharing an event puts its approved videos in the library; hiding it removes them', async () => {
+  it('sharing an event lets everyone play its approved videos; hiding it stops that', async () => {
     const category = await concert();
     await db.create(assignToCategory(approved('v1'), category));
-    const library = new ListLibrary(db);
+    const play = () =>
+      new GetPlayback(db, signer, now, db.categories).execute({
+        viewer: viewer('ben'),
+        videoId: 'v1',
+      });
 
     await update.execute({ userId: 'ana', categoryId: 'cat-1', visibility: 'shared' });
-    expect(ids(await library.execute())).toEqual(['v1']);
+    await expect(play()).resolves.toMatchObject({ video: 'video-url' });
 
     await update.execute({ userId: 'ana', categoryId: 'cat-1', visibility: 'private' });
-    expect(await library.execute()).toEqual([]);
+    await expect(play()).rejects.toThrow(NotFoundError);
   });
 });
 

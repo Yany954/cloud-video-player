@@ -1,5 +1,5 @@
 import { DomainError } from './errors';
-import { isMember, type Category } from './category';
+import { canViewCategory, type Category } from './category';
 import { isOwnedBy, type Video } from './video';
 
 export type ReviewDecision = 'approve' | 'reject';
@@ -38,29 +38,25 @@ export function awaitsReview(video: Video): boolean {
   );
 }
 
-/** Visible to every signed-in user: approved, and not kept inside a private category. */
-export function isInLibrary(video: Video): boolean {
-  return isApproved(video) && !video.private;
-}
-
-function isApproved(video: Video): boolean {
+/** An admin said yes, and it can be played. */
+export function isApproved(video: Video): boolean {
   return video.uploadStatus === 'ready' && video.moderationStatus === 'approved';
 }
 
 /**
- * The owner always sees their own video. An admin sees any playable video, to review it.
- * Everyone else sees only approved videos: those in the library, plus those of a private
- * category they are a member of. `category` is the video's category, when the caller has it.
+ * Who may watch a video. Its owner always. An admin any playable video, to review it. Anyone
+ * else only through an event: the video must be approved and sit in a category that the viewer
+ * may see. A video outside every event is its owner's alone, however approved it is.
+ * `category` is the video's own category, when the caller has loaded it.
  */
 export function canView(video: Video, viewer: Viewer, category: Category | null = null): boolean {
   if (isOwnedBy(video, viewer.userId)) return true;
   if (viewer.isAdmin) return video.uploadStatus === 'ready';
-  if (!video.private) return isInLibrary(video);
   return (
     isApproved(video) &&
     category !== null &&
     category.id === video.categoryId &&
-    isMember(category, viewer.userId)
+    canViewCategory(category, viewer)
   );
 }
 

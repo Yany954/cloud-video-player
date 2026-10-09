@@ -1,4 +1,4 @@
-import { detachPrivately, removeCollaborator } from '../../domain/category';
+import { assignToCategory, removeCollaborator } from '../../domain/category';
 import type { Viewer } from '../../domain/moderation';
 import { assertDeletable } from '../../domain/user';
 import { MAX_CATEGORY_VIDEOS, MAX_LISTED_CATEGORIES } from '../category/categories';
@@ -85,7 +85,7 @@ export class DeleteAccountData {
       for (;;) {
         const guests = await this.videos.listByCategory(category.id, MAX_CATEGORY_VIDEOS);
         if (guests.length === 0) break;
-        for (const video of guests) await this.videos.saveCategoryOf(detachPrivately(video));
+        for (const video of guests) await this.videos.saveCategoryOf(assignToCategory(video, null));
       }
       await this.categories.delete(category);
     }

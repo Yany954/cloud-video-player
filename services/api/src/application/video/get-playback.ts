@@ -38,9 +38,8 @@ export class GetPlayback {
   async execute(input: { viewer: Viewer; videoId: string }): Promise<Playback> {
     const video = await this.videos.findById(input.videoId);
     if (!video) throw new NotFoundError();
-    // Only a private video needs its category, to check that the viewer is a member.
-    const category =
-      video.private && video.categoryId ? await this.categories.findById(video.categoryId) : null;
+    // Other people reach a video only through its event, so that is what gets checked.
+    const category = video.categoryId ? await this.categories.findById(video.categoryId) : null;
     if (!canView(video, input.viewer, category)) throw new NotFoundError();
     // Admins still open a blocked person's video, to review it.
     if (

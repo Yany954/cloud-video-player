@@ -85,7 +85,7 @@ describe('DynamoVideoRepository.saveCompleted', () => {
   });
 });
 
-describe('DynamoVideoRepository moderation lists', () => {
+describe('DynamoVideoRepository review queue', () => {
   const query = (send: ReturnType<typeof vi.fn>) => (send.mock.calls[0]![0] as QueryCommand).input;
 
   it('reads the review queue oldest first', async () => {
@@ -95,21 +95,9 @@ describe('DynamoVideoRepository moderation lists', () => {
 
     expect(query(send)).toMatchObject({
       IndexName: 'GSI3',
-      ExpressionAttributeValues: { ':list': 'MODERATION#queue' },
+      ExpressionAttributeValues: { ':queue': 'MODERATION#queue' },
       ScanIndexForward: true,
       Limit: 100,
-    });
-  });
-
-  it('reads the library newest first', async () => {
-    const { send, repository } = setup();
-
-    await repository.listLibrary(100);
-
-    expect(query(send)).toMatchObject({
-      IndexName: 'GSI3',
-      ExpressionAttributeValues: { ':list': 'MODERATION#library' },
-      ScanIndexForward: false,
     });
   });
 });

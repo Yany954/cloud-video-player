@@ -1,4 +1,4 @@
-import { awaitsReview, isInLibrary } from '../domain/moderation';
+import { awaitsReview } from '../domain/moderation';
 import type { Video } from '../domain/video';
 
 // Single-table key patterns. See infra/lib/data-stack.ts for the full table.
@@ -13,16 +13,15 @@ export const ownerIndex = {
   partitionKey: (ownerId: string) => `OWNER#${ownerId}`,
 };
 
-// Sparse: only playable videos that are waiting for review, or approved and not private,
-// carry these keys.
+// Sparse: only playable videos that are waiting for an admin's decision carry these keys.
+// (Rows written before 2026-10 may still hold `MODERATION#library`; nothing reads it.)
 export const moderationIndex = {
   name: 'GSI3',
-  partitionKey: (list: 'queue' | 'library') => `MODERATION#${list}`,
+  queue: 'MODERATION#queue',
 };
 
 function moderationKeys(video: Video) {
-  const list = awaitsReview(video) ? 'queue' : isInLibrary(video) ? 'library' : null;
-  return list && { GSI3PK: moderationIndex.partitionKey(list), GSI3SK: video.createdAt };
+  return awaitsReview(video) && { GSI3PK: moderationIndex.queue, GSI3SK: video.createdAt };
 }
 
 // Sparse: only videos that were put in a category.
@@ -59,7 +58,7 @@ export type VideoItem = Video &
     /** GSI2: the videos of one category. */
     GSI2PK?: string;
     GSI2SK?: string;
-    /** GSI3: the review queue and the shared library. */
+    /** GSI3: the review queue. */
     GSI3PK?: string;
     GSI3SK?: string;
     /** TTL attribute, epoch seconds. Only present while uploading. */

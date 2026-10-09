@@ -29,7 +29,7 @@ export const es: Messages = {
     label: 'Principal',
     yourVideos: 'Tus videos',
     events: 'Eventos',
-    library: 'Biblioteca',
+    library: 'Compartido conmigo',
     review: 'Revisión',
     users: 'Usuarios',
     profile: 'Perfil',
@@ -39,7 +39,7 @@ export const es: Messages = {
   loginPage: {
     title: 'Iniciar sesión | Cloud Video Player',
     privacyNote:
-      'Aquí los videos son privados. Solo ves los tuyos, los eventos a los que te invitaron y lo que aprobaron los administradores de la biblioteca.',
+      'Aquí los videos son privados. Solo ves los tuyos y los de los eventos a los que te invitaron.',
     asideTitle: 'Todos los conciertos que grabaste, en un solo lugar privado.',
     asideText:
       'En calidad original, fuera de tu teléfono, y solo los ven las personas que invites.',
@@ -177,7 +177,7 @@ export const es: Messages = {
     progressOf: (name: string) => `Progreso de la subida de ${name}`,
     uploading: (percent: number) => `Subiendo, ${percent} %`,
     pausedAt: (percent: number) => `En pausa al ${percent} %`,
-    done: 'Subido. Los demás lo verán cuando haya sido revisado.',
+    done: 'Subido. Solo tú puedes verlo; las personas de su evento lo verán cuando haya sido revisado.',
     errors: {
       unsupportedFormat: 'Solo se pueden subir videos MP4, MOV, MKV y AVI.',
       quota: 'No queda suficiente almacenamiento para este video.',
@@ -211,12 +211,14 @@ export const es: Messages = {
     keep: 'Conservar el video',
   },
   library: {
-    title: 'Biblioteca',
-    intro: 'Videos de todas las personas del grupo, una vez que un administrador los aprobó.',
-    listTitle: 'Videos aprobados',
-    loadError: 'No se pudo cargar la biblioteca. Recarga la página para intentarlo de nuevo.',
-    emptyTitle: 'Todavía no hay nada',
-    emptyText: 'Aquí aparecerán los videos aprobados, tuyos y del resto del grupo.',
+    title: 'Compartido conmigo',
+    intro:
+      'Videos que otras personas agregaron a los eventos en los que participas. Nadie ve tus videos a menos que los pongas en un evento e invites a esa persona.',
+    listTitle: 'Videos de tus eventos',
+    loadError: 'No se pudieron cargar estos videos. Recarga la página para intentarlo de nuevo.',
+    emptyTitle: 'Todavía no te compartieron nada',
+    emptyText:
+      'Cuando alguien te invite a un evento, o agregue un video a uno tuyo, aparecerá aquí.',
   },
   events: {
     title: 'Eventos',
@@ -270,8 +272,7 @@ export const es: Messages = {
     reorder: 'Reordenar',
     makePrivate: 'Hacer privado',
     makePrivateTitle: '¿Hacer privado este evento?',
-    makePrivateText:
-      'Solo tú y las personas que invites verán este evento. Sus videos saldrán de la Biblioteca.',
+    makePrivateText: 'Solo tú y las personas que invites verán este evento y sus videos.',
     nowPrivate: 'El evento ahora es privado.',
     changeFailed: 'No se pudo cambiar el evento.',
     delete: 'Eliminar evento',
@@ -297,8 +298,7 @@ export const es: Messages = {
     removeLabel: (title: string) => `Quitar ${title} de este evento`,
     removeTitle: '¿Quitar este video del evento?',
     removeText: (title: string) => `«${title}» sigue en Tus videos; no se elimina.`,
-    removePrivateNote:
-      ' Fuera de este evento privado, aparecerá en la Biblioteca para todos cuando esté aprobado.',
+    removePrivateNote: ' Fuera de este evento, solo puede verlo la persona que lo subió.',
     keepInEvent: 'Dejarlo en el evento',
     removed: (title: string) => `Se quitó «${title}» del evento.`,
     removeFailed: (title: string) => `No se pudo quitar «${title}».`,
@@ -321,8 +321,8 @@ export const es: Messages = {
     title: 'Revisión',
     adminsOnly: 'Solo los administradores pueden revisar videos.',
     intro:
-      'Mira cada video antes de decidir. Los videos aprobados aparecen en la biblioteca para todos.',
-    approvedNotice: (title: string) => `«${title}» fue aprobado y ya está en la biblioteca.`,
+      'Mira cada video antes de decidir. Un video aprobado lo ve quien lo subió y, si está en un evento, las personas invitadas a ese evento.',
+    approvedNotice: (title: string) => `«${title}» fue aprobado.`,
     rejectedNotice: (title: string) => `«${title}» fue rechazado.`,
     queueTitle: 'Esperando revisión',
     loadError: 'No se pudo cargar la cola de revisión. Recarga la página para intentarlo de nuevo.',
@@ -347,14 +347,15 @@ export const es: Messages = {
     takeDownTitle: '¿Retirar este video?',
     rejectTitle: '¿Rechazar este video?',
     takeDownText: (title: string) =>
-      `«${title}» saldrá de la biblioteca. Solo la persona que lo subió podrá seguir viéndolo. Puedes aprobarlo más adelante.`,
+      `«${title}» quedará oculto para las personas de su evento. Solo la persona que lo subió podrá seguir viéndolo. Puedes aprobarlo más adelante.`,
     rejectText: (title: string) =>
-      `«${title}» no aparecerá en la biblioteca. Solo la persona que lo subió podrá verlo. Puedes aprobarlo más adelante.`,
+      `«${title}» seguirá oculto. Solo la persona que lo subió podrá verlo. Puedes aprobarlo más adelante.`,
     rejectVideo: 'Rechazar video',
     status: {
       pending: 'Esperando revisión. Solo tú y la persona que lo subió pueden verlo.',
       flagged: 'Reportado y esperando revisión.',
-      approved: 'Aprobado. Todas las personas del grupo pueden verlo en la biblioteca.',
+      approved:
+        'Aprobado. Lo ve quien lo subió y, si está en un evento, las personas invitadas a ese evento.',
       rejected: 'No aprobado. Solo la persona que lo subió puede verlo.',
     },
   },
@@ -588,7 +589,7 @@ export const es: Messages = {
       },
       privacy: {
         title: 'Privado, a menos que tú decidas otra cosa',
-        text: 'Nadie más ve un video hasta que un administrador lo aprueba, y un evento es solo de las personas que invites. Los enlaces a los videos dejan de funcionar a las pocas horas.',
+        text: 'Un video es solo tuyo hasta que lo pones en un evento, y un evento es solo de las personas que invites. Cada video se revisa antes de que alguien más pueda verlo. Los enlaces a los videos dejan de funcionar a las pocas horas.',
       },
       events: {
         title: 'Una noche, desde todos los ángulos',

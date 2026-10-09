@@ -69,19 +69,16 @@ describe('moderation index', () => {
     });
   });
 
-  it('moves an approved video to the library', () => {
-    expect(toVideoItem(review('approve')).GSI3PK).toBe('MODERATION#library');
-  });
-
   it.each([
+    ['an approved video', review('approve')],
     ['a rejected video', review('reject')],
     ['a video that is not playable yet', completeUpload(uploading, 1_000)],
-  ])('keeps %s out of both lists', (_, video) => {
+  ])('keeps %s out of the queue, and in no list that others can read', (_, video) => {
     expect(toVideoItem(video)).not.toHaveProperty('GSI3PK');
     expect(toVideoItem(video)).not.toHaveProperty('GSI3SK');
   });
 
-  it('keeps an approved video of a private category out of the library, but in its category', () => {
+  it('indexes an approved video of an event by its category only', () => {
     const event = createCategory({
       id: 'cat-1',
       ownerId: 'user-1',

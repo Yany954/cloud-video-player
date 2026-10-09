@@ -386,7 +386,7 @@ export default function EventPage() {
                           <AlertDialogTitle>{e.removeTitle}</AlertDialogTitle>
                           <AlertDialogDescription>
                             {e.removeText(video.title)}
-                            {isPrivate && e.removePrivateNote}
+                            {e.removePrivateNote}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

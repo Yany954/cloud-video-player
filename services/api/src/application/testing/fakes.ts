@@ -1,6 +1,6 @@
 import type { Category } from '../../domain/category';
 import { DomainError } from '../../domain/errors';
-import { awaitsReview, isInLibrary } from '../../domain/moderation';
+import { awaitsReview } from '../../domain/moderation';
 import { DEFAULT_QUOTA_BYTES, fits, type StorageUsage } from '../../domain/quota';
 import type { Block, Report } from '../../domain/safety';
 import type { UserAccount, UserRole } from '../../domain/user';
@@ -102,13 +102,6 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountAdmin {
     return [...this.videos.values()]
       .filter(awaitsReview)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .slice(0, limit);
-  }
-
-  async listLibrary(limit: number) {
-    return [...this.videos.values()]
-      .filter(isInLibrary)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, limit);
   }
 

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { completeUpload, markReady, startProcessing, startUpload } from '../../domain/video';
 import { ForbiddenError, NotFoundError } from '../errors';
 import { InMemoryDatabase } from '../testing/fakes';
-import { ListLibrary } from '../video/list-library';
 import { ListReviewQueue } from './list-review-queue';
 import { ReviewVideo } from './review-video';
 
@@ -33,13 +32,11 @@ const ben = { userId: 'ben', isAdmin: false };
 let db: InMemoryDatabase;
 let reviewVideo: ReviewVideo;
 let listReviewQueue: ListReviewQueue;
-let listLibrary: ListLibrary;
 
 beforeEach(() => {
   db = new InMemoryDatabase();
   reviewVideo = new ReviewVideo(db, () => new Date('2026-10-03T12:00:00.000Z'));
   listReviewQueue = new ListReviewQueue(db);
-  listLibrary = new ListLibrary(db);
 });
 
 const ids = (videos: { id: string }[]) => videos.map((video) => video.id);
@@ -105,28 +102,5 @@ describe('ListReviewQueue', () => {
 
   it('refuses anyone who is not an admin', async () => {
     await expect(listReviewQueue.execute({ viewer: ben })).rejects.toThrow(ForbiddenError);
-  });
-});
-
-describe('ListLibrary', () => {
-  it('holds only approved videos, newest first', async () => {
-    await db.create(ready('older', '2026-10-01T10:00:00.000Z'));
-    await db.create(ready('newer', '2026-10-03T10:00:00.000Z'));
-    await db.create(ready('pending', '2026-10-02T10:00:00.000Z'));
-    await db.create(ready('rejected', '2026-10-02T11:00:00.000Z'));
-    for (const videoId of ['older', 'newer']) {
-      await reviewVideo.execute({ reviewer: admin, videoId, decision: 'approve' });
-    }
-    await reviewVideo.execute({ reviewer: admin, videoId: 'rejected', decision: 'reject' });
-
-    expect(ids(await listLibrary.execute())).toEqual(['newer', 'older']);
-  });
-
-  it('drops a video that an admin takes down after approving it', async () => {
-    await db.create(ready('video-1'));
-    await reviewVideo.execute({ reviewer: admin, videoId: 'video-1', decision: 'approve' });
-    await reviewVideo.execute({ reviewer: admin, videoId: 'video-1', decision: 'reject' });
-
-    expect(await listLibrary.execute()).toEqual([]);
   });
 });

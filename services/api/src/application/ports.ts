@@ -17,8 +17,6 @@ export interface VideoRepository {
   listByCategory(categoryId: string, limit: number): Promise<Video[]>;
   /** Playable videos waiting for an admin's decision, oldest first. */
   listAwaitingReview(limit: number): Promise<Video[]>;
-  /** Approved, playable videos from every owner, newest first. */
-  listLibrary(limit: number): Promise<Video[]>;
   /**
    * One atomic write: stores the uploaded video and adds its size to the owner's usage.
    * Throws DomainError QUOTA_EXCEEDED (and writes nothing) if that would pass the quota.

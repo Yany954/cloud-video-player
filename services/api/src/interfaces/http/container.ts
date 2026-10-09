@@ -28,7 +28,7 @@ import { GetStorageUsage } from '../../application/upload/get-storage-usage';
 import { InitiateUpload } from '../../application/upload/initiate-upload';
 import { DeleteVideo } from '../../application/video/delete-video';
 import { GetPlayback } from '../../application/video/get-playback';
-import { ListLibrary } from '../../application/video/list-library';
+import { ListSharedWithMe } from '../../application/video/list-shared-with-me';
 import { ListMyVideos } from '../../application/video/list-my-videos';
 import { documentClient, s3Client, sqsClient, ssmClient } from '../../infrastructure/aws-clients';
 import { CloudFrontPlaybackSigner } from '../../infrastructure/cloudfront-playback-signer';
@@ -65,7 +65,7 @@ export const abortUpload = new AbortUpload(videos, storage);
 export const getStorageUsage = new GetStorageUsage(accounts);
 export const listMyVideos = new ListMyVideos(videos);
 export const deleteVideo = new DeleteVideo(videos, storage, reports);
-export const listLibrary = new ListLibrary(videos, blocks);
+export const listSharedWithMe = new ListSharedWithMe(videos, categories, blocks);
 export const listReviewQueue = new ListReviewQueueWithReports(videos, reports);
 export const reviewVideo = new ReviewVideo(videos, () => new Date());
 

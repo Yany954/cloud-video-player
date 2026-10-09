@@ -4,7 +4,7 @@ import type { Locale } from '@/lib/i18n/config';
 export const CONTACT_EMAIL = 'cloudvideoplayer.contact@gmail.com';
 
 /** The day these documents last changed, shown on each of them. */
-export const LEGAL_UPDATED = '2026-10-04';
+export const LEGAL_UPDATED = '2026-10-09';
 
 export interface LegalSection {
   heading: string;

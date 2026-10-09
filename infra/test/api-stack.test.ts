@@ -148,8 +148,12 @@ describe('ApiStack', () => {
       ]);
     });
 
-    it('lets the library and the review queue only query and sign poster links', () => {
-      expect(actionsOf('ListLibrary')).toEqual(['dynamodb:Query', 'ssm:GetParameter']);
+    it('lets "Shared with me" read the caller’s events and their videos, and sign poster links', () => {
+      expect(actionsOf('ListLibrary')).toEqual([
+        'dynamodb:BatchGetItem',
+        'dynamodb:Query',
+        'ssm:GetParameter',
+      ]);
       expect(actionsOf('ListReviewQueue')).toEqual([
         'cognito-idp:ListUsers',
         'dynamodb:Query',

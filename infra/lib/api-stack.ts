@@ -211,8 +211,8 @@ export class ApiStack extends Stack {
       method: HttpMethod.GET,
       path: '/library',
       file: 'list-library.ts',
-      // Reads the approved videos in the moderation index (GSI3).
-      tableActions: ['dynamodb:Query'],
+      // "Shared with me": the caller's events (owned and joined), then each event's videos.
+      tableActions: ['dynamodb:Query', 'dynamodb:BatchGetItem'],
       signsPlaybackUrls: true,
     });
     // The /admin routes check the caller's `admin` group inside the handler.

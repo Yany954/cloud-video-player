@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { assignToCategory, createCategory } from '../../domain/category';
 import { reviewVideo } from '../../domain/moderation';
 import {
   completeUpload,
@@ -85,8 +86,21 @@ describe('GetPlayback', () => {
     );
   });
 
-  it('lets any signed-in user play an approved video', async () => {
+  it('hides an approved video outside every event from other users', async () => {
     await db.create(approved());
+
+    await expect(getPlayback.execute({ viewer: ben, videoId: 'video-1' })).rejects.toThrow(
+      NotFoundError,
+    );
+  });
+
+  it('lets a person invited to its event play an approved video', async () => {
+    const event = {
+      ...createCategory({ id: 'cat-1', ownerId: 'ana', name: 'Concert', now: new Date() }),
+      collaboratorIds: ['ben'],
+    };
+    await db.categories.create(event);
+    await db.create(assignToCategory(approved(), event));
 
     const playback = await getPlayback.execute({ viewer: ben, videoId: 'video-1' });
 

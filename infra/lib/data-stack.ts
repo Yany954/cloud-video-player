@@ -18,7 +18,6 @@ const stringKey = (name: string) => ({ name, type: AttributeType.STRING });
  *   GSI2   CATEGORY#{id}              createdAt  the videos of one event         videos put in a category (sparse)
  *          CATEGORIES                 createdAt  events shared with everyone     shared categories (sparse)
  *   GSI3   MODERATION#queue           createdAt  admin review queue, oldest 1st  playable, undecided videos (sparse)
- *          MODERATION#library         createdAt  the library, newest first       approved, non-private videos (sparse)
  */
 export class DataStack extends Stack {
   readonly table: TableV2;

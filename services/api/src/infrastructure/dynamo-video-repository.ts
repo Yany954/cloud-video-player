@@ -103,26 +103,15 @@ export class DynamoVideoRepository implements VideoRepository {
     );
   }
 
-  listAwaitingReview(limit: number): Promise<Video[]> {
-    return this.listModeration('queue', limit, true);
-  }
-
-  listLibrary(limit: number): Promise<Video[]> {
-    return this.listModeration('library', limit, false);
-  }
-
-  private async listModeration(
-    list: 'queue' | 'library',
-    limit: number,
-    oldestFirst: boolean,
-  ): Promise<Video[]> {
+  async listAwaitingReview(limit: number): Promise<Video[]> {
     const { Items } = await this.doc.send(
       new QueryCommand({
         TableName: this.tableName,
         IndexName: moderationIndex.name,
-        KeyConditionExpression: 'GSI3PK = :list',
-        ExpressionAttributeValues: { ':list': moderationIndex.partitionKey(list) },
-        ScanIndexForward: oldestFirst,
+        KeyConditionExpression: 'GSI3PK = :queue',
+        ExpressionAttributeValues: { ':queue': moderationIndex.queue },
+        // Oldest first, so nobody's upload waits behind newer ones.
+        ScanIndexForward: true,
         Limit: limit,
       }),
     );

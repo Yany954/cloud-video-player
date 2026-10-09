@@ -28,7 +28,7 @@ export const en = {
     label: 'Main',
     yourVideos: 'Your videos',
     events: 'Events',
-    library: 'Library',
+    library: 'Shared with me',
     review: 'Review',
     users: 'Users',
     profile: 'Profile',
@@ -38,7 +38,7 @@ export const en = {
   loginPage: {
     title: 'Sign in | Cloud Video Player',
     privacyNote:
-      'Videos here are private. You see only your own, the events you were invited to, and what the library’s admins approved.',
+      'Videos here are private. You see only your own and those of the events you were invited to.',
     asideTitle: 'Every show you filmed, in one private place.',
     asideText: 'Original quality, off your phone, and only the people you invite can watch.',
   },
@@ -173,7 +173,7 @@ export const en = {
     progressOf: (name: string) => `Upload progress of ${name}`,
     uploading: (percent: number) => `Uploading, ${percent}%`,
     pausedAt: (percent: number) => `Paused at ${percent}%`,
-    done: 'Uploaded. It will appear for others once it has been reviewed.',
+    done: 'Uploaded. Only you can watch it; people in its event will see it once it has been reviewed.',
     errors: {
       unsupportedFormat: 'Only MP4, MOV, MKV and AVI videos can be uploaded.',
       quota: 'Not enough storage left for this video.',
@@ -206,12 +206,14 @@ export const en = {
     keep: 'Keep video',
   },
   library: {
-    title: 'Library',
-    intro: 'Videos from everyone in the group, once an admin has approved them.',
-    listTitle: 'Approved videos',
-    loadError: 'The library could not be loaded. Reload the page to try again.',
-    emptyTitle: 'Nothing here yet',
-    emptyText: 'Approved videos from you and the rest of the group will be listed here.',
+    title: 'Shared with me',
+    intro:
+      'Videos other people added to the events you belong to. Nobody sees your videos unless you put them in an event and invite them.',
+    listTitle: 'Videos from your events',
+    loadError: 'These videos could not be loaded. Reload the page to try again.',
+    emptyTitle: 'Nothing shared with you yet',
+    emptyText:
+      'When someone invites you to an event, or adds a video to one of yours, it will be listed here.',
   },
   events: {
     title: 'Events',
@@ -263,8 +265,7 @@ export const en = {
     reorder: 'Reorder',
     makePrivate: 'Make private',
     makePrivateTitle: 'Make this event private?',
-    makePrivateText:
-      'Only you and the people you invite will see this event. Its videos will leave the Library.',
+    makePrivateText: 'Only you and the people you invite will see this event and its videos.',
     nowPrivate: 'The event is now private.',
     changeFailed: 'The event could not be changed.',
     delete: 'Delete event',
@@ -290,8 +291,7 @@ export const en = {
     removeLabel: (title: string) => `Remove ${title} from this event`,
     removeTitle: 'Remove this video from the event?',
     removeText: (title: string) => `“${title}” stays in Your videos; it is not deleted.`,
-    removePrivateNote:
-      ' Outside this private event, it will appear in the Library for everyone once it is approved.',
+    removePrivateNote: ' Outside this event, only the person who uploaded it can watch it.',
     keepInEvent: 'Keep in event',
     removed: (title: string) => `“${title}” was removed from the event.`,
     removeFailed: (title: string) => `“${title}” could not be removed.`,
@@ -313,8 +313,9 @@ export const en = {
   review: {
     title: 'Review',
     adminsOnly: 'Only admins can review videos.',
-    intro: 'Watch each video before deciding. Approved videos appear in the library for everyone.',
-    approvedNotice: (title: string) => `“${title}” is approved and now in the library.`,
+    intro:
+      'Watch each video before deciding. An approved video is seen by its uploader and, when it is in an event, by the people invited to that event.',
+    approvedNotice: (title: string) => `“${title}” is approved.`,
     rejectedNotice: (title: string) => `“${title}” was rejected.`,
     queueTitle: 'Waiting for review',
     loadError: 'The review queue could not be loaded. Reload the page to try again.',
@@ -339,14 +340,15 @@ export const en = {
     takeDownTitle: 'Take this video down?',
     rejectTitle: 'Reject this video?',
     takeDownText: (title: string) =>
-      `“${title}” will leave the library. Only the person who uploaded it will still be able to watch it. You can approve it later.`,
+      `“${title}” will be hidden from the people in its event. Only the person who uploaded it will still be able to watch it. You can approve it later.`,
     rejectText: (title: string) =>
-      `“${title}” will not appear in the library. Only the person who uploaded it will be able to watch it. You can approve it later.`,
+      `“${title}” will stay hidden. Only the person who uploaded it will be able to watch it. You can approve it later.`,
     rejectVideo: 'Reject video',
     status: {
       pending: 'Waiting for review. Only you and the person who uploaded it can watch it.',
       flagged: 'Reported and waiting for review.',
-      approved: 'Approved. Everyone in the group can watch it in the library.',
+      approved:
+        'Approved. Its uploader can watch it, and so can the people invited to its event, if it is in one.',
       rejected: 'Not approved. Only the person who uploaded it can watch it.',
     },
   },
@@ -577,7 +579,7 @@ export const en = {
       },
       privacy: {
         title: 'Private unless you decide otherwise',
-        text: 'A video is seen by nobody else until an admin has approved it, and an event belongs only to the people you invite. Links to videos stop working after a few hours.',
+        text: 'A video is yours alone until you put it in an event, and an event belongs only to the people you invite. Every upload is reviewed before anyone else can watch it. Links to videos stop working after a few hours.',
       },
       events: {
         title: 'One night, everyone’s angles',

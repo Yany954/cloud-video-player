@@ -169,21 +169,16 @@ export function canAddVideo(category: Category, video: Video, userId: string): b
   return isMember(category, userId) && isOwnedBy(video, userId);
 }
 
-/** Puts a video in a category, or takes it out with `null`. It inherits the category's privacy. */
+/**
+ * Puts a video in a category, or takes it out with `null`. Outside every category a video is
+ * its owner's alone (see `canView`); `private` only records what kind of category it sits in.
+ */
 export function assignToCategory(video: Video, category: Category | null): Video {
   return {
     ...video,
     categoryId: category?.id ?? null,
     private: category?.visibility === 'private',
   };
-}
-
-/**
- * Takes a video out of an event that is being deleted by someone else (its owner closed their
- * account). It stays private to its uploader instead of landing in the library unasked.
- */
-export function detachPrivately(video: Video): Video {
-  return { ...video, categoryId: null, private: true };
 }
 
 /** Replaces the playing order. The ids come from the client, so they are checked first. */
