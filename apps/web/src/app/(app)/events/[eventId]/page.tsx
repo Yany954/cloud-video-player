@@ -2,7 +2,18 @@
 
 import type { EventDetailResponse, VideoResponse } from '@cvp/shared';
 import { ApiError } from '@cvp/upload-client';
-import { ArrowLeft, ArrowUp, ArrowUpDown, Pencil, Play, Plus, Trash2, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowUp,
+  ArrowUpDown,
+  ExternalLink,
+  Film,
+  Pencil,
+  Play,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -29,7 +40,8 @@ import { VideoList } from '@/components/video/video-list';
 import { uploadApi } from '@/lib/api';
 import { moveUp, sameOrder } from '@/lib/event/order';
 import { isBeingPrepared, videoStatusLabel } from '@/lib/video/status';
-import { useI18n } from '@/lib/i18n/i18n-context';
+import { formatDuration } from '@/lib/format';
+import { useFormat, useI18n } from '@/lib/i18n/i18n-context';
 
 export default function EventPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -487,6 +499,7 @@ function AddVideos({
   const e = t.event;
   const [candidates, setCandidates] = useState<VideoResponse[] | null>(null);
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
+  const fmt = useFormat();
 
   const load = useCallback(
     () =>
@@ -551,8 +564,8 @@ function AddVideos({
                   ? e.addMoves
                   : '';
               return (
-                <li key={video.id}>
-                  <label className="has-checked:bg-primary/10 has-focus-visible:ring-ring/50 has-disabled:text-muted-foreground flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 has-focus-visible:ring-3 has-disabled:cursor-not-allowed">
+                <li key={video.id} className="flex items-center gap-1">
+                  <label className="has-checked:bg-primary/10 has-focus-visible:ring-ring/50 has-disabled:text-muted-foreground flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 has-focus-visible:ring-3 has-disabled:cursor-not-allowed">
                     <input
                       type="checkbox"
                       name="add-video"
@@ -569,11 +582,53 @@ function AddVideos({
                         })
                       }
                     />
+                    <span className="bg-muted flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg">
+                      {video.posterUrl ? (
+                        // Decorative: the title next to it names the video. A signed link that
+                        // changes on every request, so the image optimizer could not cache it.
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={video.posterUrl}
+                          alt=""
+                          width={48}
+                          height={48}
+                          loading="lazy"
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <Film
+                          aria-hidden
+                          className="text-muted-foreground size-5"
+                          strokeWidth={1.5}
+                        />
+                      )}
+                    </span>
                     <span className="grid min-w-0">
-                      <span className="truncate text-sm font-medium">{video.title}</span>
+                      <span className="truncate text-sm font-medium" title={video.title}>
+                        {video.title}
+                      </span>
+                      <span className="text-muted-foreground text-xs tabular-nums">
+                        {video.durationSeconds !== null &&
+                          `${formatDuration(video.durationSeconds)}, `}
+                        <time dateTime={video.createdAt}>{fmt.date(video.createdAt)}</time>
+                      </span>
                       {note && <span className="text-muted-foreground text-xs">{note}</span>}
                     </span>
                   </label>
+                  {video.uploadStatus === 'ready' && (
+                    // A new tab, so what is ticked here is not lost while checking a video.
+                    <Button asChild variant="ghost" size="lg" className="shrink-0">
+                      <a
+                        href={`/videos/${video.id}`}
+                        target="_blank"
+                        rel="noopener"
+                        aria-label={e.addWatchLabel(video.title)}
+                      >
+                        <ExternalLink aria-hidden />
+                        <span className="max-sm:hidden">{e.addWatch}</span>
+                      </a>
+                    </Button>
+                  )}
                 </li>
               );
             })}

@@ -335,6 +335,8 @@ export const es: Messages = {
       'Marca los videos que quieres en este evento y luego agrégalos. No se agrega nada hasta que presiones el botón.',
     addNotReady: (status: string) => `${status}, todavía no se puede agregar`,
     addMoves: 'Se mueve aquí desde otro evento',
+    addWatch: 'Ver',
+    addWatchLabel: (title: string) => `Ver ${title} (se abre en una pestaña nueva)`,
     add: (count: number) => (count > 1 ? `Agregar ${count} videos` : 'Agregar al evento'),
     addedMany: (count: number) => `Se agregaron ${count} videos al evento.`,
     addFailedMany: 'No se pudieron agregar algunos videos.',

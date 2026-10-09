@@ -328,6 +328,8 @@ export const en = {
       'Tick the videos you want in this event, then add them. Nothing is added until you press the button.',
     addNotReady: (status: string) => `${status}, not ready to add yet`,
     addMoves: 'Moves here from another event',
+    addWatch: 'Watch',
+    addWatchLabel: (title: string) => `Watch ${title} (opens in a new tab)`,
     add: (count: number) => (count > 1 ? `Add ${count} videos` : 'Add to event'),
     addedMany: (count: number) => `${count} videos were added to the event.`,
     addFailedMany: 'Some videos could not be added.',
