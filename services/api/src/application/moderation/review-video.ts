@@ -9,7 +9,7 @@ export class ReviewVideo {
     private readonly now: Clock,
   ) {}
 
-  /** Admins only. Approving puts the video in the library; rejecting hides it from everyone but its owner. */
+  /** Admins only. Approving lets the people of the video's event watch it; rejecting hides it from everyone but its owner. */
   async execute(input: {
     reviewer: Viewer;
     videoId: string;
@@ -20,7 +20,7 @@ export class ReviewVideo {
     if (!video) throw new NotFoundError();
 
     const reviewed = reviewVideo(video, input.decision, input.reviewer.userId, this.now());
-    await this.videos.save(reviewed);
+    await this.videos.saveModeration(reviewed);
     return reviewed;
   }
 }

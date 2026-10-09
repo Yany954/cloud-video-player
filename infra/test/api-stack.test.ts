@@ -162,7 +162,11 @@ describe('ApiStack', () => {
     });
 
     it('gives reporting and blocking only the table actions they perform, and no files', () => {
-      expect(actionsOf('ReportVideo')).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem']);
+      expect(actionsOf('ReportVideo')).toEqual([
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+        'dynamodb:UpdateItem',
+      ]);
       expect(actionsOf('BlockUploader')).toEqual([
         'dynamodb:DeleteItem',
         'dynamodb:GetItem',
@@ -174,7 +178,7 @@ describe('ApiStack', () => {
     });
 
     it('lets "review" only read and rewrite one video: no delete, no files, no key', () => {
-      expect(actionsOf('ReviewVideo')).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem']);
+      expect(actionsOf('ReviewVideo')).toEqual(['dynamodb:GetItem', 'dynamodb:UpdateItem']);
     });
 
     it('lets only the five signing routes read the private key, and only that parameter', () => {
@@ -238,11 +242,13 @@ describe('ApiStack', () => {
       expect(actionsOf('ListEvents')).toEqual(['dynamodb:BatchGetItem', 'dynamodb:Query']);
       expect(actionsOf('GetEvent')).toEqual([
         'cognito-idp:ListUsers',
+        'dynamodb:BatchGetItem',
         'dynamodb:GetItem',
         'dynamodb:Query',
         'ssm:GetParameter',
       ]);
       expect(actionsOf('UpdateEvent')).toEqual([
+        'dynamodb:BatchGetItem',
         'dynamodb:GetItem',
         'dynamodb:PutItem',
         'dynamodb:Query',
@@ -250,6 +256,7 @@ describe('ApiStack', () => {
       ]);
       expect(actionsOf('ReorderEvent')).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem']);
       expect(actionsOf('DeleteEvent')).toEqual([
+        'dynamodb:BatchGetItem',
         'dynamodb:DeleteItem',
         'dynamodb:GetItem',
         'dynamodb:Query',

@@ -1,5 +1,6 @@
 import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
 import {
+  BatchGetCommand,
   DeleteCommand,
   GetCommand,
   PutCommand,
@@ -13,6 +14,7 @@ import { DomainError } from '../domain/errors';
 import type { Video } from '../domain/video';
 import {
   CATEGORY_ATTRIBUTES,
+  MODERATION_ATTRIBUTES,
   categoryIndex,
   fromVideoItem,
   moderationIndex,
@@ -21,6 +23,9 @@ import {
   userKey,
   videoKey,
 } from './video-item';
+
+type VideoKey = ReturnType<typeof videoKey>;
+const BATCH_GET_LIMIT = 100;
 
 export class DynamoVideoRepository implements VideoRepository {
   constructor(
@@ -68,20 +73,56 @@ export class DynamoVideoRepository implements VideoRepository {
         IndexName: categoryIndex.name,
         KeyConditionExpression: 'GSI2PK = :category',
         ExpressionAttributeValues: { ':category': categoryIndex.partitionKey(categoryId) },
+        ProjectionExpression: 'PK, SK',
         Limit: limit,
       }),
     );
-    return (Items ?? []).map(fromVideoItem);
+    // The index lags behind the table for a moment, so it only says where to look. The rows
+    // themselves are read consistently: a video just taken out of the category is not listed.
+    const keys = (Items ?? []).map(({ PK, SK }) => ({ PK, SK }) as VideoKey);
+    const rows = await this.getConsistently(keys);
+    return keys
+      .map((key) => rows.get(key.PK))
+      .filter((video): video is Video => video !== undefined && video.categoryId === categoryId);
   }
 
-  async saveCategoryOf(video: Video): Promise<void> {
+  private async getConsistently(keys: VideoKey[]): Promise<Map<string, Video>> {
+    const found = new Map<string, Video>();
+    for (let start = 0; start < keys.length; start += BATCH_GET_LIMIT) {
+      let pending: VideoKey[] | undefined = keys.slice(start, start + BATCH_GET_LIMIT);
+      // DynamoDB may answer only part of a batch; ask again for the rest.
+      while (pending?.length) {
+        const { Responses, UnprocessedKeys } = await this.doc.send(
+          new BatchGetCommand({
+            RequestItems: { [this.tableName]: { Keys: pending, ConsistentRead: true } },
+          }),
+        );
+        for (const item of Responses?.[this.tableName] ?? []) {
+          found.set((item as VideoKey).PK, fromVideoItem(item));
+        }
+        pending = UnprocessedKeys?.[this.tableName]?.Keys as VideoKey[] | undefined;
+      }
+    }
+    return found;
+  }
+
+  saveCategoryOf(video: Video): Promise<void> {
+    return this.updateAttributes(video, CATEGORY_ATTRIBUTES);
+  }
+
+  saveModeration(video: Video): Promise<void> {
+    return this.updateAttributes(video, MODERATION_ATTRIBUTES);
+  }
+
+  /** Writes only `attributes`, taken from `video`; the rest of the row is left as stored. */
+  private async updateAttributes(video: Video, attributes: readonly string[]): Promise<void> {
     const item: Record<string, unknown> = { ...toVideoItem(video) };
     const set: string[] = [];
     const remove: string[] = [];
     const names: Record<string, string> = {};
     const values: Record<string, unknown> = {};
     // Index keys the video no longer has must be removed, or it would stay listed there.
-    for (const attribute of CATEGORY_ATTRIBUTES) {
+    for (const attribute of attributes) {
       names[`#${attribute}`] = attribute;
       if (item[attribute] === undefined) {
         remove.push(`#${attribute}`);

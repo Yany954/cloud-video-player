@@ -140,7 +140,8 @@ export class ApiStack extends Stack {
       method: HttpMethod.GET,
       path: '/events/{eventId}',
       file: 'get-event.ts',
-      tableActions: ['dynamodb:GetItem', 'dynamodb:Query'],
+      // The event's videos are found in the index, then read consistently in a batch.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:BatchGetItem'],
       signsPlaybackUrls: true,
       // Shows the owner who joined through the invite link.
       userPoolActions: ['cognito-idp:ListUsers'],
@@ -185,6 +186,7 @@ export class ApiStack extends Stack {
         'dynamodb:GetItem',
         'dynamodb:PutItem',
         'dynamodb:Query',
+        'dynamodb:BatchGetItem',
         'dynamodb:UpdateItem',
       ],
     });
@@ -199,7 +201,12 @@ export class ApiStack extends Stack {
       path: '/events/{eventId}',
       file: 'delete-event.ts',
       // Queries first: only an empty event can be deleted.
-      tableActions: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:DeleteItem'],
+      tableActions: [
+        'dynamodb:GetItem',
+        'dynamodb:Query',
+        'dynamodb:BatchGetItem',
+        'dynamodb:DeleteItem',
+      ],
     });
     this.route('SetVideoEvent', {
       method: HttpMethod.PUT,
@@ -230,7 +237,8 @@ export class ApiStack extends Stack {
       method: HttpMethod.POST,
       path: '/videos/{videoId}/reports',
       file: 'report-video.ts',
-      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+      // Puts the report; updates only the video's moderation fields.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem'],
     });
     this.route('BlockUploader', {
       method: HttpMethod.POST,
@@ -260,7 +268,8 @@ export class ApiStack extends Stack {
       method: HttpMethod.POST,
       path: '/admin/videos/{videoId}/review',
       file: 'review-video.ts',
-      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+      // Updates only the moderation fields, never the whole video.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:UpdateItem'],
     });
     // The admin Users view. Like the other /admin routes, the handler checks the group.
     this.route('ListUsers', {

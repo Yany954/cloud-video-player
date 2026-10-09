@@ -10,7 +10,7 @@ import { EventHeader } from '@/components/event/event-header';
 import { InvitePanel } from '@/components/event/invite-panel';
 import { ThemePicker } from '@/components/event/theme-picker';
 import { ReorderList } from '@/components/event/reorder-list';
-import { selectClassName, VisibilityBadge } from '@/components/event/visibility-badge';
+import { VisibilityBadge } from '@/components/event/visibility-badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +74,8 @@ export default function EventPage() {
       return true;
     } catch {
       setError(`${failed} ${t.common.tryAgain}`);
+      // Part of the change may have been saved: show what the server has now.
+      void load();
       return false;
     } finally {
       setBusy(false);
@@ -394,7 +396,19 @@ export default function EventPage() {
                           <AlertDialogAction
                             onClick={() =>
                               void run(
-                                () => uploadApi.setVideoEvent(video.id, null),
+                                async () => {
+                                  await uploadApi.setVideoEvent(video.id, null);
+                                  // Gone from the page at once; the reload then confirms it.
+                                  setDetail(
+                                    (current) =>
+                                      current && {
+                                        ...current,
+                                        videos: current.videos.filter(
+                                          (other) => other.id !== video.id,
+                                        ),
+                                      },
+                                  );
+                                },
                                 e.removed(video.title),
                                 e.removeFailed(video.title),
                               )
@@ -425,12 +439,16 @@ export default function EventPage() {
       {event.isMember && draft === null && (
         <AddVideos
           eventId={event.id}
+          inEventCount={videos.length}
           busy={busy}
-          onAdd={(video) =>
+          onAdd={(chosen) =>
             run(
-              () => uploadApi.setVideoEvent(video.id, event.id),
-              e.added(video.title),
-              e.addFailed(video.title),
+              async () => {
+                // One at a time, so a failure says exactly how far it got after the reload.
+                for (const video of chosen) await uploadApi.setVideoEvent(video.id, event.id);
+              },
+              chosen.length === 1 ? e.added(chosen[0]!.title) : e.addedMany(chosen.length),
+              chosen.length === 1 ? e.addFailed(chosen[0]!.title) : e.addFailedMany,
             )
           }
         />
@@ -439,20 +457,26 @@ export default function EventPage() {
   );
 }
 
-/** The caller's own videos that are not in this event yet. */
+/**
+ * The caller's own videos that are not in this event yet, as a checklist. Nothing is added by
+ * choosing: only the button adds, and only what is ticked.
+ */
 function AddVideos({
   eventId,
+  inEventCount,
   busy,
   onAdd,
 }: {
   eventId: string;
+  /** Changes when a video enters or leaves the event, so the list is read again. */
+  inEventCount: number;
   busy: boolean;
-  onAdd(video: VideoResponse): Promise<boolean>;
+  onAdd(videos: VideoResponse[]): Promise<boolean>;
 }) {
   const { t } = useI18n();
   const e = t.event;
   const [candidates, setCandidates] = useState<VideoResponse[] | null>(null);
-  const [selected, setSelected] = useState('');
+  const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
 
   const load = useCallback(
     () =>
@@ -472,7 +496,7 @@ function AddVideos({
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [load]);
+  }, [load, inEventCount]);
 
   // A video being prepared becomes addable without the user doing anything: keep checking.
   const preparing = candidates?.some(isBeingPrepared) ?? false;
@@ -482,7 +506,8 @@ function AddVideos({
     return () => clearInterval(timer);
   }, [preparing, load]);
 
-  const chosen = candidates?.find((video) => video.id === selected && canMove(video));
+  // Only what is still listed and addable counts, whatever was ticked earlier.
+  const chosen = candidates?.filter((video) => ticked.has(video.id) && canMove(video)) ?? [];
 
   return (
     <section aria-labelledby="add-videos-title" className="grid gap-3 rounded-3xl border px-5 py-5">
@@ -495,42 +520,57 @@ function AddVideos({
         <p className="text-muted-foreground text-sm">{e.addNone}</p>
       ) : (
         <form
-          className="flex flex-wrap items-end gap-2"
+          className="grid gap-3"
           onSubmit={(submit) => {
             submit.preventDefault();
-            if (!chosen) return;
-            void onAdd(chosen).then((added) => {
-              if (!added) return;
-              setSelected('');
+            if (chosen.length === 0) return;
+            void onAdd(chosen).then(() => {
+              setTicked(new Set());
               void load();
             });
           }}
         >
-          <div className="grid min-w-0 flex-1 gap-1.5">
-            <Label htmlFor="add-video">{e.addVideoLabel}</Label>
-            <select
-              id="add-video"
-              name="add-video"
-              value={selected}
-              onChange={(change) => setSelected(change.target.value)}
-              className={`${selectClassName} w-full`}
-            >
-              <option value="">{e.addChoose}</option>
-              {candidates.map((video) => (
-                <option key={video.id} value={video.id} disabled={!canMove(video)}>
-                  {video.title}
-                  {!canMove(video)
-                    ? e.addNotReady(videoStatusLabel(video, t.videoStatus).toLowerCase())
-                    : video.eventId
-                      ? e.addMoves
-                      : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Button type="submit" size="lg" disabled={busy || !chosen}>
+          <p id="add-videos-hint" className="text-muted-foreground text-sm">
+            {e.addHint}
+          </p>
+          <ul aria-describedby="add-videos-hint" className="grid max-h-80 gap-1 overflow-y-auto">
+            {candidates.map((video) => {
+              const note = !canMove(video)
+                ? e.addNotReady(videoStatusLabel(video, t.videoStatus))
+                : video.eventId
+                  ? e.addMoves
+                  : '';
+              return (
+                <li key={video.id}>
+                  <label className="has-checked:bg-primary/10 has-focus-visible:ring-ring/50 has-disabled:text-muted-foreground flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 has-focus-visible:ring-3 has-disabled:cursor-not-allowed">
+                    <input
+                      type="checkbox"
+                      name="add-video"
+                      value={video.id}
+                      className="accent-primary size-4 shrink-0"
+                      disabled={!canMove(video)}
+                      checked={ticked.has(video.id) && canMove(video)}
+                      onChange={(change) =>
+                        setTicked((current) => {
+                          const next = new Set(current);
+                          if (change.target.checked) next.add(video.id);
+                          else next.delete(video.id);
+                          return next;
+                        })
+                      }
+                    />
+                    <span className="grid min-w-0">
+                      <span className="truncate text-sm font-medium">{video.title}</span>
+                      {note && <span className="text-muted-foreground text-xs">{note}</span>}
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+          <Button type="submit" size="lg" className="w-fit" disabled={busy || chosen.length === 0}>
             <Plus aria-hidden />
-            {e.add}
+            {e.add(chosen.length)}
           </Button>
         </form>
       )}

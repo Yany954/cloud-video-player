@@ -50,6 +50,16 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountAdmin {
     this.videos.set(video.id, { ...stored, categoryId: video.categoryId, private: video.private });
   }
 
+  async saveModeration(video: Video) {
+    const stored = this.videos.get(video.id);
+    if (!stored) throw new Error('No such video');
+    this.videos.set(video.id, {
+      ...stored,
+      moderationStatus: video.moderationStatus,
+      review: video.review,
+    });
+  }
+
   /** The categories, as their own repository (the names clash with the video methods). */
   readonly categories: CategoryRepository & { items: Map<string, Category> } = (() => {
     const items = new Map<string, Category>();

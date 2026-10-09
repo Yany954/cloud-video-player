@@ -307,11 +307,13 @@ export const es: Messages = {
     addFailed: (title: string) => `No se pudo agregar «${title}».`,
     addTitle: 'Agrega tus videos',
     addNone: 'No tienes más videos para agregar. Sube más desde Tus videos.',
-    addVideoLabel: 'Video',
-    addChoose: 'Elige uno de tus videos…',
-    addNotReady: (status: string) => ` (${status}, todavía no se puede agregar)`,
-    addMoves: ' (se mueve desde otro evento)',
-    add: 'Agregar al evento',
+    addHint:
+      'Marca los videos que quieres en este evento y luego agrégalos. No se agrega nada hasta que presiones el botón.',
+    addNotReady: (status: string) => `${status}, todavía no se puede agregar`,
+    addMoves: 'Se mueve aquí desde otro evento',
+    add: (count: number) => (count > 1 ? `Agregar ${count} videos` : 'Agregar al evento'),
+    addedMany: (count: number) => `Se agregaron ${count} videos al evento.`,
+    addFailedMany: 'No se pudieron agregar algunos videos.',
     drag: (title: string, position: number, total: number) =>
       `Arrastrar ${title}, posición ${position} de ${total}`,
     moveUp: (title: string) => `Subir ${title}`,

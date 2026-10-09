@@ -39,15 +39,11 @@ function categoryKeys(video: Video) {
   );
 }
 
-/** The attributes that change when a video moves between categories or changes privacy. */
-export const CATEGORY_ATTRIBUTES = [
-  'categoryId',
-  'private',
-  'GSI2PK',
-  'GSI2SK',
-  'GSI3PK',
-  'GSI3SK',
-] as const;
+/** The attributes that change when a video moves between categories. */
+export const CATEGORY_ATTRIBUTES = ['categoryId', 'private', 'GSI2PK', 'GSI2SK'] as const;
+
+/** The attributes that change when a video is reviewed or reported. */
+export const MODERATION_ATTRIBUTES = ['moderationStatus', 'review', 'GSI3PK', 'GSI3SK'] as const;
 
 export type VideoItem = Video &
   ReturnType<typeof videoKey> & {

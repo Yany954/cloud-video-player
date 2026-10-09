@@ -59,7 +59,7 @@ export class ReportVideo {
     });
     if (!(await this.reports.add(report))) return;
     const flagged = flagVideo(video);
-    if (flagged !== video) await this.videos.save(flagged);
+    if (flagged !== video) await this.videos.saveModeration(flagged);
   }
 }
 

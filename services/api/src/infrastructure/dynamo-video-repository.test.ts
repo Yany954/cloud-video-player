@@ -1,5 +1,6 @@
 import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
 import type {
+  BatchGetCommand,
   DynamoDBDocumentClient,
   QueryCommand,
   TransactWriteCommand,
@@ -7,7 +8,9 @@ import type {
 } from '@aws-sdk/lib-dynamodb';
 import { describe, expect, it, vi } from 'vitest';
 import { assignToCategory, createCategory } from '../domain/category';
-import { completeUpload, startUpload } from '../domain/video';
+import { reviewVideo } from '../domain/moderation';
+import { completeUpload, markReady, startProcessing, startUpload } from '../domain/video';
+import { toVideoItem } from './video-item';
 import { DynamoVideoRepository } from './dynamo-video-repository';
 
 const completed = completeUpload(
@@ -151,7 +154,7 @@ describe('DynamoVideoRepository.saveCategoryOf', () => {
     expect(update(send)).toMatchObject({
       Key: { PK: 'VIDEO#video-1', SK: 'META' },
       UpdateExpression:
-        'SET #categoryId = :categoryId, #private = :private, #GSI2PK = :GSI2PK, #GSI2SK = :GSI2SK REMOVE #GSI3PK, #GSI3SK',
+        'SET #categoryId = :categoryId, #private = :private, #GSI2PK = :GSI2PK, #GSI2SK = :GSI2SK',
       ExpressionAttributeValues: {
         ':categoryId': 'cat-1',
         ':private': true,
@@ -168,11 +171,105 @@ describe('DynamoVideoRepository.saveCategoryOf', () => {
     await repository.saveCategoryOf(assignToCategory(completed, null));
 
     expect(update(send).UpdateExpression).toBe(
-      'SET #categoryId = :categoryId, #private = :private REMOVE #GSI2PK, #GSI2SK, #GSI3PK, #GSI3SK',
+      'SET #categoryId = :categoryId, #private = :private REMOVE #GSI2PK, #GSI2SK',
     );
     expect(update(send).ExpressionAttributeValues).toEqual({
       ':categoryId': null,
       ':private': false,
     });
+  });
+});
+
+describe('DynamoVideoRepository.saveModeration', () => {
+  it('writes only the moderation attributes, leaving the category as stored', async () => {
+    const { send, repository } = setup();
+    const ready = markReady(startProcessing(completed), {
+      durationSeconds: 60,
+      width: 1920,
+      height: 1080,
+    });
+
+    await repository.saveModeration(
+      reviewVideo(ready, 'approve', 'admin-1', new Date('2026-10-03T12:00:00.000Z')),
+    );
+
+    const update = (send.mock.calls[0]![0] as UpdateCommand).input;
+    expect(update.UpdateExpression).toBe(
+      'SET #moderationStatus = :moderationStatus, #review = :review REMOVE #GSI3PK, #GSI3SK',
+    );
+    expect(update.ExpressionAttributeValues).toEqual({
+      ':moderationStatus': 'approved',
+      ':review': { reviewedBy: 'admin-1', reviewedAt: '2026-10-03T12:00:00.000Z' },
+    });
+    expect(update.ConditionExpression).toBe('attribute_exists(PK)');
+  });
+});
+
+describe('DynamoVideoRepository.listByCategory', () => {
+  const event = createCategory({
+    id: 'cat-1',
+    ownerId: 'user-1',
+    name: 'Concert',
+    now: new Date(),
+  });
+  const inEvent = (id: string) => toVideoItem(assignToCategory({ ...completed, id }, event));
+  const key = (id: string) => ({ PK: `VIDEO#${id}`, SK: 'META' });
+
+  it('finds the videos in the index, then reads the rows themselves consistently', async () => {
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ Items: [key('a'), key('b')] })
+      .mockResolvedValueOnce({ Responses: { table: [inEvent('b'), inEvent('a')] } });
+    const { repository } = setup(send);
+
+    const videos = await repository.listByCategory('cat-1', 200);
+
+    expect(videos.map((video) => video.id)).toEqual(['a', 'b']);
+    expect((send.mock.calls[0]![0] as QueryCommand).input).toMatchObject({
+      IndexName: 'GSI2',
+      ExpressionAttributeValues: { ':category': 'CATEGORY#cat-1' },
+      Limit: 200,
+    });
+    expect((send.mock.calls[1]![0] as BatchGetCommand).input.RequestItems).toEqual({
+      table: { Keys: [key('a'), key('b')], ConsistentRead: true },
+    });
+  });
+
+  it('leaves out a video the index still lists but that was taken out or deleted', async () => {
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ Items: [key('gone'), key('moved'), key('stays')] })
+      .mockResolvedValueOnce({
+        Responses: {
+          table: [
+            toVideoItem(assignToCategory({ ...completed, id: 'moved' }, null)),
+            inEvent('stays'),
+          ],
+        },
+      });
+    const { repository } = setup(send);
+
+    expect((await repository.listByCategory('cat-1', 200)).map((video) => video.id)).toEqual([
+      'stays',
+    ]);
+  });
+
+  it('asks again for rows DynamoDB did not return, and reads nothing for an empty category', async () => {
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ Items: [key('a'), key('b')] })
+      .mockResolvedValueOnce({
+        Responses: { table: [inEvent('a')] },
+        UnprocessedKeys: { table: { Keys: [key('b')] } },
+      })
+      .mockResolvedValueOnce({ Responses: { table: [inEvent('b')] } });
+    const { repository } = setup(send);
+
+    expect(await repository.listByCategory('cat-1', 200)).toHaveLength(2);
+    expect(send).toHaveBeenCalledTimes(3);
+
+    const empty = setup(vi.fn().mockResolvedValue({ Items: [] }));
+    expect(await empty.repository.listByCategory('cat-1', 200)).toEqual([]);
+    expect(empty.send).toHaveBeenCalledTimes(1);
   });
 });

@@ -29,6 +29,11 @@ export interface VideoRepository {
    * the table, so it cannot undo a change another job made meanwhile.
    */
   saveCategoryOf(video: Video): Promise<void>;
+  /**
+   * Stores only the moderation status and who decided. A review or a report must not undo
+   * what happened to the video meanwhile, such as being moved to another category.
+   */
+  saveModeration(video: Video): Promise<void>;
   delete(id: string): Promise<void>;
   /**
    * One atomic write: removes a video whose bytes were counted and gives them back to its
