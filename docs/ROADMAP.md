@@ -329,8 +329,11 @@ Notes for whoever continues:
 - Bundle id `com.cloudvideoplayer.app` is a placeholder: it can change until the first upload
   to App Store Connect.
 - The app icon and splash image are still the Expo template's.
-- `amplify.yml` installs only `@cvp/web...`, so the website's build does not install React
-  Native.
+- The website's cloud build installs the whole workspace with a flat `node_modules`, mobile
+  packages included. Two versions of `@types/react` there break the web's type check, so
+  `pnpm-workspace.yaml` pins one version for everyone (`overrides`). Before pushing a change to
+  mobile dependencies, reproduce that build locally: copy the repository, add
+  `node-linker=hoisted` to `.npmrc`, `pnpm install --frozen-lockfile`, `pnpm --filter @cvp/web build`.
 
 Expo development build. Reuse `packages/upload-client`: implement `putPart` with the native
 background uploader. Player with `expo-video`.
