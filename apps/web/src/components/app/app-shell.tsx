@@ -9,6 +9,8 @@ import { LanguageSwitch } from '@/components/language-switch';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { ThemeToggle } from '@/components/theme-control';
 import { Button } from '@/components/ui/button';
+import { UploadsBar } from '@/components/upload/uploads-bar';
+import { UploadsProvider } from '@/lib/upload/uploads-context';
 import { useAuth } from '@/lib/auth/auth-context';
 import { HOME, rememberReturnTo } from '@/lib/auth/return-to';
 import { useI18n } from '@/lib/i18n/i18n-context';
@@ -44,7 +46,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <>
+    // Keyed by the person: another account never inherits someone else's upload list.
+    <UploadsProvider key={state.user.id} userId={state.user.id}>
       <a
         href="#content"
         className="bg-background text-foreground focus-visible:ring-ring/50 sr-only rounded-lg px-4 py-2 outline-none focus-visible:not-sr-only focus-visible:absolute focus-visible:top-3 focus-visible:left-3 focus-visible:ring-3"
@@ -114,6 +117,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </ul>
         </nav>
       </header>
+      <UploadsBar />
       <main id="content" className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
         {children}
       </main>
@@ -122,7 +126,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <LegalLinks t={t.legal} />
         </div>
       </footer>
-    </>
+    </UploadsProvider>
   );
 }
 

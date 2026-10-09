@@ -21,10 +21,22 @@ function useTouchDevice(): boolean {
   );
 }
 
+/** iPhone and iPad (which calls itself a Mac): picking from Photos has a slow first step. */
+function useIos(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () =>
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1),
+    () => false,
+  );
+}
+
 export function Dropzone({ onFiles }: { onFiles(files: File[]): void }) {
   const input = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
   const touch = useTouchDevice();
+  const ios = useIos();
   const [dragging, setDragging] = useState(false);
   const { t } = useI18n();
 
@@ -62,6 +74,7 @@ export function Dropzone({ onFiles }: { onFiles(files: File[]): void }) {
           </Button>
         )}
       </div>
+      {ios && <p className="text-muted-foreground max-w-prose text-sm">{t.upload.iosNote}</p>}
       {touch && (
         // `capture` asks the phone for its camera, in video mode, instead of the gallery.
         <input

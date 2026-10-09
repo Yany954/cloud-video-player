@@ -158,6 +158,8 @@ export const es: Messages = {
     dropHint: 'MP4, MOV, MKV o AVI. Se guardan en su calidad original.',
     choose: 'Elegir videos',
     record: 'Grabar un video',
+    iosNote:
+      'En un iPhone o iPad, el teléfono primero prepara el video (puede traerlo de iCloud). Eso puede tardar unos minutos y ocurre antes de que empiece la subida. Deja Safari abierto hasta que el video aparezca en la lista de abajo.',
     eventLabel: 'Agregar las próximas subidas a un evento (opcional)',
     noEvent: 'Ningún evento',
     listTitle: 'Subidas',
@@ -187,6 +189,13 @@ export const es: Messages = {
       server: 'El servidor no pudo procesar esta subida. Vuelve a intentarlo.',
       connection: 'Se perdió la conexión. Tu avance está guardado, así que puedes continuar.',
     },
+  },
+  uploadsBar: {
+    uploading: (count: number, percent: number) =>
+      `Subiendo ${count === 1 ? '1 video' : `${count} videos`}, ${percent}%`,
+    waiting: (count: number) =>
+      count === 1 ? '1 subida está en pausa o falló' : `${count} subidas están en pausa o fallaron`,
+    view: 'Ver subidas',
   },
   downloadVideo: {
     button: 'Descargar',

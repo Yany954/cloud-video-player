@@ -154,6 +154,8 @@ export const en = {
     dropHint: 'MP4, MOV, MKV or AVI. They are stored in their original quality.',
     choose: 'Choose videos',
     record: 'Record a video',
+    iosNote:
+      'On an iPhone or iPad, the phone first gets the video ready (it may fetch it from iCloud). That can take a few minutes and happens before the upload starts. Keep Safari open until the video appears in the list below.',
     eventLabel: 'Add the next uploads to an event (optional)',
     noEvent: 'No event',
     listTitle: 'Uploads',
@@ -183,6 +185,13 @@ export const en = {
       server: 'The server could not process this upload. Try again.',
       connection: 'Connection lost. Your progress is saved, so you can resume.',
     },
+  },
+  uploadsBar: {
+    uploading: (count: number, percent: number) =>
+      `Uploading ${count === 1 ? '1 video' : `${count} videos`}, ${percent}%`,
+    waiting: (count: number) =>
+      count === 1 ? '1 upload is paused or failed' : `${count} uploads are paused or failed`,
+    view: 'View uploads',
   },
   downloadVideo: {
     button: 'Download',

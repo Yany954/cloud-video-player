@@ -12,13 +12,13 @@ import { StorageWidget } from '@/components/storage/storage-widget';
 import { Label } from '@/components/ui/label';
 import { VideoList } from '@/components/video/video-list';
 import { uploadApi } from '@/lib/api';
-import { useUploads } from '@/lib/upload/use-uploads';
+import { useSharedUploads } from '@/lib/upload/uploads-context';
 import { isBeingPrepared } from '@/lib/video/status';
 import { Dropzone } from './dropzone';
 import { UploadList } from './upload-list';
 import { useI18n } from '@/lib/i18n/i18n-context';
 
-export function UploadPanel({ userId }: { userId: string }) {
+export function UploadPanel() {
   const { t } = useI18n();
   const [usage, setUsage] = useState<StorageUsageResponse | null>(null);
   const [videos, setVideos] = useState<VideoResponse[] | null>(null);
@@ -64,7 +64,12 @@ export function UploadPanel({ userId }: { userId: string }) {
     return () => clearInterval(timer);
   }, [preparing, refresh]);
 
-  const uploads = useUploads(userId, refresh);
+  // Uploads live above the pages, so they are still here after visiting another page.
+  const uploads = useSharedUploads();
+  const { finishedCount } = uploads;
+  useEffect(() => {
+    if (finishedCount > 0) refresh();
+  }, [finishedCount, refresh]);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_18rem] lg:items-start">

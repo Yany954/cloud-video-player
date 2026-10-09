@@ -42,10 +42,28 @@ product goals; this file holds the progress.
    duration read from the local file in the browser (`lib/upload/preview.ts`; a file the
    browser cannot decode keeps the film icon). On touch devices "Record a video" opens the
    camera (`capture="environment"`). Not checked on a real phone yet.
-6. Web: Download button (`GET /videos/{videoId}/download`, 1-hour presigned link; billed like
-   playback, about $0.09 per GB).
-7. Mobile (phase 5) must also offer: offline library from the download route, record with the
-   camera, upload preview, rename, reorder by members.
+6. **Web: Download button: built, not deployed yet.** `GET /videos/{videoId}/download` returns
+   a 15-minute presigned link to the playable MP4 (same permission as playback). Billed as
+   data leaving S3: about $0.09 per GB after the free 100 GB a month.
+7. **Web: uploads keep running across pages: built.** The upload manager lives in the app
+   shell (`lib/upload/uploads-context.tsx`); a strip under the navigation says how many are
+   running or need attention. On iPhone/iPad a note explains the wait before an upload starts.
+8. Mobile (phase 5) must also offer: offline library from the download route, record with the
+   camera, upload preview, rename, reorder by members, and the upload fix below.
+
+**Why iPhone uploads start slowly on the web, and the real fix (owner's report, 2026-10-09).**
+Picking a video from Photos in Safari makes iOS fetch it from iCloud and prepare it before the
+page receives the file: a 50-second video took about 4 minutes. A web page gets no file, no
+progress and no event during that time, and Safari stops a page that is closed or in the
+background, so the web cannot queue, show or continue it. Checked on the owner's 14 uploads:
+resolution was never reduced (4K stayed 4K). The codec is not stored, so a re-encode by the
+phone cannot be ruled out.
+The fix is the mobile app, which must:
+
+- ask Photos for the original file and **show the iCloud download progress**;
+- **hand the upload to iOS** (background upload session) so it continues with the app closed
+  or the phone locked, and resumes after a lost connection;
+- do the same on Android with its background upload service.
 
 ### 3a. Moderation: done (manual review)
 
@@ -279,6 +297,15 @@ videos (today it shows at most 200, with no paging).
 
 Expo development build. Reuse `packages/upload-client`: implement `putPart` with the native
 background uploader. Player with `expo-video`.
+
+Must-haves recorded under "Now: fixes and requests from family testing": original file from
+Photos with iCloud download progress, uploads that continue with the app closed or the phone
+locked, offline library, camera recording, upload preview, rename, reorder by members.
+
+Cost while building it: AWS deploys (`cdk deploy`) are free; each push to `main` starts an
+Amplify build of the website (about $0.04). Mobile-only commits should carry `[skip-cd]`, and
+web changes should be pushed in batches. Building the app with EAS has its own free tier:
+check the current limits before the first build.
 
 ### After the MVP
 

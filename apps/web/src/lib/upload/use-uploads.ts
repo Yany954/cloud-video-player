@@ -1,7 +1,7 @@
 'use client';
 
 import { ApiError, uploadVideo } from '@cvp/upload-client';
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { uploadApi } from '@/lib/api';
 import { hasAcceptedExtension, uploadErrorMessage } from './messages';
 import { readPreview, type UploadPreview } from './preview';
@@ -50,8 +50,10 @@ interface Job {
   controller?: AbortController;
 }
 
-export function useUploads(userId: string, onUploaded: () => void) {
+export function useUploads(userId: string) {
   const [items, dispatch] = useReducer(reducer, []);
+  /** Goes up by one each time an upload finishes, so lists know when to reload. */
+  const [finishedCount, setFinishedCount] = useState(0);
   const jobs = useRef(new Map<string, Job>());
   // The latest texts, read when an error happens, without restarting uploads on a language change.
   const { t } = useI18n();
@@ -60,66 +62,63 @@ export function useUploads(userId: string, onUploaded: () => void) {
     errors.current = t.upload.errors;
   }, [t]);
 
-  const run = useCallback(
-    (id: string) => {
-      const job = jobs.current.get(id);
-      if (!job) return;
-      const controller = new AbortController();
-      job.controller = controller;
-      dispatch({ type: 'update', id, changes: { status: 'uploading', error: undefined } });
+  const run = useCallback((id: string) => {
+    const job = jobs.current.get(id);
+    if (!job) return;
+    const controller = new AbortController();
+    job.controller = controller;
+    dispatch({ type: 'update', id, changes: { status: 'uploading', error: undefined } });
 
-      const upload = () =>
-        uploadVideo({
-          api: uploadApi,
-          putPart: putPartFromBrowser,
-          source: job.file,
-          fileName: job.file.name,
-          sizeBytes: job.file.size,
-          videoId: job.videoId,
-          eventId: job.eventId,
-          signal: controller.signal,
-          onStarted(videoId) {
-            job.videoId = videoId;
-            resumeStore.set(job.key, videoId);
-          },
-          onProgress: ({ uploadedBytes, savedBytes }) =>
-            dispatch({ type: 'update', id, changes: { uploadedBytes, savedBytes } }),
-        });
+    const upload = () =>
+      uploadVideo({
+        api: uploadApi,
+        putPart: putPartFromBrowser,
+        source: job.file,
+        fileName: job.file.name,
+        sizeBytes: job.file.size,
+        videoId: job.videoId,
+        eventId: job.eventId,
+        signal: controller.signal,
+        onStarted(videoId) {
+          job.videoId = videoId;
+          resumeStore.set(job.key, videoId);
+        },
+        onProgress: ({ uploadedBytes, savedBytes }) =>
+          dispatch({ type: 'update', id, changes: { uploadedBytes, savedBytes } }),
+      });
 
-      const resuming = job.videoId !== undefined;
-      upload()
-        .catch((error: unknown) => {
-          // The remembered upload no longer exists on the server (expired, or finished
-          // elsewhere): forget it and send this file from scratch.
-          const gone = error instanceof ApiError && [404, 409].includes(error.status);
-          if (!resuming || !gone || controller.signal.aborted) throw error;
+    const resuming = job.videoId !== undefined;
+    upload()
+      .catch((error: unknown) => {
+        // The remembered upload no longer exists on the server (expired, or finished
+        // elsewhere): forget it and send this file from scratch.
+        const gone = error instanceof ApiError && [404, 409].includes(error.status);
+        if (!resuming || !gone || controller.signal.aborted) throw error;
+        resumeStore.delete(job.key);
+        job.videoId = undefined;
+        return upload();
+      })
+      .then(
+        () => {
           resumeStore.delete(job.key);
-          job.videoId = undefined;
-          return upload();
-        })
-        .then(
-          () => {
-            resumeStore.delete(job.key);
-            dispatch({
-              type: 'update',
-              id,
-              changes: { status: 'done', uploadedBytes: job.file.size, savedBytes: job.file.size },
-            });
-            onUploaded();
-          },
-          (error: unknown) => {
-            // Paused or cancelled by the user: the action that aborted already set the state.
-            if (controller.signal.aborted) return;
-            dispatch({
-              type: 'update',
-              id,
-              changes: { status: 'error', error: uploadErrorMessage(error, errors.current) },
-            });
-          },
-        );
-    },
-    [onUploaded],
-  );
+          dispatch({
+            type: 'update',
+            id,
+            changes: { status: 'done', uploadedBytes: job.file.size, savedBytes: job.file.size },
+          });
+          setFinishedCount((count) => count + 1);
+        },
+        (error: unknown) => {
+          // Paused or cancelled by the user: the action that aborted already set the state.
+          if (controller.signal.aborted) return;
+          dispatch({
+            type: 'update',
+            id,
+            changes: { status: 'error', error: uploadErrorMessage(error, errors.current) },
+          });
+        },
+      );
+  }, []);
 
   const add = useCallback(
     (files: File[], eventId?: string) => {
@@ -190,5 +189,14 @@ export function useUploads(userId: string, onUploaded: () => void) {
     return () => window.removeEventListener('beforeunload', warn);
   }, [uploading]);
 
-  return { items, add, pause, resume: run, cancel, dismiss };
+  // Signing out (or the shell going away) stops what is in flight. Parts already received
+  // stay on the server, so choosing the same file again resumes.
+  useEffect(() => {
+    const running = jobs.current;
+    return () => {
+      for (const job of running.values()) job.controller?.abort();
+    };
+  }, []);
+
+  return { items, finishedCount, add, pause, resume: run, cancel, dismiss };
 }
