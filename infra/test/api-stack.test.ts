@@ -255,7 +255,7 @@ describe('ApiStack', () => {
         'dynamodb:Query',
         'dynamodb:UpdateItem',
       ]);
-      expect(actionsOf('ReorderEvent')).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem']);
+      expect(actionsOf('ReorderEvent')).toEqual(['dynamodb:GetItem', 'dynamodb:UpdateItem']);
       expect(actionsOf('DeleteEvent')).toEqual([
         'dynamodb:BatchGetItem',
         'dynamodb:DeleteItem',

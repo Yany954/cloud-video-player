@@ -8,6 +8,7 @@ import {
   removeCollaborator,
   canAddVideo,
   canManageCategory,
+  canReorderCategory,
   canViewCategory,
   createCategory,
   inPlayingOrder,
@@ -162,9 +163,13 @@ export class ReorderCategory {
     categoryId: string;
     videoIds: string[];
   }): Promise<Category> {
-    const category = await findManaged(this.categories, input.categoryId, input.userId);
+    const category = await this.categories.findById(input.categoryId);
+    if (!category || !canReorderCategory(category, input.userId))
+      throw new NotFoundError(NOT_FOUND);
     const reordered = reorderCategory(category, input.videoIds);
-    await this.categories.save(reordered);
+    // Only the order is written: several people may reorder, and none of them should undo
+    // someone joining or the owner renaming the event at the same moment.
+    await this.categories.saveOrder(reordered);
     return reordered;
   }
 }

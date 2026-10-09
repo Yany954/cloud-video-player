@@ -274,13 +274,42 @@ describe('theme', () => {
 });
 
 describe('ReorderCategory', () => {
-  it('is the owner’s alone, even among collaborators', async () => {
+  it('is open to invited people, and refused to everyone else', async () => {
     const category = await concert();
     await db.categories.save({ ...category, collaboratorIds: ['ben'] });
 
+    await reorder.execute({ userId: 'ben', categoryId: 'cat-1', videoIds: ['b', 'a'] });
     await expect(
-      reorder.execute({ userId: 'ben', categoryId: 'cat-1', videoIds: ['a'] }),
+      reorder.execute({ userId: 'carla', categoryId: 'cat-1', videoIds: ['a'] }),
     ).rejects.toThrow(NotFoundError);
+
+    expect((await db.categories.findById('cat-1'))?.order).toEqual(['b', 'a']);
+  });
+
+  it('keeps the place of videos the caller could not see, after the ones they sent', async () => {
+    const category = await concert();
+    await db.categories.save({
+      ...category,
+      collaboratorIds: ['ben'],
+      order: ['a', 'pending', 'b', 'c'],
+    });
+
+    await reorder.execute({ userId: 'ben', categoryId: 'cat-1', videoIds: ['c', 'a', 'b'] });
+
+    expect((await db.categories.findById('cat-1'))?.order).toEqual(['c', 'a', 'b', 'pending']);
+  });
+
+  it('changes only the order, not what someone else stored meanwhile', async () => {
+    const category = await concert();
+    const stale = { ...category };
+    await db.categories.save({ ...category, name: 'Renamed meanwhile' });
+
+    await db.categories.saveOrder({ ...stale, order: ['a'] });
+
+    expect(await db.categories.findById('cat-1')).toMatchObject({
+      name: 'Renamed meanwhile',
+      order: ['a'],
+    });
   });
 });
 

@@ -195,6 +195,16 @@ export default function EventPage() {
           </div>
         )}
 
+        {/* Guests may arrange the order; the other controls are the owner's. */}
+        {!event.isOwner && event.isMember && draft === null && videos.length > 1 && (
+          <div>
+            <Button variant="outline" onClick={() => setDraft(videos)}>
+              <ArrowUpDown aria-hidden />
+              {e.reorder}
+            </Button>
+          </div>
+        )}
+
         {event.isOwner && renaming === null && draft === null && (
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRenaming(event.name)}>
@@ -358,7 +368,7 @@ export default function EventPage() {
               const mine = myVideoIds.includes(video.id);
               return (
                 <>
-                  {event.isOwner && index > 0 && (
+                  {event.isMember && index > 0 && (
                     <Button
                       variant="ghost"
                       size="icon-lg"

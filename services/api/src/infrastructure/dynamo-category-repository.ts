@@ -5,6 +5,7 @@ import {
   PutCommand,
   QueryCommand,
   TransactWriteCommand,
+  UpdateCommand,
   type DynamoDBDocumentClient,
 } from '@aws-sdk/lib-dynamodb';
 import type { CategoryRepository } from '../application/ports';
@@ -67,6 +68,20 @@ export class DynamoCategoryRepository implements CategoryRepository {
         TableName: this.tableName,
         Item: toCategoryItem(category),
         // Never resurrect a category that was deleted meanwhile.
+        ConditionExpression: 'attribute_exists(PK)',
+      }),
+    );
+  }
+
+  async saveOrder(category: Category): Promise<void> {
+    await this.doc.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: categoryKey(category.id),
+        // `order` is a reserved word in DynamoDB expressions.
+        UpdateExpression: 'SET #order = :order',
+        ExpressionAttributeNames: { '#order': 'order' },
+        ExpressionAttributeValues: { ':order': category.order },
         ConditionExpression: 'attribute_exists(PK)',
       }),
     );

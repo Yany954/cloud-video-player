@@ -99,6 +99,11 @@ export class InMemoryDatabase implements VideoRepository, StorageAccountAdmin {
       async save(category) {
         items.set(category.id, category);
       },
+      async saveOrder(category) {
+        const stored = items.get(category.id);
+        if (!stored) throw new Error('No such category');
+        items.set(category.id, { ...stored, order: category.order });
+      },
       async join(category) {
         if (items.get(category.id)?.inviteToken !== category.inviteToken) {
           throw new DomainError('INVALID_STATE', 'Invite link changed');

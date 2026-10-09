@@ -201,7 +201,8 @@ export class ApiStack extends Stack {
       method: HttpMethod.PUT,
       path: '/events/{eventId}/order',
       file: 'reorder-event.ts',
-      tableActions: ['dynamodb:GetItem', 'dynamodb:PutItem'],
+      // Updates the order only; owner and invited people may do it.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:UpdateItem'],
     });
     this.route('DeleteEvent', {
       method: HttpMethod.DELETE,

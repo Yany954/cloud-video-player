@@ -56,6 +56,8 @@ export interface CategoryRepository {
   listByMember(userId: string, limit: number): Promise<Category[]>;
   /** Overwrites an existing category with its new state. */
   save(category: Category): Promise<void>;
+  /** Stores only the playing order, leaving the rest of the category as it is in the table. */
+  saveOrder(category: Category): Promise<void>;
   /**
    * One atomic write: records `userId` as a collaborator of the category. Throws DomainError
    * INVALID_STATE (and writes nothing) if the invite link changed meanwhile.

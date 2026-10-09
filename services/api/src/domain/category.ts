@@ -159,9 +159,14 @@ export function canViewCategory(
   return category.visibility === 'shared' || viewer.isAdmin || isMember(category, viewer.userId);
 }
 
-/** Renaming, reordering, changing who sees it and deleting are the owner's alone. */
+/** Renaming, changing who sees it, the invite link and deleting are the owner's alone. */
 export function canManageCategory(category: Category, userId: string): boolean {
   return category.ownerId === userId;
+}
+
+/** Everyone in the event may arrange its playing order: owner and invited people alike. */
+export function canReorderCategory(category: Category, userId: string): boolean {
+  return isMember(category, userId);
 }
 
 /** Members add their own recordings, never someone else's. */
@@ -181,7 +186,11 @@ export function assignToCategory(video: Video, category: Category | null): Video
   };
 }
 
-/** Replaces the playing order. The ids come from the client, so they are checked first. */
+/**
+ * Sets the playing order. The ids come from the client, so they are checked first. Ids the
+ * caller did not send keep their place after the sent ones, in their previous order: an
+ * invited person does not see videos still waiting for review, and must not lose their place.
+ */
 export function reorderCategory(category: Category, videoIds: readonly string[]): Category {
   if (videoIds.length > MAX_ORDERED_VIDEOS) {
     throw new DomainError('INVALID_ORDER', `An order holds at most ${MAX_ORDERED_VIDEOS} videos`);
@@ -189,7 +198,9 @@ export function reorderCategory(category: Category, videoIds: readonly string[])
   if (new Set(videoIds).size !== videoIds.length) {
     throw new DomainError('INVALID_ORDER', 'A video appears more than once in the order');
   }
-  return { ...category, order: [...videoIds] };
+  const sent = new Set(videoIds);
+  const unseen = category.order.filter((id) => !sent.has(id));
+  return { ...category, order: [...videoIds, ...unseen].slice(0, MAX_ORDERED_VIDEOS) };
 }
 
 /**
