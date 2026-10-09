@@ -42,10 +42,10 @@ product goals; this file holds the progress.
    duration read from the local file in the browser (`lib/upload/preview.ts`; a file the
    browser cannot decode keeps the film icon). On touch devices "Record a video" opens the
    camera (`capture="environment"`). Not checked on a real phone yet.
-6. **Web: Download button: built, not deployed yet.** `GET /videos/{videoId}/download` returns
+6. **Web: Download button: done and deployed 2026-10-09.** `GET /videos/{videoId}/download` returns
    a 15-minute presigned link to the playable MP4 (same permission as playback). Billed as
    data leaving S3: about $0.09 per GB after the free 100 GB a month.
-7. **Web: uploads keep running across pages: built.** The upload manager lives in the app
+7. **Web: uploads keep running across pages: done.** The upload manager lives in the app
    shell (`lib/upload/uploads-context.tsx`); a strip under the navigation says how many are
    running or need attention. On iPhone/iPad a note explains the wait before an upload starts.
 8. Mobile (phase 5) must also offer: offline library from the download route, record with the
