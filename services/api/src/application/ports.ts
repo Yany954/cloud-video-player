@@ -158,6 +158,11 @@ export interface ObjectStorage {
   deleteOriginal(video: Video): Promise<void>;
   /** Removes the playable version and its poster. Fine if they were never made. */
   deletePlayable(video: Video): Promise<void>;
+  /**
+   * A short-lived link that makes a browser save the playable version under `fileName`.
+   * The link is the permission: hand it only to someone allowed to watch the video.
+   */
+  signDownloadUrl(video: Video, fileName: string, expiresInSeconds: number): Promise<string>;
 }
 
 export interface MediaProcessor {

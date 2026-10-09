@@ -84,6 +84,7 @@ describe('ApiStack', () => {
       'GET /me/storage',
       'GET /uploads/{videoId}/parts',
       'GET /videos',
+      'GET /videos/{videoId}/download',
       'GET /videos/{videoId}/playback',
       'PATCH /admin/users/{userId}',
       'PATCH /events/{eventId}',
@@ -119,12 +120,12 @@ describe('ApiStack', () => {
 
   it('runs every Lambda on Node 22 ARM with 2-week logs', () => {
     const functions = Object.values(template.findResources('AWS::Lambda::Function'));
-    expect(functions).toHaveLength(33);
+    expect(functions).toHaveLength(34);
     for (const fn of functions) {
       expect(fn.Properties).toMatchObject({ Runtime: 'nodejs22.x', Architectures: ['arm64'] });
     }
     const logGroups = Object.values(template.findResources('AWS::Logs::LogGroup'));
-    expect(logGroups).toHaveLength(33);
+    expect(logGroups).toHaveLength(34);
     for (const logGroup of logGroups) expect(logGroup.Properties.RetentionInDays).toBe(14);
   });
 
@@ -359,17 +360,36 @@ describe('ApiStack', () => {
       ]);
     });
 
-    it('lets only "delete video" touch the media bucket, and only to delete under media/', () => {
+    it('lets "download" read the caller’s view of a video and sign links to playable versions only', () => {
+      expect(actionsOf('GetDownload')).toEqual([
+        'dynamodb:GetItem',
+        'dynamodb:Query',
+        's3:GetObject',
+      ]);
+    });
+
+    it('lets only "delete video" and "download" touch the media bucket, each for one action', () => {
       const policies = template.findResources('AWS::IAM::Policy');
       const media = Object.entries(policies).flatMap(([id, policy]) =>
         (policy.Properties.PolicyDocument.Statement as Statement[])
           .filter((statement) => JSON.stringify(statement.Resource).includes('/media/*'))
-          .map((statement) => ({ id, actions: [statement.Action].flat() })),
+          .map((statement) => ({
+            id,
+            actions: [statement.Action].flat().join(','),
+            resource: JSON.stringify(statement.Resource).match(/\/media\/[^"]*/)?.[0],
+          })),
       );
 
-      expect(media).toHaveLength(1);
-      expect(media[0]!.id).toMatch(/^DeleteVideoServiceRoleDefaultPolicy/);
-      expect(media[0]!.actions).toEqual(['s3:DeleteObject']);
+      const byRole = media
+        .map(
+          ({ id, actions, resource }) =>
+            `${id.replace(/ServiceRole.*/, '')} ${actions} ${resource}`,
+        )
+        .sort();
+      expect(byRole).toEqual([
+        'DeleteVideo s3:DeleteObject /media/*',
+        'GetDownload s3:GetObject /media/*/video.mp4',
+      ]);
     });
 
     it('never grants wildcard actions, and limits S3 to the uploads/ and media/ prefixes', () => {

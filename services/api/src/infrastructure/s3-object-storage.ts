@@ -3,6 +3,7 @@ import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   ListPartsCommand,
   NoSuchUpload,
@@ -129,7 +130,30 @@ export class S3ObjectStorage implements ObjectStorage {
     );
   }
 
+  signDownloadUrl(video: Video, fileName: string, expiresInSeconds: number): Promise<string> {
+    // ASCII for old clients, then the real name (RFC 5987) for everything current.
+    const ascii = fileName.replace(/[^\x20-\x7e]/g, '_');
+    return getSignedUrl(
+      this.s3,
+      new GetObjectCommand({
+        Bucket: this.mediaBucket,
+        Key: mediaKeys(video.id).video,
+        ResponseContentDisposition: `attachment; filename="${ascii}"; filename*=UTF-8''${encodeRfc5987(fileName)}`,
+        ResponseContentType: 'video/mp4',
+      }),
+      { expiresIn: expiresInSeconds },
+    );
+  }
+
   private target(video: Video) {
     return { Bucket: this.bucket, Key: originalKey(video) };
   }
+}
+
+/** Percent-encoding for a header parameter value: stricter than encodeURIComponent. */
+function encodeRfc5987(value: string): string {
+  return encodeURIComponent(value).replace(
+    /['()*]/g,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
 }

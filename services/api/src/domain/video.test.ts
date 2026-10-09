@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  downloadFileName,
   activeUploadSession,
   completeUpload,
   isOwnedBy,
@@ -161,5 +162,26 @@ describe('processing', () => {
     expect(() => markFailed(uploaded(), 'TOO_LARGE')).toThrow(
       expect.objectContaining({ code: 'INVALID_STATE' }),
     );
+  });
+});
+
+describe('downloadFileName', () => {
+  const titled = (title: string) => ({
+    ...startUpload({ id: 'v', ownerId: 'u', fileName: 'a.mov', sizeBytes: 1, now: new Date() }),
+    title,
+  });
+
+  it('is the title as an MP4, whatever the uploaded format was', () => {
+    expect(downloadFileName(titled('Concierto Rosalía'))).toBe('Concierto Rosalía.mp4');
+  });
+
+  it('drops characters a file name or a header cannot carry', () => {
+    expect(downloadFileName(titled('a/b\\c: "d"\n<e>|f?*'))).toBe('a b c d e f.mp4');
+    expect(downloadFileName(titled('..hidden'))).toBe('hidden.mp4');
+  });
+
+  it('falls back to "video" and keeps the name short', () => {
+    expect(downloadFileName(titled('???'))).toBe('video.mp4');
+    expect(downloadFileName(titled('x'.repeat(200)))).toHaveLength(124);
   });
 });

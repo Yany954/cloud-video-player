@@ -81,6 +81,7 @@ function fakeServer(options: { sizeBytes: number; urlsPerRequest?: number }) {
     deleteEvent: unused,
     setVideoEvent: unused,
     renameVideo: unused,
+    getDownload: unused,
     openInvite: unused,
     closeInvite: unused,
     joinEvent: unused,

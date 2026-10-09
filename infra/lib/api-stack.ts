@@ -38,6 +38,8 @@ interface RouteProps {
   uploadActions?: string[];
   /** May remove a video's playable version and poster from the media bucket. */
   deletesMedia?: boolean;
+  /** May sign short-lived links that read a playable version from the media bucket. */
+  signsDownloads?: boolean;
   /** May ask for an account to be deleted, in the background. */
   startsAccountDeletion?: boolean;
   /** May put jobs on the processing queue. */
@@ -105,6 +107,14 @@ export class ApiStack extends Stack {
       // Also reads the caller's list of blocked people.
       tableActions: ['dynamodb:GetItem', 'dynamodb:Query'],
       signsPlaybackUrls: true,
+    });
+    this.route('GetDownload', {
+      method: HttpMethod.GET,
+      path: '/videos/{videoId}/download',
+      file: 'get-download.ts',
+      // Same reads as playback: the video, its event, the caller's blocks.
+      tableActions: ['dynamodb:GetItem', 'dynamodb:Query'],
+      signsDownloads: true,
     });
     this.route('RenameVideo', {
       method: HttpMethod.PATCH,
@@ -407,6 +417,16 @@ export class ApiStack extends Stack {
         new PolicyStatement({
           actions: route.uploadActions,
           resources: [uploadsBucket.arnForObjects('uploads/*')],
+        }),
+      );
+    }
+    if (route.signsDownloads) {
+      // A presigned link carries the permissions of whoever signed it, so this role needs
+      // to be allowed to read what the link reads: the playable versions, nothing else.
+      fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['s3:GetObject'],
+          resources: [mediaBucket.arnForObjects('media/*/video.mp4')],
         }),
       );
     }

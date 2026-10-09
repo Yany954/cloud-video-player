@@ -187,6 +187,10 @@ export class InMemoryObjectStorage implements ObjectStorage {
     this.session(sessionId).set(partNumber, { partNumber, etag: `etag-${partNumber}`, sizeBytes });
   }
 
+  async signDownloadUrl(video: Video, fileName: string, expiresInSeconds: number) {
+    return `https://storage.test/media/${video.id}/video.mp4?name=${encodeURIComponent(fileName)}&ttl=${expiresInSeconds}`;
+  }
+
   async startMultipartUpload() {
     const sessionId = `session-${this.nextSession++}`;
     this.sessions.set(sessionId, new Map());

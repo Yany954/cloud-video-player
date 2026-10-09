@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { DeleteVideoButton } from '@/components/video/delete-video-button';
+import { DownloadVideoButton } from '@/components/video/download-video-button';
 import { RenameVideoForm } from '@/components/video/rename-video-form';
 import { ReportPanel } from '@/components/video/report-panel';
 import { Button } from '@/components/ui/button';
@@ -155,6 +156,7 @@ function Watch() {
               {state.playback.height}
             </p>
           </div>
+          <DownloadVideoButton video={{ id: videoId, title: state.playback.title }} />
           {state.playback.canDelete && (
             <div className="grid gap-2">
               <div>

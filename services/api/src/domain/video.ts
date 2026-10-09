@@ -100,6 +100,22 @@ export function renameVideo(video: Video, title: string): Video {
   return { ...video, title: validTitle(title) };
 }
 
+/**
+ * The name a downloaded copy is saved under: the title, without characters that file systems
+ * or HTTP headers cannot carry. The playable version is always an MP4.
+ */
+export function downloadFileName(video: Video): string {
+  const base = video.title
+    // Control characters (\p{Cc}) and the characters Windows and macOS refuse in a name.
+    .replace(/[\p{Cc}"\\/:*?<>|]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^\.+/, '')
+    .slice(0, 120)
+    .trim();
+  return `${base || 'video'}.mp4`;
+}
+
 export function isOwnedBy(video: Video, userId: string): boolean {
   return video.ownerId === userId;
 }

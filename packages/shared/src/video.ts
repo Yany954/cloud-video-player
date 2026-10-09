@@ -50,6 +50,13 @@ export interface PlaybackResponse {
   isMine: boolean;
 }
 
+export interface DownloadResponse {
+  /** A short-lived link; opening it saves the playable version (MP4) as `fileName`. */
+  url: string;
+  fileName: string;
+  expiresAt: string;
+}
+
 export const VIDEO_TITLE_MAX_LENGTH = 200;
 
 export const renameVideoRequestSchema = z.object({

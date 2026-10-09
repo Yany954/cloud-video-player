@@ -188,6 +188,13 @@ export const es: Messages = {
       connection: 'Se perdió la conexión. Tu avance está guardado, así que puedes continuar.',
     },
   },
+  downloadVideo: {
+    button: 'Descargar',
+    label: (title: string) => `Descargar ${title}`,
+    preparing: 'Preparando…',
+    hint: 'Guarda el video en calidad completa en este dispositivo, para verlo sin conexión. Los archivos grandes tardan y usan datos móviles.',
+    failed: 'No se pudo iniciar la descarga.',
+  },
   renameVideo: {
     button: (title: string) => `Cambiar el nombre de ${title}`,
     label: 'Título del video',

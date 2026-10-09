@@ -184,6 +184,13 @@ export const en = {
       connection: 'Connection lost. Your progress is saved, so you can resume.',
     },
   },
+  downloadVideo: {
+    button: 'Download',
+    label: (title: string) => `Download ${title}`,
+    preparing: 'Preparing…',
+    hint: 'Saves the full-quality video to this device, so you can watch it without a connection. Large files take a while and use mobile data.',
+    failed: 'The download could not be started.',
+  },
   renameVideo: {
     button: (title: string) => `Rename ${title}`,
     label: 'Video title',

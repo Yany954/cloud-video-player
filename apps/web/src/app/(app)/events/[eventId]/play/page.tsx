@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { DownloadVideoButton } from '@/components/video/download-video-button';
 import { uploadApi } from '@/lib/api';
 import { nextId, previousId, readAutoplay, startingId, writeAutoplay } from '@/lib/event/playlist';
 import { formatDuration } from '@/lib/format';
@@ -223,6 +224,8 @@ export default function PlayEventPage() {
           </Button>
         </div>
       </div>
+
+      {source && currentId && <DownloadVideoButton video={{ id: currentId, title }} />}
 
       <Link
         href={`/videos/${currentId}?from=event-${eventId}`}

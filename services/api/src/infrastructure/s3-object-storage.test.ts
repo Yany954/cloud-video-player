@@ -39,4 +39,28 @@ describe('S3ObjectStorage', () => {
     expect(first!.url).not.toMatch(/checksum/i);
     expect(new URL(second!.url).searchParams.get('partNumber')).toBe('2');
   });
+
+  it('signs a download link to the playable version only, saved under the given name', async () => {
+    const s3 = new S3Client({
+      ...s3ClientConfig,
+      region: 'us-east-1',
+      credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    });
+
+    const url = new URL(
+      await new S3ObjectStorage(s3, 'bucket', 'media-bucket').signDownloadUrl(
+        video,
+        "Rosalía (live) it's.mp4",
+        900,
+      ),
+    );
+
+    expect(url.hostname).toContain('media-bucket');
+    expect(url.pathname).toBe('/media/video-1/video.mp4');
+    expect(url.searchParams.get('X-Amz-Expires')).toBe('900');
+    expect(url.searchParams.get('response-content-type')).toBe('video/mp4');
+    expect(url.searchParams.get('response-content-disposition')).toBe(
+      `attachment; filename="Rosal_a (live) it's.mp4"; filename*=UTF-8''Rosal%C3%ADa%20%28live%29%20it%27s.mp4`,
+    );
+  });
 });
