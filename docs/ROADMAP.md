@@ -27,14 +27,17 @@ product goals; this file holds the progress.
    is now "Shared with me": other people's approved videos from the events the caller owns or
    joined. `GSI3` holds only the review queue. Tested on the deployed API with temporary
    accounts (a fresh account gets an empty list and 404 on playback).
-2. **"A removed video comes back in the event" (IMG_9837): cause not found yet.** No code path
-   adds a video by itself. Since 2026-10-09 every add/remove writes one log line in the
-   `SetVideoEvent` function (`videoId`, `to`, `userId`). Still to do: reproduce in the browser;
-   read the event's videos consistently (`GSI2` keys + consistent `BatchGetItem`); targeted
-   `saveModeration` instead of a whole-row write in review and report; replace the one-by-one
-   "Add your videos" select with a checklist.
-3. Rename a video (`PATCH /videos/{videoId}`, owner only).
-4. Invited people can reorder an event (ids the caller did not send keep their place after).
+2. **"A removed video comes back in the event" (IMG_9837): hardened, cause not proven.**
+   No code path adds a video by itself, and it has not come back since the owner removed it
+   on 2026-10-09 06:23 UTC. Done and deployed 2026-10-09: every add/remove writes one log line
+   in the `SetVideoEvent` function (`videoId`, `to`, `userId`); an event's videos are found in
+   `GSI2` and then read consistently from the table; review and report update only the
+   moderation fields (`saveModeration`); "Add your videos" is a checklist with one button.
+   If it happens again, read that log first.
+3. **Rename a video: done.** `PATCH /videos/{videoId}`, owner only; pencil on "Your videos" and
+   on the player page.
+4. **Invited people can reorder an event: done.** Ids the caller did not send keep their place
+   after the sent ones; the order is stored with a targeted update (`saveOrder`).
 5. Web: preview (thumbnail, duration) of what is being uploaded; "Record a video" button on
    touch devices.
 6. Web: Download button (`GET /videos/{videoId}/download`, 1-hour presigned link; billed like
