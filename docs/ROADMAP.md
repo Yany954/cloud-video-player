@@ -304,8 +304,8 @@ Program ($99 a year): decide when the app is worth sharing.
 | -------------------------------------------------------------------- | ----- |
 | 1. Skeleton in the monorepo, running in the simulator                | Done  |
 | 2. Sign in, sign up, forgot password (Cognito), English/Spanish      | Done  |
-| 3. Watch: lists and player (PiP, locked-screen sound, AirPlay)       | Next  |
-| 4. Events: play all, add from a checklist, reorder, rename           |       |
+| 3. Watch: lists and player (PiP, locked-screen sound, AirPlay)       | Built |
+| 4. Events: play all, add from a checklist, reorder, rename           | Next  |
 | 5. Upload with the app open: Photos or camera, preview, pause/resume |       |
 | 6. Upload in the background + iCloud progress (small Swift module)   |       |
 | 7. Offline library; report/block; delete account; legal pages        |       |
@@ -318,6 +318,16 @@ Notes for whoever continues:
   sign-out, and the sign-up form's rules. The owner also signed in by hand. Not exercised:
   the emailed codes (sign-up confirmation, password reset) and the invited user's first
   password, which need a real mailbox.
+- Step 3 is tested in the simulator (`.maestro/watch.yaml`) with three real uploads made
+  through the API by temporary accounts: the three lists show the right videos, an event opens
+  in playing order, and the player loads and plays. **Still to check on the owner's iPhone,
+  because a simulator cannot: Picture-in-Picture, sound with the screen locked, the lock-screen
+  controls and AirPlay.** They are switched on in `app.json` (`expo-video` plugin) and in the
+  player (`src/app/videos/[videoId].tsx`).
+- Tabs: Your videos, Events, Shared with me, Account. Creating events, uploading, rename,
+  download, delete and report are not in the app yet (website only).
+- `videoStatusLabel`, `formatBytes`/`formatDuration`, the Cognito wrapper and the auth texts
+  are copies of the website's files. Moving them to a shared package is a tidy-up for later.
 - Mobile forms ask for a new password once, with a Show button, not twice like the website:
   iOS's "Use Strong Password?" sheet interferes with two password boxes.
 - Sign-in uses Amplify's SRP flow like the website (`src/lib/auth/cognito.ts` mirrors the

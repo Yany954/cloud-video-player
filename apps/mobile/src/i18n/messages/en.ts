@@ -19,14 +19,69 @@ export const en = {
     consentMissing: 'Tick the box to create your account.',
     opensInBrowser: '(opens in the browser)',
   },
-  home: {
+  tabs: {
+    yourVideos: 'Your videos',
+    events: 'Events',
+    shared: 'Shared with me',
+    account: 'Account',
+  },
+  lists: {
+    pullToRetry: 'Pull down to try again.',
+    play: (title: string) => `Play ${title}`,
+    videosLoadError: 'Your videos could not be loaded.',
+    videosEmptyTitle: 'No videos yet',
+    videosEmptyText:
+      'The videos you upload will be listed here. Uploading from the phone arrives in a later step; for now, upload on the website.',
+    sharedIntro:
+      'Videos other people added to the events you belong to. Nobody sees your videos unless you put them in an event and invite them.',
+    sharedLoadError: 'These videos could not be loaded.',
+    sharedEmptyTitle: 'Nothing shared with you yet',
+    sharedEmptyText:
+      'When someone invites you to an event, or adds a video to one of yours, it will be listed here.',
+  },
+  events: {
+    loadError: 'Your events could not be loaded.',
+    mine: 'My events',
+    mineEmpty: 'You have no events yet. Create one on the website, then add your videos to it.',
+    invited: 'Events I was invited to',
+    open: (name: string) => `Open ${name}`,
+    private: 'Private',
+  },
+  event: {
+    notFound: 'This event does not exist, or you were not invited to it.',
+    loadFailed: 'The event could not be loaded.',
+    videosTitle: 'Videos, in playing order',
+    emptyTitle: 'No videos in this event yet',
+    emptyVisitor: 'Its videos will be listed here once they are approved.',
+    count: (count: number) => (count === 1 ? '1 video' : `${count} videos`),
+  },
+  player: {
+    notFound: 'This video does not exist.',
+    stillPreparing: 'This video is still being prepared. Try again in a moment.',
+    loadFailed: 'The video could not be loaded.',
+    loading: 'Loading video',
+    cannotPlay: 'This video could not be played. Check your connection and try again.',
+    retry: 'Try again',
+  },
+  account: {
     signedInAs: 'Signed in as',
     admin: 'Administrator',
-    videos: (count: number) =>
-      count === 1 ? '1 video in your account' : `${count} videos in your account`,
-    videosFailed: 'Your videos could not be loaded.',
-    comingNext: 'Your videos, events and uploads arrive in the next steps.',
     signOut: 'Sign out',
+    more: 'Profile, storage and uploads are on the website for now.',
+  },
+  videoStatus: {
+    uploadNotFinished: 'Upload not finished',
+    beingPrepared: 'Being prepared',
+    notApproved: 'Not approved',
+    beingReviewed: 'Being reviewed',
+    waitingForReview: 'Waiting for review',
+    readyToWatch: 'Ready to watch',
+    failed: {
+      UNSUPPORTED_VIDEO_CODEC: 'Format not supported yet',
+      TOO_LARGE: 'Too large to process yet',
+      NO_VIDEO_STREAM: 'No video found in the file',
+      PROCESSING_ERROR: 'Could not be processed',
+    },
   },
   auth: {
     email: 'Email',

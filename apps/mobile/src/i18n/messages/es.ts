@@ -19,14 +19,69 @@ export const es: Messages = {
     consentMissing: 'Marca la casilla para crear tu cuenta.',
     opensInBrowser: '(se abre en el navegador)',
   },
-  home: {
+  tabs: {
+    yourVideos: 'Tus videos',
+    events: 'Eventos',
+    shared: 'Compartido conmigo',
+    account: 'Cuenta',
+  },
+  lists: {
+    pullToRetry: 'Desliza hacia abajo para intentarlo de nuevo.',
+    play: (title: string) => `Reproducir ${title}`,
+    videosLoadError: 'No se pudieron cargar tus videos.',
+    videosEmptyTitle: 'Todavía no hay videos',
+    videosEmptyText:
+      'Los videos que subas aparecerán aquí. Subir desde el teléfono llega en un paso posterior; por ahora, súbelos en el sitio web.',
+    sharedIntro:
+      'Videos que otras personas agregaron a los eventos en los que participas. Nadie ve tus videos a menos que los pongas en un evento e invites a esa persona.',
+    sharedLoadError: 'No se pudieron cargar estos videos.',
+    sharedEmptyTitle: 'Todavía no te compartieron nada',
+    sharedEmptyText:
+      'Cuando alguien te invite a un evento, o agregue un video a uno tuyo, aparecerá aquí.',
+  },
+  events: {
+    loadError: 'No se pudieron cargar tus eventos.',
+    mine: 'Mis eventos',
+    mineEmpty: 'Todavía no tienes eventos. Crea uno en el sitio web y luego agrégale tus videos.',
+    invited: 'Eventos a los que me invitaron',
+    open: (name: string) => `Abrir ${name}`,
+    private: 'Privado',
+  },
+  event: {
+    notFound: 'Este evento no existe, o no te invitaron.',
+    loadFailed: 'No se pudo cargar el evento.',
+    videosTitle: 'Videos, en orden de reproducción',
+    emptyTitle: 'Este evento todavía no tiene videos',
+    emptyVisitor: 'Sus videos aparecerán aquí cuando sean aprobados.',
+    count: (count: number) => (count === 1 ? '1 video' : `${count} videos`),
+  },
+  player: {
+    notFound: 'Este video no existe.',
+    stillPreparing: 'Este video todavía se está preparando. Inténtalo de nuevo en un momento.',
+    loadFailed: 'No se pudo cargar el video.',
+    loading: 'Cargando el video',
+    cannotPlay: 'No se pudo reproducir este video. Revisa tu conexión y vuelve a intentarlo.',
+    retry: 'Intentar de nuevo',
+  },
+  account: {
     signedInAs: 'Sesión iniciada como',
     admin: 'Administrador',
-    videos: (count: number) =>
-      count === 1 ? '1 video en tu cuenta' : `${count} videos en tu cuenta`,
-    videosFailed: 'No se pudieron cargar tus videos.',
-    comingNext: 'Tus videos, eventos y subidas llegan en los próximos pasos.',
     signOut: 'Cerrar sesión',
+    more: 'El perfil, el almacenamiento y las subidas están en el sitio web por ahora.',
+  },
+  videoStatus: {
+    uploadNotFinished: 'Subida sin terminar',
+    beingPrepared: 'En preparación',
+    notApproved: 'No aprobado',
+    beingReviewed: 'En revisión',
+    waitingForReview: 'Esperando revisión',
+    readyToWatch: 'Listo para ver',
+    failed: {
+      UNSUPPORTED_VIDEO_CODEC: 'Formato aún no compatible',
+      TOO_LARGE: 'Demasiado grande para procesarlo por ahora',
+      NO_VIDEO_STREAM: 'El archivo no contiene video',
+      PROCESSING_ERROR: 'No se pudo procesar',
+    },
   },
   auth: {
     email: 'Correo electrónico',

@@ -1,0 +1,16 @@
+# Leaves the app on the sign-in screen, whoever used the simulator last.
+appId: com.cloudvideoplayer.app
+---
+- runFlow: open-app.yaml
+- runFlow:
+    when:
+      visible:
+        id: tab-account
+    commands:
+      - tapOn:
+          id: tab-account
+      - tapOn:
+          id: sign-out
+- extendedWaitUntil:
+    visible: Use the email address and password of your account.
+    timeout: 25000

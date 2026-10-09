@@ -36,12 +36,22 @@ function Screens() {
 
   const signedIn = state.status === 'signedIn';
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: c.background },
+        headerTintColor: c.foreground,
+        headerShadowVisible: false,
+        headerBackTitle: t.common.back,
+        contentStyle: { backgroundColor: c.background },
+      }}
+    >
       <Stack.Protected guard={signedIn}>
-        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="videos/[videoId]" options={{ title: '' }} />
+        <Stack.Screen name="events/[eventId]" options={{ title: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
-        <Stack.Screen name="sign-in" />
+        <Stack.Screen name="sign-in" options={{ headerShown: false }} />
       </Stack.Protected>
     </Stack>
   );

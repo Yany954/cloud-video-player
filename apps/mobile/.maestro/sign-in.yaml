@@ -4,18 +4,7 @@
 #   maestro test .maestro/sign-in.yaml -e EMAIL=... -e PASSWORD=...
 appId: com.cloudvideoplayer.app
 ---
-- runFlow: open-app.yaml
-# Start signed out, whoever used the simulator last.
-- runFlow:
-    when:
-      visible:
-        id: sign-out
-    commands:
-      - tapOn:
-          id: sign-out
-- extendedWaitUntil:
-    visible: Use the email address and password of your account.
-    timeout: 25000
+- runFlow: signed-out.yaml
 - assertVisible: Sign in
 
 # A wrong password: same message whether or not the account exists.
@@ -47,22 +36,22 @@ appId: com.cloudvideoplayer.app
       - tapOn: Not Now
 - extendedWaitUntil:
     visible:
-      id: sign-out
+      id: tab-videos
     timeout: 20000
-- assertVisible: ${EMAIL}
-# A real API call made with the new session.
+# A real API call made with the new session: a new account has no videos.
 - extendedWaitUntil:
-    visible: 0 videos in your account
+    visible: No videos yet
     timeout: 20000
 
 # The session survives closing the app.
 - runFlow: open-app.yaml
 - extendedWaitUntil:
     visible:
-      id: sign-out
+      id: tab-account
     timeout: 30000
+- tapOn:
+    id: tab-account
 - assertVisible: ${EMAIL}
-
 - tapOn:
     id: sign-out
 - extendedWaitUntil:

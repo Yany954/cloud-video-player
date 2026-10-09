@@ -1,0 +1,22 @@
+# Signs in with the temporary account given as EMAIL and PASSWORD.
+appId: com.cloudvideoplayer.app
+---
+- runFlow: signed-out.yaml
+- tapOn:
+    id: email
+- inputText: ${EMAIL}
+- tapOn:
+    id: password
+- inputText: ${PASSWORD}
+# The keyboard's return key signs in, like pressing the button.
+- pressKey: Enter
+# iOS offers to keep the password in its own password manager.
+- runFlow:
+    when:
+      visible: Not Now
+    commands:
+      - tapOn: Not Now
+- extendedWaitUntil:
+    visible:
+      id: tab-videos
+    timeout: 25000

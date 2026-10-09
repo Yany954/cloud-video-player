@@ -1,0 +1,61 @@
+# Lists and player. Needs the fixture of three real uploads (see docs/ROADMAP.md, mobile
+# notes): the account owns "Concert clip" (approved, in the event "Test concert") and
+# "Waiting clip" (not reviewed); a guest added "Ben angle" to the event.
+#   maestro test .maestro/watch.yaml -e EMAIL=... -e PASSWORD=...
+appId: com.cloudvideoplayer.app
+---
+- runFlow: signed-in.yaml
+
+# Your videos: everything the person uploaded, with where each one stands. (A row is read
+# out as one sentence, so the tests match that sentence.)
+- extendedWaitUntil:
+    visible: Play Concert clip, .*Ready to watch
+    timeout: 20000
+- assertVisible: Play Waiting clip, .*Waiting for review
+- assertNotVisible: Play Ben angle.*
+
+# The player.
+- tapOn: Play Concert clip, .*
+- extendedWaitUntil:
+    visible: 0:10, 640 x 360
+    timeout: 20000
+- assertVisible:
+    id: video
+# The uploader sees where the review stands.
+- assertVisible: Ready to watch
+- tapOn: Back
+
+# Events, then one event in playing order.
+- tapOn:
+    id: tab-events
+- extendedWaitUntil:
+    visible: Open Test concert
+    timeout: 20000
+- assertVisible: My events
+- tapOn: Open Test concert
+- extendedWaitUntil:
+    visible: Private, 2 videos
+    timeout: 20000
+- assertVisible: Play Concert clip, .*
+- assertVisible: Play Ben angle, .*
+- tapOn: Play Ben angle, .*
+- extendedWaitUntil:
+    visible: 0:10, 640 x 360
+    timeout: 20000
+# Someone else's video: no review status is shown.
+- assertNotVisible: Ready to watch
+- tapOn: Back
+- tapOn: Back
+
+# Shared with me: other people's videos from my events, never my own.
+- tapOn:
+    id: tab-shared
+- extendedWaitUntil:
+    visible: Play Ben angle, .*
+    timeout: 20000
+- assertNotVisible: Play Concert clip.*
+- assertNotVisible: Play Waiting clip.*
+
+- tapOn:
+    id: tab-account
+- assertVisible: ${EMAIL}
