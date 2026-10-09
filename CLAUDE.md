@@ -50,7 +50,7 @@ Explicitly out of scope: watch party.
 | Infra as code | AWS CDK (TypeScript) |
 
 ## Content moderation (no violent or sexual content)
-- Sign-up is open (decided 2026-10-04, so people invited to an event can create their own account); the email address must be confirmed with a code. Videos stay private by default: a new account sees only its own videos, events it was invited to, and approved library videos.
+- Sign-up is open (decided 2026-10-04, so people invited to an event can create their own account); the email address must be confirmed with a code. Videos stay private by default: a new account sees only its own videos and the events it was invited to. There is no library for everyone (decided 2026-10-09): a video outside an event is its owner's alone, and others watch a video only through an event they belong to, once it is approved.
 - Every upload starts as `pending`: not visible to anyone except the uploader until approved.
 - After upload, run automatic moderation (e.g., Amazon Rekognition video content moderation, or ffmpeg-extracted frames + image moderation to lower cost). Results: `approved` / `flagged` / `rejected`.
 - Flagged videos go to an admin review queue in the web admin.

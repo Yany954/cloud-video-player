@@ -19,10 +19,33 @@ product goals; this file holds the progress.
 
 ## What to do next, in order
 
+### Now: fixes and requests from family testing (plan approved 2026-10-09)
+
+1. **Privacy: done and deployed 2026-10-09.** There is no library that every account sees.
+   A video outside an event is visible only to its owner (and to admins, to review it). Other
+   people reach a video only through an event they belong to, once it is approved. `GET /library`
+   is now "Shared with me": other people's approved videos from the events the caller owns or
+   joined. `GSI3` holds only the review queue. Tested on the deployed API with temporary
+   accounts (a fresh account gets an empty list and 404 on playback).
+2. **"A removed video comes back in the event" (IMG_9837): cause not found yet.** No code path
+   adds a video by itself. Since 2026-10-09 every add/remove writes one log line in the
+   `SetVideoEvent` function (`videoId`, `to`, `userId`). Still to do: reproduce in the browser;
+   read the event's videos consistently (`GSI2` keys + consistent `BatchGetItem`); targeted
+   `saveModeration` instead of a whole-row write in review and report; replace the one-by-one
+   "Add your videos" select with a checklist.
+3. Rename a video (`PATCH /videos/{videoId}`, owner only).
+4. Invited people can reorder an event (ids the caller did not send keep their place after).
+5. Web: preview (thumbnail, duration) of what is being uploaded; "Record a video" button on
+   touch devices.
+6. Web: Download button (`GET /videos/{videoId}/download`, 1-hour presigned link; billed like
+   playback, about $0.09 per GB).
+7. Mobile (phase 5) must also offer: offline library from the download route, record with the
+   camera, upload preview, rename, reorder by members.
+
 ### 3a. Moderation: done (manual review)
 
-An admin approves or rejects each playable video; approved videos are in a library every
-signed-in user can watch. Automatic checks (Rekognition, roughly $0.10 per minute of video:
+An admin approves or rejects each playable video. Approval lets the people of the video's
+event watch it (until 2026-10-09 approved videos outside an event were in a library for all). Automatic checks (Rekognition, roughly $0.10 per minute of video:
 confirm the price and warn before building) are not built; `flagged` is reserved for them and
 for reports.
 
@@ -68,8 +91,8 @@ Design in the domain (`domain/category.ts`, done):
 
 - Which videos belong to an event is recorded on each video (`categoryId`). The event keeps
   only the playing `order`; videos it does not mention yet go last, oldest first.
-- A video in a private event carries `private: true`: it stays out of the library, and others
-  see it only if it is approved and they are members of that event. Moderation still applies.
+- Others see a video only if it is approved and they are members of its event (`private` is
+  still stored but no rule depends on it). Moderation still applies.
 - Only the owner renames, reorders, changes visibility or deletes an event. Members add only
   their own videos.
 
@@ -113,8 +136,8 @@ Slices, in order:
   the events they own, their memberships, their storage record and, last, the Cognito user.
   It retries 3 times, 11 minutes apart, then parks the message in the dead-letter queue.
 - The last admin cannot be deleted.
-- Other people's videos in a deleted event are kept with `categoryId: null, private: true`
-  (the user's choice): visible only to their uploader, out of the library.
+- Other people's videos in a deleted event are kept with `categoryId: null` (the user's
+  choice): visible only to their uploader.
 
 ### 3c. Fargate re-encoding
 
@@ -301,7 +324,7 @@ infra                    CDK stacks, tests, scripts (smoke tests, ffmpeg and key
 | Item     | PK              | SK        | Indexes                                                                                               |
 | -------- | --------------- | --------- | ----------------------------------------------------------------------------------------------------- |
 | User     | `USER#{sub}`    | `PROFILE` |                                                                                                       |
-| Video    | `VIDEO#{id}`    | `META`    | `GSI1`: `OWNER#{userId}` / `createdAt`. `GSI3`: `MODERATION#queue` or `#library` / `createdAt`        |
+| Video    | `VIDEO#{id}`    | `META`    | `GSI1`: `OWNER#{userId}` / `createdAt`. `GSI3`: `MODERATION#queue` / `createdAt`                      |
 | Category | `CATEGORY#{id}` | `META`    | `GSI1`: `OWNER#{userId}#CATEGORIES`. `GSI2`: `CATEGORIES` when shared. Videos: `GSI2` `CATEGORY#{id}` |
 
 ## Decisions that differ from, or add to, CLAUDE.md
@@ -325,8 +348,8 @@ infra                    CDK stacks, tests, scripts (smoke tests, ffmpeg and key
 - **Who can watch a video:** its owner always; an admin any playable video (so admins can
   see every upload, which the Terms of Service must say); everyone else only approved ones.
   A video the caller may not see answers 404, never 403.
-- **`GSI3` holds both moderation lists**, written once a video is playable: the review queue
-  (pending and flagged) and the library (approved). Rejected videos are in neither. `GSI2`
+- **`GSI3` holds the review queue** (pending and flagged), written once a video is playable.
+  Approved and rejected videos are not in it. `GSI2`
   stays free for categories.
 - **Admin uploads also start as `pending`**: one rule for everyone.
 - **Deleting removes the table row first, then the files**, and is refused while a video is
@@ -403,8 +426,7 @@ pnpm --filter @cvp/infra cdk:deploy --all
   day, watchable by someone holding a signed link that has not expired yet (6 hours at most).
   Fix: create an invalidation for `media/{id}/*` on delete (the first 1,000 a month are free).
 - An event can be deleted only when empty, and a video moved only when it is ready or failed.
-- Taking a video out of a private event (or sharing the event) puts its approved videos in the
-  library: the web app must say so before doing it.
+- Taking a video out of an event makes it visible to its owner only; the web app says so.
 - A video moved at the same instant an admin reviews it can lose the move (the review rewrites
   the whole record). Rare; the owner repeats the move.
 - An event page shows at most 200 videos; event lists at most 100 events.
@@ -414,7 +436,7 @@ pnpm --filter @cvp/infra cdk:deploy --all
   page to take them out (they can still delete them).
 - Memberships are rows `USER#{sub}` / `MEMBER#{categoryId}`; the category's `collaboratorIds`
   is the source of truth.
-- The library does not say who uploaded a video: user names are not stored yet.
+- "Shared with me" does not say who uploaded a video: user names are not stored yet.
 - A failed "enqueue" after a completed upload leaves the video at `uploaded`; there is no
   "reprocess" action yet.
 - Resuming an upload after a page reload was only seen in the browser for an upload that had
