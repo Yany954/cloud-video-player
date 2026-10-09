@@ -303,8 +303,8 @@ Program ($99 a year): decide when the app is worth sharing.
 | Step                                                                 | State |
 | -------------------------------------------------------------------- | ----- |
 | 1. Skeleton in the monorepo, running in the simulator                | Done  |
-| 2. Sign in, sign up, forgot password (Cognito), English/Spanish      | Built |
-| 3. Watch: lists and player (PiP, locked-screen sound, AirPlay)       |       |
+| 2. Sign in, sign up, forgot password (Cognito), English/Spanish      | Done  |
+| 3. Watch: lists and player (PiP, locked-screen sound, AirPlay)       | Next  |
 | 4. Events: play all, add from a checklist, reorder, rename           |       |
 | 5. Upload with the app open: Photos or camera, preview, pause/resume |       |
 | 6. Upload in the background + iCloud progress (small Swift module)   |       |
@@ -313,10 +313,13 @@ Program ($99 a year): decide when the app is worth sharing.
 
 Notes for whoever continues:
 
-- Step 2 is built but **the sign-in itself has not been exercised**: the screens render in the
-  simulator (English/light, Spanish/dark), and the token storage, texts and error messages
-  have unit tests, but nothing on this Mac can tap or type in the simulator. Either the owner
-  tries it by hand, or a UI test tool (Maestro is the usual one for Expo) is installed.
+- Step 2 is tested in the simulator with Maestro (`apps/mobile/.maestro/sign-in.yaml`): wrong
+  password refused, sign-in, a real API call, the session kept after restarting the app,
+  sign-out, and the sign-up form's rules. The owner also signed in by hand. Not exercised:
+  the emailed codes (sign-up confirmation, password reset) and the invited user's first
+  password, which need a real mailbox.
+- Mobile forms ask for a new password once, with a Show button, not twice like the website:
+  iOS's "Use Strong Password?" sheet interferes with two password boxes.
 - Sign-in uses Amplify's SRP flow like the website (`src/lib/auth/cognito.ts` mirrors the
   web's). Tokens are kept in the Keychain / Keystore through `expo-secure-store`
   (`src/lib/auth/secure-storage.ts`), split in pieces because a stored value has a size limit.

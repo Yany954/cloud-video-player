@@ -36,14 +36,12 @@ export function AuthFlow() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [confirmation, setConfirmation] = useState('');
   const [code, setCode] = useState('');
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [pending, setPending] = useState(false);
 
-  const mismatch = confirmation.length > 0 && confirmation !== newPassword;
   const tooShort = newPassword.length < MIN_PASSWORD_LENGTH;
   const cleanEmail = email.trim();
 
@@ -74,29 +72,20 @@ export function AuthFlow() {
     void WebBrowser.openBrowserAsync(`${env.webUrl}/${page}`);
 
   const passwordSecret = { show: t.common.show, hide: t.common.hide };
-  const newPasswordFields = (labels: { password: string; repeat: string }) => (
-    <>
-      <Field
-        testID="new-password"
-        label={labels.password}
-        hint={a.passwordHint(MIN_PASSWORD_LENGTH)}
-        value={newPassword}
-        onChangeText={setNewPassword}
-        secret={passwordSecret}
-        textContentType="newPassword"
-        autoComplete="new-password"
-      />
-      <Field
-        testID="confirm-password"
-        label={labels.repeat}
-        value={confirmation}
-        onChangeText={setConfirmation}
-        secret={passwordSecret}
-        textContentType="newPassword"
-        autoComplete="new-password"
-      />
-      {mismatch && <ErrorText>{a.passwordsDoNotMatch}</ErrorText>}
-    </>
+  // One box with a Show button instead of "type it twice": iOS's strong-password sheet gets in
+  // the way of two password boxes, and on a phone showing the text is the easier check.
+  const newPasswordField = (label: string) => (
+    <Field
+      testID="new-password"
+      label={label}
+      hint={a.passwordHint(MIN_PASSWORD_LENGTH)}
+      value={newPassword}
+      onChangeText={setNewPassword}
+      secret={passwordSecret}
+      textContentType="newPassword"
+      autoComplete="new-password"
+      passwordRules={`minlength: ${MIN_PASSWORD_LENGTH};`}
+    />
   );
   const codeField = (label: string) => (
     <Field
@@ -128,7 +117,7 @@ export function AuthFlow() {
       <>
         <Heading title={a.signUp.title} intro={a.signUp.intro} />
         {emailField}
-        {newPasswordFields({ password: a.password, repeat: a.signUp.repeatPassword })}
+        {newPasswordField(a.password)}
         <Checkbox
           checked={consent}
           onChange={setConsent}
@@ -161,7 +150,7 @@ export function AuthFlow() {
           testID="submit"
           label={pending ? a.signUp.submitting : a.signUp.submit}
           busy={pending}
-          disabled={!cleanEmail || tooShort || mismatch || confirmation.length === 0}
+          disabled={!cleanEmail || tooShort}
           onPress={() => {
             if (!consent) return setError(t.legal.consentMissing);
             void run(async () => {
@@ -231,7 +220,6 @@ export function AuthFlow() {
               await requestPasswordReset(cleanEmail);
               setCode('');
               setNewPassword('');
-              setConfirmation('');
               setStep('reset');
               return 'stay';
             })
@@ -252,14 +240,14 @@ export function AuthFlow() {
           intro={`${a.reset.introBefore} ${cleanEmail} ${a.reset.introAfter}`}
         />
         {codeField(a.reset.code)}
-        {newPasswordFields({ password: a.reset.newPassword, repeat: a.reset.repeatNewPassword })}
+        {newPasswordField(a.reset.newPassword)}
         <ErrorText>{error}</ErrorText>
         <Notice text={notice} />
         <Button
           testID="submit"
           label={pending ? a.reset.submitting : a.reset.submit}
           busy={pending}
-          disabled={code.trim().length === 0 || tooShort || mismatch || confirmation.length === 0}
+          disabled={code.trim().length === 0 || tooShort}
           onPress={() =>
             void run(async () => {
               await confirmPasswordReset(cleanEmail, code.trim(), newPassword);
@@ -284,16 +272,13 @@ export function AuthFlow() {
     content = (
       <>
         <Heading title={a.newPassword.title} intro={a.newPassword.intro} />
-        {newPasswordFields({
-          password: a.newPassword.newPassword,
-          repeat: a.newPassword.repeatNewPassword,
-        })}
+        {newPasswordField(a.newPassword.newPassword)}
         <ErrorText>{error}</ErrorText>
         <Button
           testID="submit"
           label={pending ? a.newPassword.submitting : a.newPassword.submit}
           busy={pending}
-          disabled={tooShort || mismatch || confirmation.length === 0}
+          disabled={tooShort}
           onPress={() => void run(() => completeNewPassword(newPassword))}
         />
       </>
@@ -331,7 +316,6 @@ export function AuthFlow() {
           link={a.signIn.createAccount}
           onPress={() => {
             setNewPassword('');
-            setConfirmation('');
             go('signUp');
           }}
         />

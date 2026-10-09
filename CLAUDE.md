@@ -98,7 +98,7 @@ Status 2026-10-04: items 1, 2, 4, 6, 16, 17 and 20 are built for the web (privac
   infra/         (CDK stacks)
   packages/shared/ (shared types)   packages/upload-client/ (upload engine for web + mobile)
   ```
-- Testing: Vitest for domain and use cases; Playwright E2E for web; mobile E2E tool TBD with framework. Verify checks by exit code and never with `pnpm -s` (it hides sub-package errors).
+- Testing: Vitest for domain and use cases; Playwright E2E for web; mobile E2E with Maestro (DECIDED 2026-10-09; flows in `apps/mobile/.maestro/`), plus the owner's real iPhone for big changes and anything touching the gallery or the camera. Verify checks by exit code and never with `pnpm -s` (it hides sub-package errors).
 - Secrets: never commit keys; `.env` files in `.gitignore`.
 - AWS cost safety: account is on the paid (pay-as-you-go) plan, no free credits; only always-free limits apply. Monthly budget `cvp-monthly` ($10, alerts at 85%/100% actual and 100% forecast), Free Tier alerts and Cost Anomaly Detection (daily summary, >$5) email me. Budgets only alert, they never stop resources. Warn me before creating any resource that costs money beyond free tier (e.g., MediaConvert jobs), and before any console step with billing side effects.
 - AWS access: region `us-east-1`. Daily work through IAM Identity Center (user with AdministratorAccess, MFA always-on); CLI profile `cvp-dev` via SSO. Never use root or long-lived access keys.

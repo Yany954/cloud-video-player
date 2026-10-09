@@ -1,0 +1,16 @@
+# Restarts the app and connects the development build to the dev server on this Mac.
+appId: com.cloudvideoplayer.app
+---
+- stopApp
+# The tests read English texts, whatever language the simulator is set to.
+- launchApp:
+    arguments:
+      AppleLanguages: '(en)'
+      AppleLocale: en_US
+- openLink: exp+cloud-video-player://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081
+- extendedWaitUntil:
+    visible: Cloud Video Player
+    timeout: 60000
+# The first screen may still be settling after the bundle loads.
+- waitForAnimationToEnd:
+    timeout: 5000
