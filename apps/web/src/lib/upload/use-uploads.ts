@@ -4,6 +4,7 @@ import { ApiError, uploadVideo } from '@cvp/upload-client';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { uploadApi } from '@/lib/api';
 import { hasAcceptedExtension, uploadErrorMessage } from './messages';
+import { readPreview, type UploadPreview } from './preview';
 import { putPartFromBrowser } from './put-part';
 import { fingerprint, resumeStore } from './resume-store';
 import { useI18n } from '@/lib/i18n/i18n-context';
@@ -19,6 +20,8 @@ export interface UploadItem {
   error?: string;
   /** False when retrying can't help, e.g. an unsupported format. */
   canResume: boolean;
+  /** Thumbnail and duration read from the local file; absent until read, or if unreadable. */
+  preview?: UploadPreview;
 }
 
 type Action =
@@ -147,6 +150,10 @@ export function useUploads(userId: string, onUploaded: () => void) {
         jobs.current.set(id, { file, key, videoId: resumeStore.get(key), eventId });
         dispatch({ type: 'add', item });
         run(id);
+        // Beside the upload, never before it: a slow or failed preview must not delay sending.
+        void readPreview(file).then((preview) =>
+          dispatch({ type: 'update', id, changes: { preview } }),
+        );
       }
     },
     [userId, run],

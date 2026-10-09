@@ -157,6 +157,7 @@ export const es: Messages = {
     dropTitle: 'Suelta tus videos aquí',
     dropHint: 'MP4, MOV, MKV o AVI. Se guardan en su calidad original.',
     choose: 'Elegir videos',
+    record: 'Grabar un video',
     eventLabel: 'Agregar las próximas subidas a un evento (opcional)',
     noEvent: 'Ningún evento',
     listTitle: 'Subidas',

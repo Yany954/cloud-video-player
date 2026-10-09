@@ -38,8 +38,10 @@ product goals; this file holds the progress.
    on the player page.
 4. **Invited people can reorder an event: done.** Ids the caller did not send keep their place
    after the sent ones; the order is stored with a targeted update (`saveOrder`).
-5. Web: preview (thumbnail, duration) of what is being uploaded; "Record a video" button on
-   touch devices.
+5. **Web: upload preview and camera button: done.** Each upload row shows a thumbnail and the
+   duration read from the local file in the browser (`lib/upload/preview.ts`; a file the
+   browser cannot decode keeps the film icon). On touch devices "Record a video" opens the
+   camera (`capture="environment"`). Not checked on a real phone yet.
 6. Web: Download button (`GET /videos/{videoId}/download`, 1-hour presigned link; billed like
    playback, about $0.09 per GB).
 7. Mobile (phase 5) must also offer: offline library from the download route, record with the

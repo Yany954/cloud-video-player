@@ -1,13 +1,30 @@
 'use client';
 
-import { UploadCloud } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { UploadCloud, Video } from 'lucide-react';
+import { useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/i18n-context';
 
+const TOUCH = '(pointer: coarse)';
+
+/** True on phones and tablets: there, "record" opens the camera instead of a file picker. */
+function useTouchDevice(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia(TOUCH);
+      query.addEventListener('change', onChange);
+      return () => query.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(TOUCH).matches,
+    () => false,
+  );
+}
+
 export function Dropzone({ onFiles }: { onFiles(files: File[]): void }) {
   const input = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  const touch = useTouchDevice();
   const [dragging, setDragging] = useState(false);
   const { t } = useI18n();
 
@@ -34,9 +51,33 @@ export function Dropzone({ onFiles }: { onFiles(files: File[]): void }) {
         <p className="text-muted-foreground text-sm">{t.upload.dropHint}</p>
       </div>
       {/* The button is the keyboard and screen-reader path; dragging is a shortcut. */}
-      <Button size="lg" onClick={() => input.current?.click()}>
-        {t.upload.choose}
-      </Button>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button size="lg" onClick={() => input.current?.click()}>
+          {t.upload.choose}
+        </Button>
+        {touch && (
+          <Button size="lg" variant="outline" onClick={() => camera.current?.click()}>
+            <Video aria-hidden />
+            {t.upload.record}
+          </Button>
+        )}
+      </div>
+      {touch && (
+        // `capture` asks the phone for its camera, in video mode, instead of the gallery.
+        <input
+          ref={camera}
+          type="file"
+          accept="video/*"
+          capture="environment"
+          tabIndex={-1}
+          aria-hidden
+          className="sr-only"
+          onChange={(event) => {
+            onFiles([...(event.target.files ?? [])]);
+            event.target.value = '';
+          }}
+        />
+      )}
       <input
         ref={input}
         type="file"

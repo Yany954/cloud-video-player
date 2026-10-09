@@ -153,6 +153,7 @@ export const en = {
     dropTitle: 'Drop videos here',
     dropHint: 'MP4, MOV, MKV or AVI. They are stored in their original quality.',
     choose: 'Choose videos',
+    record: 'Record a video',
     eventLabel: 'Add the next uploads to an event (optional)',
     noEvent: 'No event',
     listTitle: 'Uploads',

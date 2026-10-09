@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleAlert, CircleCheck, Pause, Play, X } from 'lucide-react';
+import { CircleAlert, CircleCheck, Film, Pause, Play, X } from 'lucide-react';
 import { useState } from 'react';
 import {
   AlertDialog,
@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { formatDuration } from '@/lib/format';
 import { useFormat, useI18n } from '@/lib/i18n/i18n-context';
 import type { UploadItem } from '@/lib/upload/use-uploads';
 import { cn } from '@/lib/utils';
@@ -110,11 +111,29 @@ function UploadRow({
   return (
     <li className="bg-card grid gap-3 rounded-3xl border p-4 sm:p-5">
       <div className="flex items-start gap-3">
+        <span className="bg-muted flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-lg">
+          {item.preview?.posterUrl ? (
+            // Decorative: the file name next to it already names the video. A data URL made
+            // in this browser from the local file, so there is nothing to optimise or fetch.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.preview.posterUrl}
+              alt=""
+              width={56}
+              height={56}
+              className="size-full object-cover"
+            />
+          ) : (
+            <Film aria-hidden className="text-muted-foreground size-5" strokeWidth={1.5} />
+          )}
+        </span>
         <div className="grid min-w-0 flex-1 gap-0.5">
           <p className="truncate font-medium" title={item.fileName}>
             {item.fileName}
           </p>
           <p className="text-muted-foreground text-sm tabular-nums">
+            {item.preview?.durationSeconds != null &&
+              `${formatDuration(item.preview.durationSeconds)}, `}
             {active
               ? t.upload.sentOf(fmt.bytes(item.uploadedBytes), fmt.bytes(item.sizeBytes))
               : fmt.bytes(item.sizeBytes)}
