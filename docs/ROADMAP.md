@@ -304,9 +304,9 @@ Program ($99 a year): decide when the app is worth sharing.
 | -------------------------------------------------------------------- | ----- |
 | 1. Skeleton in the monorepo, running in the simulator                | Done  |
 | 2. Sign in, sign up, forgot password (Cognito), English/Spanish      | Done  |
-| 3. Watch: lists and player (PiP, locked-screen sound, AirPlay)       | Built |
-| 4. Events: play all, add from a checklist, reorder, rename           | Next  |
-| 5. Upload with the app open: Photos or camera, preview, pause/resume |       |
+| 3. Watch: lists and player (PiP, locked-screen sound, AirPlay)       | Done  |
+| 4. Events: play all, add from a checklist, reorder, rename           | Done  |
+| 5. Upload with the app open: Photos or camera, preview, pause/resume | Next  |
 | 6. Upload in the background + iCloud progress (small Swift module)   |       |
 | 7. Offline library; report/block; delete account; legal pages        |       |
 | 8. The owner's iPhone; TestFlight decision; then Android             |       |
@@ -324,6 +324,20 @@ Notes for whoever continues:
   because a simulator cannot: Picture-in-Picture, sound with the screen locked, the lock-screen
   controls and AirPlay.** They are switched on in `app.json` (`expo-video` plugin) and in the
   player (`src/app/videos/[videoId].tsx`).
+- The owner confirmed on their iPhone (2026-10-09) that sign-in, the lists, the player,
+  Picture-in-Picture, sound with the screen locked, the lock-screen controls and AirPlay work.
+  The phone runs a development build: it needs the dev server on the Mac
+  (`pnpm --filter @cvp/mobile start`) and the same Wi-Fi; in the app, "Enter URL manually"
+  with `http://<the Mac's address from ipconfig getifaddr en0>:8081`.
+- Step 4 (`.maestro/events.yaml`, all passing): Play all with one player for the whole event,
+  autoplay switch (remembered on the phone), previous/next; create, rename and delete an event;
+  add videos from a checklist; move up; remove; rename and delete a video. Built but not
+  exercised by a test: the guest's view (Leave event) and the invite link's share sheet. The
+  invite link opens the website's join page; opening it in the app needs universal links
+  (paid Apple account).
+- Test data for the Maestro flows: three temporary accounts upload a 10-second clip through the
+  API, an admin approves two, and an event holds two of them. The script that does this lives
+  only in the session's scratch folder so far; move it into the repository when it settles.
 - Tabs: Your videos, Events, Shared with me, Account. Creating events, uploading, rename,
   download, delete and report are not in the app yet (website only).
 - `videoStatusLabel`, `formatBytes`/`formatDuration`, the Cognito wrapper and the auth texts

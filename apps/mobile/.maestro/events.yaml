@@ -1,0 +1,201 @@
+# Events: play all, create, add from the checklist, move up, remove, rename, delete; and
+# renaming and deleting a video. Needs the same fixture as watch.yaml.
+#   maestro test .maestro/events.yaml -e EMAIL=... -e PASSWORD=...
+appId: com.cloudvideoplayer.app
+---
+- runFlow: signed-in.yaml
+
+# Play all: one video after another, with the autoplay switch.
+- tapOn:
+    id: tab-events
+- extendedWaitUntil:
+    visible: Open Test concert
+    timeout: 20000
+- tapOn: Open Test concert
+- extendedWaitUntil:
+    visible:
+      id: play-all
+    timeout: 20000
+- tapOn:
+    id: play-all
+- extendedWaitUntil:
+    visible: Video 1 of 2, 0:10
+    timeout: 25000
+- assertVisible: Autoplay next video
+# The choice is remembered on the phone: start from "on" whatever an earlier run left.
+- runFlow:
+    when:
+      visible: 'Off: playback stops when a video ends.'
+    commands:
+      - tapOn:
+          id: autoplay
+      - tapOn:
+          id: queue-1
+- assertVisible: 'On: when a video ends, the next one starts by itself.'
+# The clip lasts ten seconds: the next one starts by itself.
+- extendedWaitUntil:
+    visible: Video 2 of 2, 0:10
+    timeout: 30000
+- tapOn:
+    id: previous
+- extendedWaitUntil:
+    visible: Video 1 of 2, 0:10
+    timeout: 20000
+- tapOn:
+    id: next
+- extendedWaitUntil:
+    visible: Video 2 of 2, 0:10
+    timeout: 20000
+# With autoplay off, playback stays on the video that ended.
+- tapOn:
+    id: autoplay
+- assertVisible: 'Off: playback stops when a video ends.'
+- tapOn:
+    id: queue-1
+- extendedWaitUntil:
+    visible: Video 1 of 2, 0:10
+    timeout: 20000
+- extendedWaitUntil:
+    notVisible: Video 1 of 2, 0:10
+    timeout: 16000
+    optional: true
+- assertVisible: Video 1 of 2, 0:10
+- tapOn:
+    id: autoplay
+- assertVisible: 'On: when a video ends, the next one starts by itself.'
+- tapOn: Back
+- tapOn: Back
+
+# A new event.
+- tapOn:
+    id: new-event
+- tapOn:
+    id: event-name
+- inputText: Maestro party
+- tapOn:
+    id: create-event
+- extendedWaitUntil:
+    visible: 0 videos
+    timeout: 20000
+- assertVisible: 'Private: only you and the people you invite can see this event and its videos.'
+- assertVisible: Add your videos below.
+
+# Nothing is added by ticking; one button adds what is ticked.
+- scrollUntilVisible:
+    element:
+      id: add-selected
+- tapOn:
+    id: add-Concert clip
+- tapOn:
+    id: add-Waiting clip
+- assertVisible: 0 videos
+- tapOn: Add 2 videos
+- extendedWaitUntil:
+    visible: 2 videos were added to the event.
+    timeout: 25000
+- assertVisible: 2 videos
+
+# Move the second video up, then take one out.
+- tapOn:
+    id: up-Waiting clip
+    optional: true
+- tapOn:
+    id: up-Concert clip
+    optional: true
+- extendedWaitUntil:
+    visible: .* moved up\.
+    timeout: 20000
+- tapOn:
+    id: remove-Waiting clip
+- tapOn: Remove from event
+- extendedWaitUntil:
+    visible: “Waiting clip” was removed from the event.
+    timeout: 20000
+- assertVisible: 1 video
+
+# Rename the event.
+- tapOn:
+    id: rename-event
+- eraseText: 30
+- inputText: Maestro fiesta
+- tapOn:
+    id: rename-save
+- extendedWaitUntil:
+    visible: The event was renamed.
+    timeout: 20000
+- assertVisible: Maestro fiesta
+
+# An event with videos cannot be deleted; an empty one can.
+- scrollUntilVisible:
+    element:
+      id: delete-event
+- tapOn:
+    id: delete-event
+- assertVisible: Take its videos out first
+- tapOn: OK
+- scrollUntilVisible:
+    element:
+      id: remove-Concert clip
+    direction: UP
+- tapOn:
+    id: remove-Concert clip
+- tapOn: Remove from event
+- extendedWaitUntil:
+    visible: 0 videos
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: delete-event
+- tapOn:
+    id: delete-event
+- assertVisible: Delete this event?
+# The confirmation's own button, not the one on the screen behind it.
+- tapOn:
+    text: Delete event
+    rightOf: Keep event
+- extendedWaitUntil:
+    visible: My events
+    timeout: 20000
+- assertNotVisible: Open Maestro fiesta
+
+# Rename a video, then delete another.
+- tapOn:
+    id: tab-videos
+- extendedWaitUntil:
+    visible: Play Concert clip, .*
+    timeout: 20000
+- tapOn: Play Concert clip, .*
+- extendedWaitUntil:
+    visible:
+      id: rename-video
+    timeout: 20000
+- tapOn:
+    id: rename-video
+- eraseText: 30
+- inputText: Opening song
+- tapOn:
+    id: rename-save
+- extendedWaitUntil:
+    visible:
+      id: rename-video
+    timeout: 20000
+- assertVisible: Opening song
+- tapOn: Back
+- extendedWaitUntil:
+    visible: Play Opening song, .*
+    timeout: 20000
+- tapOn: Play Waiting clip, .*
+- extendedWaitUntil:
+    visible:
+      id: delete-video
+    timeout: 20000
+- tapOn:
+    id: delete-video
+- assertVisible: Delete this video?
+- tapOn:
+    text: Delete video
+    rightOf: Keep video
+- extendedWaitUntil:
+    visible: Play Opening song, .*
+    timeout: 20000
+- assertNotVisible: Play Waiting clip.*

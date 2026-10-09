@@ -17,11 +17,27 @@ interface VideoListProps {
   showStatus?: boolean;
   /** Shown above the rows, e.g. an explanation or an event's name. */
   header?: React.ReactElement;
+  /** Shown under the rows (also when there are none). */
+  footer?: React.ReactElement;
+  /** Extra controls at the end of a row, e.g. "move up" in an event. */
+  renderActions?: (video: VideoResponse, index: number) => React.ReactNode;
+  /** Where a playable row leads, when it is not the single-video player. */
+  onOpen?: (video: VideoResponse) => void;
   testID?: string;
 }
 
 /** A list of videos: pull down to refresh, tap a playable one to watch it. */
-export function VideoList({ state, errorText, empty, showStatus, header, testID }: VideoListProps) {
+export function VideoList({
+  state,
+  errorText,
+  empty,
+  showStatus,
+  header,
+  footer,
+  renderActions,
+  onOpen,
+  testID,
+}: VideoListProps) {
   const c = useColors();
   const { t } = useI18n();
 
@@ -30,7 +46,16 @@ export function VideoList({ state, errorText, empty, showStatus, header, testID 
       testID={testID}
       data={state.data ?? []}
       keyExtractor={(video) => video.id}
-      renderItem={({ item }) => <VideoRow video={item} showStatus={!!showStatus} />}
+      renderItem={({ item, index }) => (
+        <VideoRow
+          video={item}
+          showStatus={!!showStatus}
+          actions={renderActions?.(item, index)}
+          onOpen={onOpen}
+        />
+      )}
+      ListFooterComponent={footer}
+      keyboardShouldPersistTaps="handled"
       ItemSeparatorComponent={() => (
         <View style={[styles.separator, { backgroundColor: c.border }]} />
       )}
@@ -62,7 +87,17 @@ export function VideoList({ state, errorText, empty, showStatus, header, testID 
   );
 }
 
-function VideoRow({ video, showStatus }: { video: VideoResponse; showStatus: boolean }) {
+function VideoRow({
+  video,
+  showStatus,
+  actions,
+  onOpen,
+}: {
+  video: VideoResponse;
+  showStatus: boolean;
+  actions?: React.ReactNode;
+  onOpen?: (video: VideoResponse) => void;
+}) {
   const c = useColors();
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -76,45 +111,56 @@ function VideoRow({ video, showStatus }: { video: VideoResponse; showStatus: boo
   const status = videoStatusLabel(video, t.videoStatus);
 
   return (
-    <Pressable
-      testID={`video-${video.id}`}
-      accessibilityRole={playable ? 'button' : 'text'}
-      accessibilityLabel={
-        playable
-          ? `${t.lists.play(video.title)}, ${facts.join(', ')}${showStatus ? `, ${status}` : ''}`
-          : `${video.title}, ${status}`
-      }
-      disabled={!playable}
-      onPress={() => router.push({ pathname: '/videos/[videoId]', params: { videoId: video.id } })}
-      style={({ pressed }) => [styles.row, pressed && { backgroundColor: c.muted }]}
-    >
-      <View style={[styles.poster, { backgroundColor: c.muted }]}>
-        {video.posterUrl ? (
-          // Decorative: the title beside it names the video.
-          <Image
-            source={{ uri: video.posterUrl }}
-            style={styles.posterImage}
-            contentFit="cover"
-            accessible={false}
-            // The link is signed again on every request; the picture itself does not change.
-            cachePolicy="memory-disk"
-            recyclingKey={video.id}
-          />
-        ) : (
-          <Ionicons name="film-outline" size={22} color={c.mutedForeground} />
-        )}
-      </View>
-      <View style={styles.text}>
-        <Text numberOfLines={2} style={[styles.title, { color: c.foreground }]}>
-          {video.title}
-        </Text>
-        <Text style={[styles.facts, { color: c.mutedForeground }]}>{facts.join(', ')}</Text>
-        {(showStatus || !playable) && (
-          <Text style={[styles.facts, { color: c.mutedForeground }]}>{status}</Text>
-        )}
-      </View>
-      {playable && <Ionicons name="play" size={18} color={c.mutedForeground} />}
-    </Pressable>
+    <View style={styles.rowWithActions}>
+      <Pressable
+        testID={`video-${video.id}`}
+        accessibilityRole={playable ? 'button' : 'text'}
+        accessibilityLabel={
+          playable
+            ? `${t.lists.play(video.title)}, ${facts.join(', ')}${showStatus ? `, ${status}` : ''}`
+            : `${video.title}, ${status}`
+        }
+        disabled={!playable}
+        onPress={() =>
+          onOpen
+            ? onOpen(video)
+            : router.push({ pathname: '/videos/[videoId]', params: { videoId: video.id } })
+        }
+        style={({ pressed }) => [
+          styles.row,
+          styles.rowMain,
+          pressed && { backgroundColor: c.muted },
+        ]}
+      >
+        <View style={[styles.poster, { backgroundColor: c.muted }]}>
+          {video.posterUrl ? (
+            // Decorative: the title beside it names the video.
+            <Image
+              source={{ uri: video.posterUrl }}
+              style={styles.posterImage}
+              contentFit="cover"
+              accessible={false}
+              // The link is signed again on every request; the picture itself does not change.
+              cachePolicy="memory-disk"
+              recyclingKey={video.id}
+            />
+          ) : (
+            <Ionicons name="film-outline" size={22} color={c.mutedForeground} />
+          )}
+        </View>
+        <View style={styles.text}>
+          <Text numberOfLines={2} style={[styles.title, { color: c.foreground }]}>
+            {video.title}
+          </Text>
+          <Text style={[styles.facts, { color: c.mutedForeground }]}>{facts.join(', ')}</Text>
+          {(showStatus || !playable) && (
+            <Text style={[styles.facts, { color: c.mutedForeground }]}>{status}</Text>
+          )}
+        </View>
+        {playable && !actions && <Ionicons name="play" size={18} color={c.mutedForeground} />}
+      </Pressable>
+      {actions && <View style={styles.actions}>{actions}</View>}
+    </View>
   );
 }
 
@@ -172,6 +218,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
+  rowWithActions: { flexDirection: 'row', alignItems: 'center' },
+  rowMain: { flex: 1 },
+  actions: { flexDirection: 'row', alignItems: 'center', paddingRight: 8 },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 20 + 64 + 14 },
   poster: {
     width: 64,
@@ -186,7 +235,43 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, fontWeight: '600', lineHeight: 21 },
   facts: { fontSize: 14, lineHeight: 19, fontVariant: ['tabular-nums'] },
   bar: { height: 12, borderRadius: 6 },
+  iconButton: {
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    borderRadius: MIN_TOUCH / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   message: { alignItems: 'center', gap: 8, paddingHorizontal: 32, paddingVertical: 56 },
   messageTitle: { fontSize: 17, fontWeight: '600', textAlign: 'center' },
   messageText: { fontSize: 15, lineHeight: 21, textAlign: 'center' },
 });
+
+/** A round icon button for a row: big enough to hit, named for screen readers. */
+export function IconButton(props: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress(): void;
+  disabled?: boolean;
+  testID?: string;
+}) {
+  const c = useColors();
+  return (
+    <Pressable
+      testID={props.testID}
+      accessibilityRole="button"
+      accessibilityLabel={props.label}
+      accessibilityState={{ disabled: !!props.disabled }}
+      disabled={props.disabled}
+      onPress={props.onPress}
+      hitSlop={4}
+      style={({ pressed }) => [
+        styles.iconButton,
+        (pressed || props.disabled) && { opacity: 0.5 },
+        pressed && { backgroundColor: c.muted },
+      ]}
+    >
+      <Ionicons name={props.icon} size={20} color={c.mutedForeground} />
+    </Pressable>
+  );
+}

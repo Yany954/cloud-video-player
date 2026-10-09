@@ -48,7 +48,8 @@ function Screens() {
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="videos/[videoId]" options={{ title: '' }} />
-        <Stack.Screen name="events/[eventId]" options={{ title: '' }} />
+        <Stack.Screen name="events/[eventId]/index" options={{ title: '' }} />
+        <Stack.Screen name="events/[eventId]/play" options={{ title: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />

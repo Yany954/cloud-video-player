@@ -34,7 +34,7 @@ appId: com.cloudvideoplayer.app
 - assertVisible: My events
 - tapOn: Open Test concert
 - extendedWaitUntil:
-    visible: Private, 2 videos
+    visible: 2 videos
     timeout: 20000
 - assertVisible: Play Concert clip, .*
 - assertVisible: Play Ben angle, .*

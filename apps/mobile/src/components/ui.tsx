@@ -46,7 +46,9 @@ export function ErrorText({ children }: { children: React.ReactNode }) {
 interface ButtonProps {
   label: string;
   onPress(): void;
-  variant?: 'primary' | 'outline';
+  variant?: 'primary' | 'outline' | 'destructive';
+  /** Read by screen readers instead of the label, when the label alone is too short. */
+  accessibilityLabel?: string;
   /** Shows a spinner and ignores presses. */
   busy?: boolean;
   disabled?: boolean;
@@ -60,14 +62,21 @@ export function Button({
   busy,
   disabled,
   testID,
+  accessibilityLabel,
 }: ButtonProps) {
   const c = useColors();
   const primary = variant === 'primary';
+  const textColor = primary
+    ? c.primaryForeground
+    : variant === 'destructive'
+      ? c.destructive
+      : c.foreground;
   const off = busy || disabled;
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !!off, busy: !!busy }}
       disabled={off}
       onPress={onPress}
@@ -75,14 +84,16 @@ export function Button({
         styles.button,
         primary
           ? { backgroundColor: c.primary }
-          : { borderWidth: 1, borderColor: c.border, backgroundColor: c.card },
+          : {
+              borderWidth: 1,
+              borderColor: variant === 'destructive' ? c.destructive : c.border,
+              backgroundColor: c.card,
+            },
         (pressed || off) && { opacity: 0.6 },
       ]}
     >
-      {busy && <ActivityIndicator color={primary ? c.primaryForeground : c.foreground} />}
-      <Text style={[styles.buttonText, { color: primary ? c.primaryForeground : c.foreground }]}>
-        {label}
-      </Text>
+      {busy && <ActivityIndicator color={textColor} />}
+      <Text style={[styles.buttonText, { color: textColor }]}>{label}</Text>
     </Pressable>
   );
 }
