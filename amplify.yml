@@ -15,7 +15,9 @@ applications:
             # Amplify needs a flat node_modules to package a pnpm workspace. Set here only, so
             # local installs keep pnpm's stricter default layout.
             - echo "node-linker=hoisted" >> .npmrc
-            - pnpm install --frozen-lockfile
+            # Only the web app and the workspace packages it uses: the mobile app's packages
+            # (React Native, Expo) are not needed here and must not be hoisted beside the web's.
+            - pnpm install --frozen-lockfile --filter @cvp/web...
         build:
           commands:
             - pnpm --filter @cvp/web build
