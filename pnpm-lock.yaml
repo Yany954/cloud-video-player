@@ -7,6 +7,11 @@ settings:
 overrides:
   '@types/react': 19.3.0
 
+patchedDependencies:
+  expo-image-picker@57.0.20:
+    hash: 49bfaa2d07d5661331fb790e158ce64b95f4ab3347a2acb8314ef8a195999d2b
+    path: patches/expo-image-picker@57.0.20.patch
+
 importers:
 
   .:
@@ -70,7 +75,7 @@ importers:
         version: 57.0.5(expo@57.0.27)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)
       expo-image-picker:
         specifier: ~57.0.20
-        version: 57.0.20(expo@57.0.27)
+        version: 57.0.20(patch_hash=49bfaa2d07d5661331fb790e158ce64b95f4ab3347a2acb8314ef8a195999d2b)(expo@57.0.27)
       expo-keep-awake:
         specifier: ~57.0.2
         version: 57.0.2(expo@57.0.27)(react@19.2.3)
@@ -12091,7 +12096,7 @@ snapshots:
     dependencies:
       expo: 57.0.27(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.16)(expo-router@57.0.25)(react-dom@19.2.8(react@19.2.3))(react-native-worklets@0.10.1(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
 
-  expo-image-picker@57.0.20(expo@57.0.27):
+  expo-image-picker@57.0.20(patch_hash=49bfaa2d07d5661331fb790e158ce64b95f4ab3347a2acb8314ef8a195999d2b)(expo@57.0.27):
     dependencies:
       expo: 57.0.27(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.16)(expo-router@57.0.25)(react-dom@19.2.8(react@19.2.3))(react-native-worklets@0.10.1(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
       expo-image-loader: 57.0.1(expo@57.0.27)

@@ -4,15 +4,17 @@ packages:
   - packages/*
   - infra
 
-onlyBuiltDependencies:
-  - esbuild
-
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+onlyBuiltDependencies:
+  - esbuild
 
 # One copy of React's types for the whole workspace. The website's cloud build installs with a
 # flat node_modules, where two versions (the web's and the mobile app's) end up mixed and
 # TypeScript rejects them as "two different types with this name".
 overrides:
   '@types/react': 19.3.0
+patchedDependencies:
+  expo-image-picker@57.0.20: patches/expo-image-picker@57.0.20.patch

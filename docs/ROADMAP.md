@@ -361,6 +361,10 @@ Notes for whoever continues:
   does; "Original" sends the file as recorded. The owner prefers smaller, quicker and smooth
   over exact originals. This departs from `CLAUDE.md` ("preserve original quality", "never
   transcode on the phone"): update `CLAUDE.md` once the owner confirms the result on the phone.
+  First attempt failed on the phone (`IMG_1546_mobile`, still 106 Mbps): with photo-library
+  access granted, `expo-image-picker` copies the original file whatever representation is
+  asked for. `patches/expo-image-picker@57.0.20.patch` makes it do that only when the original
+  is wanted. Needs a native rebuild; re-check the patch when Expo is upgraded.
   A lighter streaming copy made on the server (step 3c) would allow keeping originals too.
 - **Asked for later (2026-10-10):** choose several videos and have them upload one by one as a
   queue, at a suitable time, without the person watching over it, and notify them when done.
