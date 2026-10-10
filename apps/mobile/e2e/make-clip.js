@@ -51,4 +51,4 @@ async (page) => {
       s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
     return { type, size: buf.length, video: btoa(s) };
   });
-};
+}

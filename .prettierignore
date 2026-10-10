@@ -6,3 +6,4 @@ CLAUDE.md
 skills-lock.json
 **/.next/
 **/next-env.d.ts
+apps/mobile/e2e/make-clip.js

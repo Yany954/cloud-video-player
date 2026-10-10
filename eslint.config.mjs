@@ -11,6 +11,8 @@ export default tseslint.config(
       '**/.expo/**',
       '**/cdk.out/**',
       'apps/web/**',
+      // A snippet run inside a browser page by playwright-cli, not a module.
+      'apps/mobile/e2e/make-clip.js',
       '.claude/**',
     ],
   },
