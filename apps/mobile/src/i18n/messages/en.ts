@@ -288,8 +288,26 @@ export const en = {
     eventFor: (name: string) => `Next uploads go into: ${name}`,
     recordNote:
       'Recording here is Full HD (1080p) at most, an iPhone limit for cameras inside apps. For 4K, record with the Camera app and then choose the video.',
-    keepOpen: 'Keep the app open: an upload pauses if you leave it or lock the phone.',
-    resumeHint: 'Choose the same video again to continue from where it stopped.',
+    keepOpen:
+      'Videos are sent one at a time, in the order you chose them. If the app is closed or the phone locks, sending stops and carries on by itself when you open the app again.',
+    queued: 'Waiting for its turn',
+    lost: (count: number) =>
+      count === 1
+        ? 'One video that was waiting is no longer on this phone’s temporary storage. Choose it again to upload it.'
+        : `${count} videos that were waiting are no longer on this phone’s temporary storage. Choose them again to upload them.`,
+    removeUnfinished: (title: string) => `Remove the unfinished upload of ${title}`,
+    removeUnfinishedTitle: 'Remove this unfinished upload?',
+    removeUnfinishedText: (title: string) =>
+      `“${title}” was never fully sent, so there is nothing to watch. Removing it only clears this entry.`,
+    removeUnfinishedConfirm: 'Remove',
+    removeUnfinishedFailed: 'The entry could not be removed.',
+  },
+  uploadNotice: {
+    title: 'Uploads finished',
+    done: (count: number) =>
+      count === 1 ? 'Your video was uploaded.' : `Your ${count} videos were uploaded.`,
+    someFailed: (done: number, failed: number) =>
+      `${done} uploaded, ${failed} could not be sent. Open the app to try again.`,
   },
   player: {
     notFound: 'This video does not exist.',

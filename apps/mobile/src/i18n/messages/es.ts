@@ -292,8 +292,26 @@ export const es: Messages = {
     eventFor: (name: string) => `Las próximas subidas van a: ${name}`,
     recordNote:
       'Grabar aquí es como máximo en Full HD (1080p), un límite del iPhone para las cámaras dentro de las apps. Para 4K, graba con la app Cámara y luego elige el video.',
-    keepOpen: 'Deja la app abierta: una subida se pausa si sales de ella o bloqueas el teléfono.',
-    resumeHint: 'Elige el mismo video otra vez para continuar desde donde se detuvo.',
+    keepOpen:
+      'Los videos se envían de uno en uno, en el orden en que los elegiste. Si cierras la app o el teléfono se bloquea, el envío se detiene y continúa solo cuando vuelves a abrir la app.',
+    queued: 'Esperando su turno',
+    lost: (count: number) =>
+      count === 1
+        ? 'Un video que estaba en espera ya no está en el almacenamiento temporal de este teléfono. Elígelo otra vez para subirlo.'
+        : `${count} videos que estaban en espera ya no están en el almacenamiento temporal de este teléfono. Elígelos otra vez para subirlos.`,
+    removeUnfinished: (title: string) => `Quitar la subida sin terminar de ${title}`,
+    removeUnfinishedTitle: '¿Quitar esta subida sin terminar?',
+    removeUnfinishedText: (title: string) =>
+      `«${title}» nunca se envió por completo, así que no hay nada que ver. Quitarla solo borra esta entrada.`,
+    removeUnfinishedConfirm: 'Quitar',
+    removeUnfinishedFailed: 'No se pudo quitar la entrada.',
+  },
+  uploadNotice: {
+    title: 'Subidas terminadas',
+    done: (count: number) =>
+      count === 1 ? 'Tu video se subió.' : `Tus ${count} videos se subieron.`,
+    someFailed: (done: number, failed: number) =>
+      `${done} subidos, ${failed} no se pudieron enviar. Abre la app para intentarlo de nuevo.`,
   },
   player: {
     notFound: 'Este video no existe.',

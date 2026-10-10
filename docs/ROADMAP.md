@@ -306,7 +306,7 @@ Program ($99 a year): decide when the app is worth sharing.
 | 2. Sign in, sign up, forgot password (Cognito), English/Spanish      | Done  |
 | 3. Watch: lists and player (PiP, locked-screen sound, AirPlay)       | Done  |
 | 4. Events: play all, add from a checklist, reorder, rename           | Done  |
-| 5. Upload with the app open: Photos or camera, preview, pause/resume | Built |
+| 5. Upload with the app open: Photos or camera, preview, pause/resume | Done  |
 | 6. Upload in the background + iCloud progress (small Swift module)   | Next  |
 | 7. Offline library; report/block; delete account; legal pages        |       |
 | 8. The owner's iPhone; TestFlight decision; then Android             |       |
@@ -368,10 +368,26 @@ Notes for whoever continues:
   "Smaller / Original"; with library access granted, `expo-image-picker` copies the original
   whatever is asked for when the preset is `Passthrough`, so "Smaller" had no effect on the
   owner's phone. A non-passthrough preset does not take that shortcut.
-- **Asked for later (2026-10-10):** choose several videos and have them upload one by one as a
-  queue, at a suitable time, without the person watching over it, and notify them when done.
-  Belongs with background upload (step 6): one video at a time, a local notification at the
-  end.
+- **Measured on the owner's phone (2026-10-10):** the HEVC 4K copy of `IMG_1556` is 657 MB for
+  3:10, 27.6 Mbps, and the owner likes the quality. The preset stays.
+- **Step 6, part 1 (built 2026-10-10): the upload queue is kept on the phone.**
+  `src/lib/upload/{queue,queue-store,use-uploads}.ts`. Chosen videos are moved to the app's
+  cache folder (`upload-queue/`, not in iCloud backups) and remembered with their server
+  upload id; they are sent one at a time in the order chosen; after the app was closed,
+  reloaded or stopped by the system the queue carries on by itself; a connection error is
+  retried when the app comes back to the front; the same video chosen twice is queued once.
+  A local notification says when the queue has emptied while the app was not in front
+  (`expo-notifications`, asked for at the first queued video). An "Upload not finished" row
+  that nothing on the phone will finish gets a remove button on Your videos.
+  Why: on the owner's phone an upload was started, the app was reloaded right after, and the
+  video was sent again as a second upload, leaving a dead "Upload not finished" entry with no
+  way to remove it. (During development, changes made on the Mac reload the app on the phone,
+  which is one way that happens.)
+  **Not exercised: carrying on after an interruption** (the test clip uploads in a second).
+  The owner's phone has to show it with a long video.
+- **Step 6, still to do:** sending while the app is closed or the phone is locked (parts
+  handed to iOS's background session; this is the uncertain part and only a real phone can
+  test it), and a progress bar while the phone prepares a video.
 - React Native has no `AbortSignal.throwIfAborted()`, which `packages/upload-client` uses:
   `src/lib/polyfills.ts` adds it.
 - In a development build the floating "dev tools" gear covers the photo picker's confirm

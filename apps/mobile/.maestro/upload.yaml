@@ -37,6 +37,12 @@ appId: com.cloudvideoplayer.app
 - extendedWaitUntil:
     visible: Uploads
     timeout: 60000
+# The first queued video is when the app asks whether it may notify at the end.
+- runFlow:
+    when:
+      visible: Allow
+    commands:
+      - tapOn: Allow
 # Sent for real: the part goes to S3 through the phone's uploader.
 - extendedWaitUntil:
     visible: Uploaded\. Only you can watch it.*

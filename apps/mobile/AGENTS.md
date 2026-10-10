@@ -15,4 +15,7 @@ repository's `CLAUDE.md` and `docs/ROADMAP.md`.
   and the runner are in `e2e/`: `python3 e2e/fixture.py up` (or `user`), `e2e/run.sh <flow>`,
   `python3 e2e/fixture.py down`. They need the development build in a booted simulator and
   the dev server running. Temporary accounts only; never the owner's account.
+- While the owner tests on their phone, the phone runs the code served by this Mac: saving a
+  file or installing a package here reloads the app there, and a change that needs a new
+  native module breaks it until the phone is rebuilt. Say so before doing either.
 - Commits that touch only the mobile app carry `[skip-cd]`: they must not rebuild the website.

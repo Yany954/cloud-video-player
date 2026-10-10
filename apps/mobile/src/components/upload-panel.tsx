@@ -54,7 +54,7 @@ export function UploadPanel({ refreshKey }: { refreshKey: number }) {
     setError('');
     try {
       const sources = await get();
-      uploads.add(sources, event?.id);
+      await uploads.add(sources, event?.id);
     } catch (caught) {
       setError(caught instanceof PermissionDeniedError ? u.cameraDenied : u.pickFailed);
     } finally {
@@ -155,6 +155,12 @@ export function UploadPanel({ refreshKey }: { refreshKey: number }) {
               );
             })}
         </View>
+      )}
+
+      {uploads.lostCount > 0 && (
+        <Text accessibilityRole="alert" style={[styles.small, { color: c.destructive }]}>
+          {u.lost(uploads.lostCount)}
+        </Text>
       )}
 
       {uploads.items.length > 0 && (
@@ -321,6 +327,7 @@ function UploadRow(props: {
           { color: item.status === 'error' ? c.destructive : c.mutedForeground },
         ]}
       >
+        {item.status === 'queued' && u.queued}
         {item.status === 'uploading' && u.uploading(percent)}
         {item.status === 'paused' && u.pausedAt(percent)}
         {item.status === 'done' && u.done}

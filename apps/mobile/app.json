@@ -51,7 +51,8 @@
           "cameraPermission": "Cloud Video Player uses the camera when you record a video to upload.",
           "microphonePermission": "Cloud Video Player uses the microphone to record sound with your video."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,
