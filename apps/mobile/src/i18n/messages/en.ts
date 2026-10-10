@@ -287,6 +287,13 @@ export const en = {
     openSettings: 'Open Settings',
     eventChange: 'Change',
     eventFor: (name: string) => `Next uploads go into: ${name}`,
+    qualityLabel: 'Videos from Photos are sent as',
+    qualitySmaller: 'Smaller',
+    qualitySmallerText:
+      'Recommended. Your phone prepares a lighter version first (the same thing the website does): about a quarter of the size, quicker to upload, and it plays smoothly.',
+    qualityOriginal: 'Original',
+    qualityOriginalText:
+      'Exactly as recorded. A 4K 60 fps video is very large: slow to upload, and it may stop and start while playing unless you download it.',
     recordNote:
       'Recording here is Full HD (1080p) at most, an iPhone limit for cameras inside apps. For 4K, record with the Camera app and then choose the video.',
     keepOpen: 'Keep the app open: an upload pauses if you leave it or lock the phone.',

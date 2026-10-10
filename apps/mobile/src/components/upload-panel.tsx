@@ -10,7 +10,13 @@ import { useI18n } from '@/i18n/i18n';
 import { api } from '@/lib/api';
 import { env } from '@/lib/env';
 import { formatBytes, formatDuration } from '@/lib/format';
-import { chooseVideos, PermissionDeniedError, recordVideo } from '@/lib/upload/pick';
+import {
+  chooseVideos,
+  PermissionDeniedError,
+  recordVideo,
+  type UploadQuality,
+} from '@/lib/upload/pick';
+import { readUploadQuality, writeUploadQuality } from '@/lib/upload/quality';
 import type { UploadSource } from '@/lib/upload/source';
 import { useSharedUploads } from '@/lib/upload/uploads-context';
 import type { UploadItem } from '@/lib/upload/use-uploads';
@@ -29,6 +35,10 @@ export function UploadPanel({ refreshKey }: { refreshKey: number }) {
   const [events, setEvents] = useState<EventResponse[]>([]);
   const [eventId, setEventId] = useState<string | null>(null);
   const [choosingEvent, setChoosingEvent] = useState(false);
+  const [quality, setQuality] = useState<UploadQuality>('smaller');
+  useEffect(() => {
+    void readUploadQuality().then(setQuality);
+  }, []);
 
   // Storage changes with every finished upload and every deleted video.
   useEffect(() => {
@@ -78,7 +88,7 @@ export function UploadPanel({ refreshKey }: { refreshKey: number }) {
             label={u.choose}
             busy={busy === 'choose'}
             disabled={busy !== null || !uploads.ready}
-            onPress={() => void pick('choose', chooseVideos)}
+            onPress={() => void pick('choose', () => chooseVideos(quality))}
           />
         </View>
         <View style={styles.grow}>
@@ -91,6 +101,42 @@ export function UploadPanel({ refreshKey }: { refreshKey: number }) {
             onPress={() => void pick('record', recordVideo)}
           />
         </View>
+      </View>
+      <View style={styles.gap} accessibilityRole="radiogroup" accessibilityLabel={u.qualityLabel}>
+        <Text style={[styles.text, { color: c.foreground }]}>{u.qualityLabel}</Text>
+        <View style={styles.buttons}>
+          {(['smaller', 'original'] as const).map((option) => {
+            const selected = quality === option;
+            return (
+              <Pressable
+                key={option}
+                testID={`quality-${option}`}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                onPress={() => {
+                  setQuality(option);
+                  void writeUploadQuality(option);
+                }}
+                style={[
+                  styles.choice,
+                  { borderColor: selected ? c.primary : c.border, backgroundColor: c.card },
+                ]}
+              >
+                <Ionicons
+                  name={selected ? 'radio-button-on' : 'radio-button-off'}
+                  size={18}
+                  color={selected ? c.primary : c.mutedForeground}
+                />
+                <Text style={[styles.text, { color: c.foreground }]}>
+                  {option === 'smaller' ? u.qualitySmaller : u.qualityOriginal}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={[styles.small, { color: c.mutedForeground }]}>
+          {quality === 'smaller' ? u.qualitySmallerText : u.qualityOriginalText}
+        </Text>
       </View>
       <Text style={[styles.small, { color: c.mutedForeground }]}>{u.recordNote}</Text>
       {busy === 'choose' && (
@@ -347,6 +393,16 @@ const styles = StyleSheet.create({
   numbers: { fontVariant: ['tabular-nums'] },
   link: { textDecorationLine: 'underline' },
   heading: { fontSize: 17, fontWeight: '600', marginTop: 4 },
+  choice: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: radius.control,
+  },
   option: {
     minHeight: 44,
     flexDirection: 'row',

@@ -6,10 +6,27 @@ appId: com.cloudvideoplayer.app
 ---
 - runFlow: signed-in.yaml
 - extendedWaitUntil:
-    visible: No videos yet
+    visible:
+      id: choose-videos
     timeout: 20000
 - assertVisible: MP4, MOV, MKV or AVI. They are stored in their original quality.
-- assertVisible: 'Storage: 0 B used of 5 GB'
+# Smaller is the default: the phone prepares the lighter version, as the website does.
+- assertVisible: Videos from Photos are sent as
+- assertVisible: 'Recommended\. Your phone prepares a lighter version first.*'
+- tapOn:
+    id: quality-original
+- assertVisible: 'Exactly as recorded\..*'
+- tapOn:
+    id: quality-smaller
+- assertVisible: 'Recommended\. Your phone prepares a lighter version first.*'
+- scrollUntilVisible:
+    element: 'Storage: 0 B used of 5 GB'
+- scrollUntilVisible:
+    element: No videos yet
+- scrollUntilVisible:
+    element:
+      id: choose-videos
+    direction: UP
 
 - tapOn:
     id: choose-videos
@@ -39,15 +56,15 @@ appId: com.cloudvideoplayer.app
     timeout: 90000
 - assertVisible:
     id: upload-done
-# The pipeline prepares it; the list updates by itself.
-- extendedWaitUntil:
-    visible: .*, Waiting for review
-    timeout: 180000
-- assertNotVisible: No videos yet
-- assertNotVisible: 'Storage: 0 B used of 5 GB'
 - tapOn:
     id: dismiss-upload
 - assertNotVisible: Uploads
+# The pipeline prepares it; the list updates by itself.
+- scrollUntilVisible:
+    element: .*, Waiting for review
+    timeout: 180000
+- assertNotVisible: No videos yet
+- assertNotVisible: 'Storage: 0 B used of 5 GB'
 
 # It plays, and it is the same length as the original.
 - tapOn: Play .*, Waiting for review

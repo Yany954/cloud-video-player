@@ -347,15 +347,25 @@ Notes for whoever continues:
   session (`src/lib/upload/put-part.ts`), two parts at a time; the screen is kept awake while
   sending; choosing the same video again resumes. Recording from inside the app is 1080p at
   most (iOS limit for the in-app camera): for 4K, record with the Camera app and choose it.
-- The owner confirmed on their iPhone (2026-10-10): recording works, and a 3:30 video of 2.6 GB
-  uploaded from Photos. **Finding:** that video is the true original, HEVC 4K at 60 frames and
-  about 106 Mbps, and it stutters when played, because the playable copy is the original
-  streams (no lighter version exists) and the connection cannot deliver 106 Mbps. Videos
-  uploaded earlier through Safari are H.264 4K at 30 frames and about 25 Mbps: iOS re-encoded
-  them before the website received them, which is why they are smaller and play smoothly. So
-  the app preserves the original and the website on iPhone does not. Smooth playback of heavy
-  originals needs a lighter streaming version made on the server (the planned re-encoding
-  step, 3c): decide with a cost estimate.
+- **Why app uploads were heavier than website uploads (measured 2026-10-10).** Same concert,
+  same phone settings (iPhone 16 Pro, 4K at 59.96 fps):
+  - from the app, `IMG_1552` and `IMG_1550`: HEVC, 59.96 fps, about 106 Mbps (2.77 GB for 3:30,
+    the size the owner sees in their gallery). The true originals.
+  - from the website, `IMG_1556`: H.264, 30 fps, about 26 Mbps (611 MB for 3:10). Safari hands
+    the site the phone's "most compatible" version, not the original.
+    The originals stutter because nothing lighter exists to stream: this Mac's Wi-Fi fetched the
+    file at about 100 Mbps, under the 106 Mbps it needs; the file itself is well formed
+    (header first, sound and picture interleaved).
+- **Upload size choice in the app (built 2026-10-10, the owner's phone still has to confirm
+  it):** "Smaller" (default) asks the picker for the phone's compatible version, as Safari
+  does; "Original" sends the file as recorded. The owner prefers smaller, quicker and smooth
+  over exact originals. This departs from `CLAUDE.md` ("preserve original quality", "never
+  transcode on the phone"): update `CLAUDE.md` once the owner confirms the result on the phone.
+  A lighter streaming copy made on the server (step 3c) would allow keeping originals too.
+- **Asked for later (2026-10-10):** choose several videos and have them upload one by one as a
+  queue, at a suitable time, without the person watching over it, and notify them when done.
+  Belongs with background upload (step 6): one video at a time, a local notification at the
+  end.
 - React Native has no `AbortSignal.throwIfAborted()`, which `packages/upload-client` uses:
   `src/lib/polyfills.ts` adds it.
 - In a development build the floating "dev tools" gear covers the photo picker's confirm

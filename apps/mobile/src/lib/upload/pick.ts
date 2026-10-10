@@ -8,20 +8,34 @@ export class PermissionDeniedError extends Error {
   }
 }
 
-/** Videos chosen from the photo library, exactly as stored: the phone does not convert them. */
-export async function chooseVideos(): Promise<UploadSource[]> {
-  // Without it iOS shows its question after the videos are chosen, and a "no" loses the choice.
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) throw new PermissionDeniedError('photos');
+/**
+ * What the phone hands over when a video is chosen from Photos.
+ * - `smaller`: the phone first makes its "most compatible" version, as Safari does for the
+ *   website: H.264 at a moderate data rate. About a quarter of the size of a 4K 60 fps
+ *   original, quicker to upload, and it plays smoothly while streaming.
+ * - `original`: the file exactly as recorded. Nothing is lost, but a 4K 60 fps recording is
+ *   around 100 Mbps: slow to upload and too heavy to stream on most connections.
+ */
+export type UploadQuality = 'smaller' | 'original';
+
+export async function chooseVideos(quality: UploadQuality): Promise<UploadSource[]> {
+  if (quality === 'original') {
+    // Reading the untouched file needs access to the library. Without asking first, iOS
+    // shows its question after the videos are chosen, and a "no" loses the choice.
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) throw new PermissionDeniedError('photos');
+  }
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['videos'],
     allowsMultipleSelection: true,
     selectionLimit: 0,
     orderedSelection: true,
-    // The original file, not a "compatible" re-encode.
     preferredAssetRepresentationMode:
-      ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
+      quality === 'original'
+        ? ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current
+        : ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+    // No further export step of ours on top of what the phone hands over.
     videoExportPreset: ImagePicker.VideoExportPreset.Passthrough,
     // A video kept only in iCloud is fetched by the picker before it is handed over.
     shouldDownloadFromNetwork: true,
