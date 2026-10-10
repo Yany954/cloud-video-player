@@ -3,40 +3,39 @@ import * as VideoThumbnails from 'expo-video-thumbnails';
 import type { UploadSource } from './source';
 
 export class PermissionDeniedError extends Error {
-  constructor(readonly what: 'camera' | 'photos') {
+  constructor(readonly what: 'camera') {
     super(`${what} permission denied`);
   }
 }
 
 /**
- * What the phone hands over when a video is chosen from Photos.
- * - `smaller`: the phone first makes its "most compatible" version, as Safari does for the
- *   website: H.264 at a moderate data rate. About a quarter of the size of a 4K 60 fps
- *   original, quicker to upload, and it plays smoothly while streaming.
- * - `original`: the file exactly as recorded. Nothing is lost, but a 4K 60 fps recording is
- *   around 100 Mbps: slow to upload and too heavy to stream on most connections.
+ * How the phone prepares a video chosen from Photos before it is sent.
+ *
+ * A recording as it comes out of the camera can be around 100 Mbps (4K, 60 frames, HDR): slow
+ * to upload and too heavy to stream. So the phone makes a lighter copy first, with its own
+ * hardware encoder: HEVC at up to 4K, which keeps the resolution, the frame rate and the HDR
+ * brightness at a fraction of the data. (The website gets less: Safari hands it an H.264
+ * copy at 30 frames without HDR.)
+ *
+ * The native preset exists in expo-image-picker (`hevc_3840_2160 = 10`) but is missing from
+ * its TypeScript enum, hence the number.
  */
-export type UploadQuality = 'smaller' | 'original';
+const PHONE_EXPORT_PRESET = 10 as ImagePicker.VideoExportPreset;
 
-export async function chooseVideos(quality: UploadQuality): Promise<UploadSource[]> {
-  if (quality === 'original') {
-    // Reading the untouched file needs access to the library. Without asking first, iOS
-    // shows its question after the videos are chosen, and a "no" loses the choice.
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) throw new PermissionDeniedError('photos');
-  }
-
+/**
+ * Videos chosen from the photo library. The system's own picker is used, which needs no
+ * access to the library: the app only ever receives the videos the person picks.
+ */
+export async function chooseVideos(): Promise<UploadSource[]> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['videos'],
     allowsMultipleSelection: true,
     selectionLimit: 0,
     orderedSelection: true,
+    // The recording as it is, which the preset below then makes lighter in one step.
     preferredAssetRepresentationMode:
-      quality === 'original'
-        ? ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current
-        : ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
-    // No further export step of ours on top of what the phone hands over.
-    videoExportPreset: ImagePicker.VideoExportPreset.Passthrough,
+      ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
+    videoExportPreset: PHONE_EXPORT_PRESET,
     // A video kept only in iCloud is fetched by the picker before it is handed over.
     shouldDownloadFromNetwork: true,
   });

@@ -47,7 +47,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Cloud Video Player reads the videos you choose so it can upload them to your private library.",
+          "photosPermission": false,
           "cameraPermission": "Cloud Video Player uses the camera when you record a video to upload.",
           "microphonePermission": "Cloud Video Player uses the microphone to record sound with your video."
         }

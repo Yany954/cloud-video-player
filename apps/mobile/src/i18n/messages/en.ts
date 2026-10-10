@@ -275,25 +275,17 @@ export const en = {
       connection: 'Connection lost. Your progress is saved, so you can resume.',
     },
     title: 'Upload',
-    formats: 'MP4, MOV, MKV or AVI. They are stored in their original quality.',
-    wait: 'The phone may take a few minutes to get a video ready (it may fetch it from iCloud) before the upload starts. Keep the app open until the upload finishes.',
+    formats:
+      'Your phone prepares each video before sending it: up to 4K, lighter than the camera’s file, so it uploads quicker and plays smoothly.',
+    wait: 'Getting your videos ready. A long video can take a few minutes (it may be fetched from iCloud first). Keep the app open.',
     choosing: 'Getting your videos ready…',
     pickFailed: 'The videos could not be read from your photo library.',
     cameraDenied:
       'The camera is turned off for this app. Turn it on in Settings to record a video.',
-    photosDenied:
-      'This app may not read your photo library. Allow it in Settings to choose videos.',
     eventNone: 'No event',
     openSettings: 'Open Settings',
     eventChange: 'Change',
     eventFor: (name: string) => `Next uploads go into: ${name}`,
-    qualityLabel: 'Videos from Photos are sent as',
-    qualitySmaller: 'Smaller',
-    qualitySmallerText:
-      'Recommended. Your phone prepares a lighter version first (the same thing the website does): about a quarter of the size, quicker to upload, and it plays smoothly.',
-    qualityOriginal: 'Original',
-    qualityOriginalText:
-      'Exactly as recorded. A 4K 60 fps video is very large: slow to upload, and it may stop and start while playing unless you download it.',
     recordNote:
       'Recording here is Full HD (1080p) at most, an iPhone limit for cameras inside apps. For 4K, record with the Camera app and then choose the video.',
     keepOpen: 'Keep the app open: an upload pauses if you leave it or lock the phone.',

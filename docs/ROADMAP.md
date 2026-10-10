@@ -356,16 +356,18 @@ Notes for whoever continues:
     The originals stutter because nothing lighter exists to stream: this Mac's Wi-Fi fetched the
     file at about 100 Mbps, under the 106 Mbps it needs; the file itself is well formed
     (header first, sound and picture interleaved).
-- **Upload size choice in the app (built 2026-10-10, the owner's phone still has to confirm
-  it):** "Smaller" (default) asks the picker for the phone's compatible version, as Safari
-  does; "Original" sends the file as recorded. The owner prefers smaller, quicker and smooth
-  over exact originals. This departs from `CLAUDE.md` ("preserve original quality", "never
-  transcode on the phone"): update `CLAUDE.md` once the owner confirms the result on the phone.
-  First attempt failed on the phone (`IMG_1546_mobile`, still 106 Mbps): with photo-library
-  access granted, `expo-image-picker` copies the original file whatever representation is
-  asked for. `patches/expo-image-picker@57.0.20.patch` makes it do that only when the original
-  is wanted. Needs a native rebuild; re-check the patch when Expo is upgraded.
-  A lighter streaming copy made on the server (step 3c) would allow keeping originals too.
+- **What the app uploads (decided with the owner 2026-10-10).** No choice on screen: the phone
+  always prepares a lighter copy before sending, HEVC at up to 4K made with the system's
+  export preset (`PHONE_EXPORT_PRESET` in `src/lib/upload/pick.ts`). It keeps resolution,
+  frame rate and HDR; the website's Safari copy (H.264, 30 fps, no HDR) looked a little dull
+  to the owner, which is why the app aims higher. **The size, data rate and smoothness of this
+  preset on a real 4K 60 fps video are not measured yet**: compare the next upload from the
+  phone with `IMG_1556` (website, 26 Mbps) and `IMG_1552` (original, 106 Mbps). If it is too
+  heavy to stream, fall back to the compatible copy (`Compatible` + `Passthrough`).
+  The app never asks for access to the photo library. History: a first version offered
+  "Smaller / Original"; with library access granted, `expo-image-picker` copies the original
+  whatever is asked for when the preset is `Passthrough`, so "Smaller" had no effect on the
+  owner's phone. A non-passthrough preset does not take that shortcut.
 - **Asked for later (2026-10-10):** choose several videos and have them upload one by one as a
   queue, at a suitable time, without the person watching over it, and notify them when done.
   Belongs with background upload (step 6): one video at a time, a local notification at the

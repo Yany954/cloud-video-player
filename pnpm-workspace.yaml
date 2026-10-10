@@ -16,5 +16,3 @@ onlyBuiltDependencies:
 # TypeScript rejects them as "two different types with this name".
 overrides:
   '@types/react': 19.3.0
-patchedDependencies:
-  expo-image-picker@57.0.20: patches/expo-image-picker@57.0.20.patch

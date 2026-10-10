@@ -9,16 +9,7 @@ appId: com.cloudvideoplayer.app
     visible:
       id: choose-videos
     timeout: 20000
-- assertVisible: MP4, MOV, MKV or AVI. They are stored in their original quality.
-# Smaller is the default: the phone prepares the lighter version, as the website does.
-- assertVisible: Videos from Photos are sent as
-- assertVisible: 'Recommended\. Your phone prepares a lighter version first.*'
-- tapOn:
-    id: quality-original
-- assertVisible: 'Exactly as recorded\..*'
-- tapOn:
-    id: quality-smaller
-- assertVisible: 'Recommended\. Your phone prepares a lighter version first.*'
+- assertVisible: 'Your phone prepares each video before sending it.*'
 - scrollUntilVisible:
     element: 'Storage: 0 B used of 5 GB'
 - scrollUntilVisible:
@@ -30,12 +21,8 @@ appId: com.cloudvideoplayer.app
 
 - tapOn:
     id: choose-videos
-# iOS asks once whether the app may read the photo library.
-- runFlow:
-    when:
-      visible: Allow Full Access
-    commands:
-      - tapOn: Allow Full Access
+# The system picker opens straight away: the app never asks for access to the library.
+- assertNotVisible: Allow Full Access
 - extendedWaitUntil:
     visible: Select Videos
     timeout: 20000

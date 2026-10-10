@@ -279,25 +279,17 @@ export const es: Messages = {
       connection: 'Se perdió la conexión. Tu avance está guardado, así que puedes continuar.',
     },
     title: 'Subir',
-    formats: 'MP4, MOV, MKV o AVI. Se guardan en su calidad original.',
-    wait: 'El teléfono puede tardar unos minutos en preparar un video (puede traerlo de iCloud) antes de que empiece la subida. Deja la app abierta hasta que termine.',
+    formats:
+      'Tu teléfono prepara cada video antes de enviarlo: hasta 4K, más liviano que el archivo de la cámara, para que suba más rápido y se reproduzca sin cortes.',
+    wait: 'Preparando tus videos. Un video largo puede tardar unos minutos (puede que primero se traiga de iCloud). Deja la app abierta.',
     choosing: 'Preparando tus videos…',
     pickFailed: 'No se pudieron leer los videos de tu biblioteca de fotos.',
     cameraDenied:
       'La cámara está desactivada para esta app. Actívala en Ajustes para grabar un video.',
-    photosDenied:
-      'Esta app no puede leer tu biblioteca de fotos. Permítelo en Ajustes para elegir videos.',
     eventNone: 'Ningún evento',
     openSettings: 'Abrir Ajustes',
     eventChange: 'Cambiar',
     eventFor: (name: string) => `Las próximas subidas van a: ${name}`,
-    qualityLabel: 'Los videos de Fotos se envían como',
-    qualitySmaller: 'Más liviano',
-    qualitySmallerText:
-      'Recomendado. Tu teléfono prepara primero una versión más liviana (lo mismo que hace el sitio web): cerca de una cuarta parte del tamaño, sube más rápido y se reproduce sin cortes.',
-    qualityOriginal: 'Original',
-    qualityOriginalText:
-      'Tal como se grabó. Un video 4K a 60 fps es muy grande: tarda en subir y puede detenerse al reproducirse, a menos que lo descargues.',
     recordNote:
       'Grabar aquí es como máximo en Full HD (1080p), un límite del iPhone para las cámaras dentro de las apps. Para 4K, graba con la app Cámara y luego elige el video.',
     keepOpen: 'Deja la app abierta: una subida se pausa si sales de ella o bloqueas el teléfono.',
