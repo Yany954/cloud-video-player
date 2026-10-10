@@ -3,7 +3,7 @@ import { ApiError } from '@cvp/upload-client';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { RenameForm } from '@/components/rename-form';
 import { Button } from '@/components/ui';
 import { IconButton, Message, VideoList } from '@/components/video-list';
@@ -389,52 +389,63 @@ function AddVideos(props: {
       ) : (
         <>
           <Text style={[styles.facts, { color: c.mutedForeground }]}>{e.addHint}</Text>
-          {candidates.map((video) => {
-            const addable = canMove(video);
-            const checked = addable && ticked.has(video.id);
-            const note = !addable
-              ? e.addNotReady(videoStatusLabel(video, t.videoStatus))
-              : video.eventId
-                ? e.addMoves
-                : '';
-            return (
-              <Pressable
-                key={video.id}
-                testID={`add-${video.title}`}
-                accessibilityRole="checkbox"
-                accessibilityLabel={note ? `${video.title}, ${note}` : video.title}
-                accessibilityState={{ checked, disabled: !addable }}
-                disabled={!addable}
-                onPress={() =>
-                  setTicked((current) => {
-                    const next = new Set(current);
-                    if (next.has(video.id)) next.delete(video.id);
-                    else next.add(video.id);
-                    return next;
-                  })
-                }
-                style={[styles.candidate, !addable && { opacity: 0.55 }]}
-              >
-                <View
-                  style={[
-                    styles.box,
-                    { borderColor: checked ? c.primary : c.input },
-                    checked && { backgroundColor: c.primary },
-                  ]}
+          {/* Its own scroll area: with many videos the Add button stays close at hand. */}
+          <ScrollView
+            testID="add-list"
+            style={[styles.addList, { borderColor: c.border }]}
+            nestedScrollEnabled
+            persistentScrollbar
+          >
+            {candidates.map((video) => {
+              const addable = canMove(video);
+              const checked = addable && ticked.has(video.id);
+              const note = !addable
+                ? e.addNotReady(videoStatusLabel(video, t.videoStatus))
+                : video.eventId
+                  ? e.addMoves
+                  : '';
+              return (
+                <Pressable
+                  key={video.id}
+                  testID={`add-${video.title}`}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={note ? `${video.title}, ${note}` : video.title}
+                  accessibilityState={{ checked, disabled: !addable }}
+                  disabled={!addable}
+                  onPress={() =>
+                    setTicked((current) => {
+                      const next = new Set(current);
+                      if (next.has(video.id)) next.delete(video.id);
+                      else next.add(video.id);
+                      return next;
+                    })
+                  }
+                  style={[styles.candidate, !addable && { opacity: 0.55 }]}
                 >
-                  {checked && <Ionicons name="checkmark" size={16} color={c.primaryForeground} />}
-                </View>
-                <View style={styles.candidateText}>
-                  <Text numberOfLines={2} style={[styles.candidateTitle, { color: c.foreground }]}>
-                    {video.title}
-                  </Text>
-                  {note !== '' && (
-                    <Text style={[styles.note, { color: c.mutedForeground }]}>{note}</Text>
-                  )}
-                </View>
-              </Pressable>
-            );
-          })}
+                  <View
+                    style={[
+                      styles.box,
+                      { borderColor: checked ? c.primary : c.input },
+                      checked && { backgroundColor: c.primary },
+                    ]}
+                  >
+                    {checked && <Ionicons name="checkmark" size={16} color={c.primaryForeground} />}
+                  </View>
+                  <View style={styles.candidateText}>
+                    <Text
+                      numberOfLines={2}
+                      style={[styles.candidateTitle, { color: c.foreground }]}
+                    >
+                      {video.title}
+                    </Text>
+                    {note !== '' && (
+                      <Text style={[styles.note, { color: c.mutedForeground }]}>{note}</Text>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
           <Button
             testID="add-selected"
             label={e.add(chosen.length)}
@@ -458,6 +469,7 @@ const styles = StyleSheet.create({
   footer: { gap: 24, paddingHorizontal: 20, paddingTop: 24 },
   guest: { gap: 8 },
   add: { gap: 10 },
+  addList: { maxHeight: 264, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10 },
   candidate: { minHeight: MIN_TOUCH, flexDirection: 'row', alignItems: 'center', gap: 12 },
   candidateText: { flex: 1, gap: 2 },
   candidateTitle: { fontSize: 16, fontWeight: '500', lineHeight: 21 },

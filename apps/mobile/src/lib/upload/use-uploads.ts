@@ -4,7 +4,7 @@ import { AppState } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { api as uploadApi } from '@/lib/api';
 import { hasAcceptedExtension, uploadErrorMessage } from './messages';
-import { putPartFromPhone } from './put-part';
+import { partsAtOnce, putPartFromPhone } from './put-part';
 import { isSameVideo, type QueuedUpload } from './queue';
 import { discard, QueueStore } from './queue-store';
 import type { UploadSource } from './source';
@@ -117,8 +117,8 @@ export function useUploads(userId: string) {
         uploadVideo({
           api: uploadApi,
           putPart: putPartFromPhone,
-          // Each part is copied to a temporary file first: two at a time keeps that small.
-          concurrency: 2,
+          // Parts handed to iOS keep being sent after the app leaves the screen.
+          concurrency: partsAtOnce(entry.sizeBytes),
           source: entry,
           fileName: entry.fileName,
           sizeBytes: entry.sizeBytes,

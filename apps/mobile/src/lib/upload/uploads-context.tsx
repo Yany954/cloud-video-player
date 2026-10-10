@@ -1,20 +1,18 @@
-import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { createContext, use, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { askToNotify, notifyUploadsFinished } from './notify';
-import { clearLeftoverParts } from './put-part';
+import { clearOldParts } from './put-part';
 import { useUploads } from './use-uploads';
 
 type Uploads = ReturnType<typeof useUploads>;
 
 const UploadsContext = createContext<Uploads | null>(null);
-const KEEP_AWAKE = 'cvp-uploading';
 
 /**
  * Keeps uploads alive above the screens: moving between tabs, into an event or a player does
- * not stop or hide them. While anything is being sent the screen is kept awake, and when the
- * queue has emptied while the app was not in front, the phone says so with a notification.
+ * not stop or hide them. When the queue has emptied while the app was not in front, the phone
+ * says so with a notification.
  */
 export function UploadsProvider({
   userId,
@@ -27,15 +25,8 @@ export function UploadsProvider({
   const { t } = useI18n();
 
   useEffect(() => {
-    clearLeftoverParts();
+    clearOldParts();
   }, []);
-
-  const sending = uploads.items.some((item) => item.status === 'uploading');
-  useEffect(() => {
-    if (!sending) return;
-    void activateKeepAwakeAsync(KEEP_AWAKE).catch(() => {});
-    return () => void deactivateKeepAwake(KEEP_AWAKE).catch(() => {});
-  }, [sending]);
 
   const waiting = uploads.items.some(
     (item) => item.status === 'queued' || item.status === 'uploading',

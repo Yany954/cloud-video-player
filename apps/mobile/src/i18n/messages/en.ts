@@ -289,7 +289,7 @@ export const en = {
     recordNote:
       'Recording here is Full HD (1080p) at most, an iPhone limit for cameras inside apps. For 4K, record with the Camera app and then choose the video.',
     keepOpen:
-      'Videos are sent one at a time, in the order you chose them. If the app is closed or the phone locks, sending stops and carries on by itself when you open the app again.',
+      'Videos are sent one at a time, in the order you chose them. You can switch apps or lock the phone: the phone keeps sending what it was given. Open the app again to finish the upload and start the next one.',
     queued: 'Waiting for its turn',
     lost: (count: number) =>
       count === 1

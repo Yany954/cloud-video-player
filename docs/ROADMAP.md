@@ -385,9 +385,27 @@ Notes for whoever continues:
   which is one way that happens.)
   **Not exercised: carrying on after an interruption** (the test clip uploads in a second).
   The owner's phone has to show it with a long video.
-- **Step 6, still to do:** sending while the app is closed or the phone is locked (parts
-  handed to iOS's background session; this is the uncertain part and only a real phone can
-  test it), and a progress bar while the phone prepares a video.
+- **Step 6, part 2 (built 2026-10-10, NOT verified): sending with the app in the background.**
+  Parts are handed to iOS's background transfer service (`sessionType: 'background'` in
+  `put-part.ts`). With enough free space the whole video is handed over at once (up to 64
+  parts, `partsAtOnce`), so iOS can keep sending after the app leaves the screen, the phone
+  locks, or the app is closed; otherwise two parts at a time. The screen is no longer kept
+  awake. What still needs the app open: handing over further parts of a very large video,
+  telling the server the upload is complete, and starting the next video in the queue. Part
+  files are cleared after 24 hours, not at launch, because iOS may still be sending them.
+  Passes in the simulator with the app in front. **Only the owner's phone can show whether
+  sending really continues when locked or closed**, and how fast.
+- **Notifications:** the "Uploads finished" notification is a local one and needs no Apple
+  certificate. The `expo-notifications` config plugin is deliberately NOT in `app.json`: it adds
+  the push entitlement (`aps-environment`), which a free Apple account cannot sign, and the
+  build fails. Push notifications sent from a server (e.g. "your video was approved") need the
+  paid Apple Developer Program and an APNs key: later, with the TestFlight decision. The
+  owner has not seen the local notification work yet.
+- **Step 6, still to do:** a progress bar while the phone prepares a video (needs our own
+  small Swift module in place of the picker library, which reports no progress).
+- **Website on iPhone:** leave as it is. Safari decides what it hands over (H.264, 30 fps, no
+  HDR) and a web page cannot ask for more; choosing through "Files" gives the 106 Mbps
+  original, which stutters. For the best quality from an iPhone, upload with the app.
 - React Native has no `AbortSignal.throwIfAborted()`, which `packages/upload-client` uses:
   `src/lib/polyfills.ts` adds it.
 - In a development build the floating "dev tools" gear covers the photo picker's confirm

@@ -293,7 +293,7 @@ export const es: Messages = {
     recordNote:
       'Grabar aquí es como máximo en Full HD (1080p), un límite del iPhone para las cámaras dentro de las apps. Para 4K, graba con la app Cámara y luego elige el video.',
     keepOpen:
-      'Los videos se envían de uno en uno, en el orden en que los elegiste. Si cierras la app o el teléfono se bloquea, el envío se detiene y continúa solo cuando vuelves a abrir la app.',
+      'Los videos se envían de uno en uno, en el orden en que los elegiste. Puedes cambiar de app o bloquear el teléfono: el teléfono sigue enviando lo que recibió. Abre la app otra vez para terminar la subida y empezar la siguiente.',
     queued: 'Esperando su turno',
     lost: (count: number) =>
       count === 1

@@ -11,9 +11,11 @@ const partsDirectory = () => new Directory(Paths.cache, 'upload-parts');
 /**
  * Sends one part of the video straight to S3.
  *
- * iOS uploads from a file, not from memory, so the part's bytes are first copied into a small
- * temporary file and that file is handed to the system's uploader. The same mechanism can
- * later continue with the app in the background (`sessionType: 'background'`).
+ * iOS uploads in the background only from a file, so the part's bytes are first copied into
+ * a small temporary file, and that file is handed to iOS's background transfer service. Once
+ * handed over, iOS keeps sending it while the app is in the background or the phone is
+ * locked, and even if the app is closed. What needs the app again is everything around it:
+ * handing over further parts, and telling our server that the upload is complete.
  */
 export const putPartFromPhone: PutPart<UploadSource> = async ({
   source,
@@ -33,10 +35,10 @@ export const putPartFromPhone: PutPart<UploadSource> = async ({
   );
 
   try {
-    copyRange(new File(source.uri), part, start, end, signal);
+    await copyRange(new File(source.uri), part, start, end, signal);
     const result = await part.upload(url, {
       httpMethod: 'PUT',
-      sessionType: 'foreground',
+      sessionType: 'background',
       signal,
       onProgress: ({ bytesSent }) => onProgress(bytesSent),
     });
@@ -44,15 +46,24 @@ export const putPartFromPhone: PutPart<UploadSource> = async ({
       throw new Error(`Storage rejected the part with status ${result.status}`);
     }
   } finally {
+    // Only reached while the app is alive. If it was closed meanwhile, iOS may still be
+    // sending this file: `clearOldParts` removes it later.
     try {
       if (part.exists) part.delete();
     } catch {
-      // A leftover piece in the cache is harmless; the system clears it.
+      // A leftover piece in the cache is harmless.
     }
   }
 };
 
-function copyRange(from: File, to: File, start: number, end: number, signal: AbortSignal): void {
+/** Copies a few megabytes at a time and lets the screen breathe in between. */
+async function copyRange(
+  from: File,
+  to: File,
+  start: number,
+  end: number,
+  signal: AbortSignal,
+): Promise<void> {
   const reader = from.open();
   to.create({ overwrite: true });
   const writer = to.open();
@@ -64,6 +75,7 @@ function copyRange(from: File, to: File, start: number, end: number, signal: Abo
       if (bytes.length === 0) throw new Error('The video file ended before the part did');
       writer.writeBytes(bytes);
       position += bytes.length;
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
   } finally {
     reader.close();
@@ -71,12 +83,40 @@ function copyRange(from: File, to: File, start: number, end: number, signal: Abo
   }
 }
 
-/** Removes pieces left behind by an upload that was interrupted (the app was closed). */
-export function clearLeftoverParts(): void {
+const PART_KEPT_FOR_MS = 24 * 60 * 60 * 1000;
+
+/** The time a part file was made, read from its name (`<time>-<part>-<random>.part`). */
+export function partCreatedAt(fileName: string): number | null {
+  const time = Number(fileName.split('-')[0]);
+  return Number.isFinite(time) && time > 0 ? time : null;
+}
+
+/**
+ * Removes part files left by an earlier run, but only old ones: after the app was closed,
+ * iOS may still be sending the recent ones, and the links they are sent to last one hour.
+ */
+export function clearOldParts(now = Date.now()): void {
   try {
     const directory = partsDirectory();
-    if (directory.exists) directory.delete();
+    if (!directory.exists) return;
+    for (const entry of directory.list()) {
+      const created = partCreatedAt(entry.name);
+      if (created === null || now - created > PART_KEPT_FOR_MS) entry.delete();
+    }
   } catch {
     // Nothing depends on it.
   }
 }
+
+/**
+ * How many parts to hand to iOS at once. Every part handed over keeps being sent after the
+ * app leaves the screen, so more is better, but each one is a temporary copy on the phone.
+ * With room to spare the whole video is handed over; otherwise two at a time.
+ */
+export function partsAtOnce(sizeBytes: number, freeBytes = Paths.availableDiskSpace): number {
+  const HEADROOM_BYTES = 1024 * 1024 * 1024;
+  return freeBytes > sizeBytes + HEADROOM_BYTES ? MAX_PARTS_AT_ONCE : 2;
+}
+
+// The server hands out at most 100 part links per request.
+const MAX_PARTS_AT_ONCE = 64;
