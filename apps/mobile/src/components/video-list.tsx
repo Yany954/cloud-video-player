@@ -56,6 +56,9 @@ export function VideoList({
       )}
       ListFooterComponent={footer}
       keyboardShouldPersistTaps="handled"
+      // A name being typed in the header or footer stays above the keyboard.
+      automaticallyAdjustKeyboardInsets
+      keyboardDismissMode="interactive"
       ItemSeparatorComponent={() => (
         <View style={[styles.separator, { backgroundColor: c.border }]} />
       )}

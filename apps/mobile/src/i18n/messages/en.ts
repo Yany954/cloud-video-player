@@ -287,6 +287,8 @@ export const en = {
     openSettings: 'Open Settings',
     eventChange: 'Change',
     eventFor: (name: string) => `Next uploads go into: ${name}`,
+    recordNote:
+      'Recording here is Full HD (1080p) at most, an iPhone limit for cameras inside apps. For 4K, record with the Camera app and then choose the video.',
     keepOpen: 'Keep the app open: an upload pauses if you leave it or lock the phone.',
     resumeHint: 'Choose the same video again to continue from where it stopped.',
   },

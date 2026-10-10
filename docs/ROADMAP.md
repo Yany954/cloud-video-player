@@ -347,6 +347,15 @@ Notes for whoever continues:
   session (`src/lib/upload/put-part.ts`), two parts at a time; the screen is kept awake while
   sending; choosing the same video again resumes. Recording from inside the app is 1080p at
   most (iOS limit for the in-app camera): for 4K, record with the Camera app and choose it.
+- The owner confirmed on their iPhone (2026-10-10): recording works, and a 3:30 video of 2.6 GB
+  uploaded from Photos. **Finding:** that video is the true original, HEVC 4K at 60 frames and
+  about 106 Mbps, and it stutters when played, because the playable copy is the original
+  streams (no lighter version exists) and the connection cannot deliver 106 Mbps. Videos
+  uploaded earlier through Safari are H.264 4K at 30 frames and about 25 Mbps: iOS re-encoded
+  them before the website received them, which is why they are smaller and play smoothly. So
+  the app preserves the original and the website on iPhone does not. Smooth playback of heavy
+  originals needs a lighter streaming version made on the server (the planned re-encoding
+  step, 3c): decide with a cost estimate.
 - React Native has no `AbortSignal.throwIfAborted()`, which `packages/upload-client` uses:
   `src/lib/polyfills.ts` adds it.
 - In a development build the floating "dev tools" gear covers the photo picker's confirm

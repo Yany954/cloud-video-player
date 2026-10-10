@@ -60,7 +60,14 @@ export default function VideoScreen() {
     <View style={[styles.screen, { backgroundColor: c.background }]}>
       <Stack.Screen options={{ title }} />
       {playback ? (
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          // The title box sits under the video: when the keyboard opens, the screen moves up so
+          // what is being typed stays in view.
+          automaticallyAdjustKeyboardInsets
+          keyboardDismissMode="interactive"
+        >
           <VideoStage playback={playback} />
           <View style={styles.details}>
             {renaming ? (

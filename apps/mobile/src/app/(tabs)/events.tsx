@@ -56,6 +56,8 @@ export default function EventsScreen() {
       keyExtractor={(event) => event.id}
       stickySectionHeadersEnabled={false}
       keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+      keyboardDismissMode="interactive"
       ListHeaderComponent={
         <View style={styles.create}>
           <Text style={[styles.intro, { color: c.mutedForeground }]}>{t.events.intro}</Text>

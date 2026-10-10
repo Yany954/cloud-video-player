@@ -1,0 +1,23 @@
+# The title being typed must stay visible above the keyboard (it sits under the video).
+# Needs the fixture of watch.yaml.   e2e/run.sh rename-keyboard
+appId: com.cloudvideoplayer.app
+---
+- runFlow: signed-in.yaml
+- extendedWaitUntil:
+    visible: Play Concert clip, .*
+    timeout: 20000
+- tapOn: Play Concert clip, .*
+- extendedWaitUntil:
+    visible:
+      id: rename-video
+    timeout: 20000
+- tapOn:
+    id: rename-video
+- eraseText: 30
+- inputText: Typed while the keyboard is open
+# Visible means on screen and not covered: the box and its Save button.
+- assertVisible:
+    id: rename-input
+- assertVisible: Typed while the keyboard is open
+- assertVisible:
+    id: rename-save

@@ -291,6 +291,8 @@ export const es: Messages = {
     openSettings: 'Abrir Ajustes',
     eventChange: 'Cambiar',
     eventFor: (name: string) => `Las próximas subidas van a: ${name}`,
+    recordNote:
+      'Grabar aquí es como máximo en Full HD (1080p), un límite del iPhone para las cámaras dentro de las apps. Para 4K, graba con la app Cámara y luego elige el video.',
     keepOpen: 'Deja la app abierta: una subida se pausa si sales de ella o bloqueas el teléfono.',
     resumeHint: 'Elige el mismo video otra vez para continuar desde donde se detuvo.',
   },

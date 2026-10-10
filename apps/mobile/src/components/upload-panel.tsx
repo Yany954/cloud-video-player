@@ -92,6 +92,7 @@ export function UploadPanel({ refreshKey }: { refreshKey: number }) {
           />
         </View>
       </View>
+      <Text style={[styles.small, { color: c.mutedForeground }]}>{u.recordNote}</Text>
       {busy === 'choose' && (
         <View style={styles.inline} accessibilityLiveRegion="polite">
           <ActivityIndicator color={c.mutedForeground} />
