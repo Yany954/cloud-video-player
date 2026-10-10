@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ColorValue } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
+import { useSharedUploads } from '@/lib/upload/uploads-context';
 import { useColors } from '@/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -15,6 +16,8 @@ const icon =
 export default function TabsLayout() {
   const { t } = useI18n();
   const c = useColors();
+  // Seen from any tab: how many videos are still being sent.
+  const sending = useSharedUploads().items.filter((item) => item.status === 'uploading').length;
   return (
     <Tabs
       screenOptions={{
@@ -35,6 +38,7 @@ export default function TabsLayout() {
           title: t.tabs.yourVideos,
           tabBarIcon: icon('film-outline'),
           tabBarButtonTestID: 'tab-videos',
+          tabBarBadge: sending > 0 ? sending : undefined,
         }}
       />
       <Tabs.Screen

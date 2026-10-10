@@ -1,8 +1,10 @@
+import '@/lib/polyfills';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, useColorScheme, View } from 'react-native';
 import { I18nProvider, useI18n } from '@/i18n/i18n';
 import { AuthProvider, useAuth } from '@/lib/auth/auth-context';
+import { UploadsProvider } from '@/lib/upload/uploads-context';
 import { useColors } from '@/theme';
 
 export default function RootLayout() {
@@ -35,7 +37,7 @@ function Screens() {
   }
 
   const signedIn = state.status === 'signedIn';
-  return (
+  const screens = (
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: c.background },
@@ -55,6 +57,15 @@ function Screens() {
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />
       </Stack.Protected>
     </Stack>
+  );
+  // Uploads belong to the signed-in person and live above every screen. Keyed by the person:
+  // another account never inherits someone else's upload list.
+  return state.status === 'signedIn' ? (
+    <UploadsProvider key={state.user.id} userId={state.user.id}>
+      {screens}
+    </UploadsProvider>
+  ) : (
+    screens
   );
 }
 

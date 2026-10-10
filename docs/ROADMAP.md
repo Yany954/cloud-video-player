@@ -306,8 +306,8 @@ Program ($99 a year): decide when the app is worth sharing.
 | 2. Sign in, sign up, forgot password (Cognito), English/Spanish      | Done  |
 | 3. Watch: lists and player (PiP, locked-screen sound, AirPlay)       | Done  |
 | 4. Events: play all, add from a checklist, reorder, rename           | Done  |
-| 5. Upload with the app open: Photos or camera, preview, pause/resume | Next  |
-| 6. Upload in the background + iCloud progress (small Swift module)   |       |
+| 5. Upload with the app open: Photos or camera, preview, pause/resume | Built |
+| 6. Upload in the background + iCloud progress (small Swift module)   | Next  |
 | 7. Offline library; report/block; delete account; legal pages        |       |
 | 8. The owner's iPhone; TestFlight decision; then Android             |       |
 
@@ -335,11 +335,24 @@ Notes for whoever continues:
   exercised by a test: the guest's view (Leave event) and the invite link's share sheet. The
   invite link opens the website's join page; opening it in the app needs universal links
   (paid Apple account).
-- Test data for the Maestro flows: three temporary accounts upload a 10-second clip through the
-  API, an admin approves two, and an event holds two of them. The script that does this lives
-  only in the session's scratch folder so far; move it into the repository when it settles.
-- Tabs: Your videos, Events, Shared with me, Account. Creating events, uploading, rename,
-  download, delete and report are not in the app yet (website only).
+- Test data and runner for the Maestro flows live in `apps/mobile/e2e/`: `fixture.py`
+  (`up`, `user`, `env`, `down`; temporary `e2e-…@example.com` accounts only, real uploads of
+  `clip.mp4` through the API) and `run.sh <flow>`. All four flows pass in the simulator:
+  `sign-in`, `watch`, `events`, `upload`.
+- Step 5 (`.maestro/upload.yaml`): choose a video from Photos, a real upload through the
+  phone's uploader, the pipeline, and playback, all pass in the simulator. **Only the owner's
+  iPhone can check: the camera, a large video (several parts, pause and resume), and a video
+  kept in iCloud.** How it works: the picker hands over the original file (no conversion); each
+  part is copied to a small temporary file and sent with `File.upload` in a foreground
+  session (`src/lib/upload/put-part.ts`), two parts at a time; the screen is kept awake while
+  sending; choosing the same video again resumes. Recording from inside the app is 1080p at
+  most (iOS limit for the in-app camera): for 4K, record with the Camera app and choose it.
+- React Native has no `AbortSignal.throwIfAborted()`, which `packages/upload-client` uses:
+  `src/lib/polyfills.ts` adds it.
+- In a development build the floating "dev tools" gear covers the photo picker's confirm
+  button: drag it aside, or hide it (`EXDevMenuShowFloatingActionButton`).
+- Tabs: Your videos, Events, Shared with me, Account. Download, report and block, and deleting
+  the account are not in the app yet (website only).
 - `videoStatusLabel`, `formatBytes`/`formatDuration`, the Cognito wrapper and the auth texts
   are copies of the website's files. Moving them to a shared package is a tidy-up for later.
 - Mobile forms ask for a new password once, with a Show button, not twice like the website:

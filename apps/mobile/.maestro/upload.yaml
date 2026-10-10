@@ -1,0 +1,58 @@
+# Upload from the photo library with the app open. Needs an empty temporary account
+# (python3 e2e/fixture.py user) and one video in the simulator's Photos
+# (xcrun simctl addmedia booted e2e/clip.mp4).
+#   e2e/run.sh upload
+appId: com.cloudvideoplayer.app
+---
+- runFlow: signed-in.yaml
+- extendedWaitUntil:
+    visible: No videos yet
+    timeout: 20000
+- assertVisible: MP4, MOV, MKV or AVI. They are stored in their original quality.
+- assertVisible: 'Storage: 0 B used of 5 GB'
+
+- tapOn:
+    id: choose-videos
+# iOS asks once whether the app may read the photo library.
+- runFlow:
+    when:
+      visible: Allow Full Access
+    commands:
+      - tapOn: Allow Full Access
+- extendedWaitUntil:
+    visible: Select Videos
+    timeout: 20000
+# The only video in the simulator's library, then the picker's confirm button.
+- tapOn:
+    point: 16%,24%
+# The confirm button is the tick at the top right (it has no text). The development build's
+# floating gear would cover it: hide the gear first with
+#   xcrun simctl spawn booted defaults write com.cloudvideoplayer.app EXDevMenuShowFloatingActionButton -bool NO
+- tapOn:
+    point: 90%,12%
+- extendedWaitUntil:
+    visible: Uploads
+    timeout: 60000
+# Sent for real: the part goes to S3 through the phone's uploader.
+- extendedWaitUntil:
+    visible: Uploaded\. Only you can watch it.*
+    timeout: 90000
+- assertVisible:
+    id: upload-done
+# The pipeline prepares it; the list updates by itself.
+- extendedWaitUntil:
+    visible: .*, Waiting for review
+    timeout: 180000
+- assertNotVisible: No videos yet
+- assertNotVisible: 'Storage: 0 B used of 5 GB'
+- tapOn:
+    id: dismiss-upload
+- assertNotVisible: Uploads
+
+# It plays, and it is the same length as the original.
+- tapOn: Play .*, Waiting for review
+- extendedWaitUntil:
+    visible: 0:1[0-3], 640 x 360
+    timeout: 30000
+- assertVisible:
+    id: video

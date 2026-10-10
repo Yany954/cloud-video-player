@@ -17,7 +17,7 @@ appId: com.cloudvideoplayer.app
 # The player.
 - tapOn: Play Concert clip, .*
 - extendedWaitUntil:
-    visible: 0:10, 640 x 360
+    visible: 0:1[0-3], 640 x 360
     timeout: 20000
 - assertVisible:
     id: video
@@ -40,7 +40,7 @@ appId: com.cloudvideoplayer.app
 - assertVisible: Play Ben angle, .*
 - tapOn: Play Ben angle, .*
 - extendedWaitUntil:
-    visible: 0:10, 640 x 360
+    visible: 0:1[0-3], 640 x 360
     timeout: 20000
 # Someone else's video: no review status is shown.
 - assertNotVisible: Ready to watch

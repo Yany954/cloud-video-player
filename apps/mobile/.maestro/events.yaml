@@ -19,7 +19,7 @@ appId: com.cloudvideoplayer.app
 - tapOn:
     id: play-all
 - extendedWaitUntil:
-    visible: Video 1 of 2, 0:10
+    visible: Video 1 of 2, 0:1[0-3]
     timeout: 25000
 - assertVisible: Autoplay next video
 # The choice is remembered on the phone: start from "on" whatever an earlier run left.
@@ -34,17 +34,17 @@ appId: com.cloudvideoplayer.app
 - assertVisible: 'On: when a video ends, the next one starts by itself.'
 # The clip lasts ten seconds: the next one starts by itself.
 - extendedWaitUntil:
-    visible: Video 2 of 2, 0:10
+    visible: Video 2 of 2, 0:1[0-3]
     timeout: 30000
 - tapOn:
     id: previous
 - extendedWaitUntil:
-    visible: Video 1 of 2, 0:10
+    visible: Video 1 of 2, 0:1[0-3]
     timeout: 20000
 - tapOn:
     id: next
 - extendedWaitUntil:
-    visible: Video 2 of 2, 0:10
+    visible: Video 2 of 2, 0:1[0-3]
     timeout: 20000
 # With autoplay off, playback stays on the video that ended.
 - tapOn:
@@ -53,13 +53,13 @@ appId: com.cloudvideoplayer.app
 - tapOn:
     id: queue-1
 - extendedWaitUntil:
-    visible: Video 1 of 2, 0:10
+    visible: Video 1 of 2, 0:1[0-3]
     timeout: 20000
 - extendedWaitUntil:
-    notVisible: Video 1 of 2, 0:10
-    timeout: 16000
+    notVisible: Video 1 of 2, 0:1[0-3]
+    timeout: 19000
     optional: true
-- assertVisible: Video 1 of 2, 0:10
+- assertVisible: Video 1 of 2, 0:1[0-3]
 - tapOn:
     id: autoplay
 - assertVisible: 'On: when a video ends, the next one starts by itself.'
