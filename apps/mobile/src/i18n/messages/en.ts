@@ -12,6 +12,14 @@ export const en = {
     cancel: 'Cancel',
     saving: 'Saving…',
   },
+  welcome: {
+    slogan: 'Every show you filmed, in one private place.',
+    support:
+      'Keep your concert videos off your phone and watch them with the people you invite. Nobody else sees them.',
+    getStarted: 'Get started',
+    haveAccount: 'Already have an account?',
+    signIn: 'Sign in',
+  },
   legal: {
     privacy: 'Privacy policy',
     terms: 'Terms of service',
@@ -25,7 +33,7 @@ export const en = {
     yourVideos: 'Your videos',
     events: 'Events',
     shared: 'Shared with me',
-    account: 'Account',
+    account: 'Profile',
   },
   lists: {
     pullToRetry: 'Pull down to try again.',

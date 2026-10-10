@@ -26,13 +26,13 @@ type Step = 'credentials' | 'newPassword' | 'signUp' | 'confirmEmail' | 'forgot'
  * and wording as the website's sign-in page. When a step ends signed in, the root layout shows
  * the app instead of this screen.
  */
-export function AuthFlow() {
+export function AuthFlow({ startAt = 'credentials' }: { startAt?: 'credentials' | 'signUp' }) {
   const { t } = useI18n();
   const a = t.auth;
   const c = useColors();
   const { signIn, completeNewPassword } = useAuth();
 
-  const [step, setStep] = useState<Step>('credentials');
+  const [step, setStep] = useState<Step>(startAt);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

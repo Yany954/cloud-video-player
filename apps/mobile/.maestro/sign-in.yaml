@@ -5,7 +5,28 @@
 appId: com.cloudvideoplayer.app
 ---
 - runFlow: signed-out.yaml
-- assertVisible: Sign in
+
+# The welcome screen: what the app is, and the two ways in.
+- assertVisible: Every show you filmed, in one private place.
+- assertVisible: Already have an account?
+- assertVisible: Privacy policy
+- assertVisible: Terms of service
+# "Get started" leads to creating an account; the header's back button returns.
+- tapOn:
+    id: get-started
+- extendedWaitUntil:
+    visible: Create your account
+    timeout: 15000
+- tapOn: Back
+- extendedWaitUntil:
+    visible:
+      id: get-started
+    timeout: 15000
+- tapOn:
+    id: go-sign-in
+- extendedWaitUntil:
+    visible: Use the email address and password of your account.
+    timeout: 15000
 
 # A wrong password: same message whether or not the account exists.
 - tapOn:
@@ -14,9 +35,8 @@ appId: com.cloudvideoplayer.app
 - tapOn:
     id: password
 - inputText: definitely-not-the-password
-- hideKeyboard
-- tapOn:
-    id: submit
+# The keyboard's return key submits, like pressing the button.
+- pressKey: Enter
 - extendedWaitUntil:
     visible: Incorrect email or password.
     timeout: 20000
@@ -55,8 +75,14 @@ appId: com.cloudvideoplayer.app
 - tapOn:
     id: sign-out
 - extendedWaitUntil:
-    visible: Sign in
+    visible:
+      id: get-started
     timeout: 20000
+- tapOn:
+    id: go-sign-in
+- extendedWaitUntil:
+    visible: Use the email address and password of your account.
+    timeout: 15000
 
 # Creating an account: a password that is too short keeps the button off, and the age and
 # terms tick box is asked for before anything is sent.

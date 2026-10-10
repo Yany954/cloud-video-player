@@ -311,6 +311,31 @@ Program ($99 a year): decide when the app is worth sharing.
 | 7. Offline library; report/block; delete account; legal pages        |       |
 | 8. The owner's iPhone; TestFlight decision; then Android             |       |
 
+**Design pass (owner's brief, 2026-10-10; summary in `CLAUDE.md`, design section).** Mobile
+first, one screen at a time, each reviewed by the owner (in the simulator while their Apple
+team's licence agreement blocks installs on the phone):
+
+| Screen                                                             | State                     |
+| ------------------------------------------------------------------ | ------------------------- |
+| Shared colour tokens (`packages/shared`), contrast tests           | Done                      |
+| Welcome screen before sign-in                                      | Built, waiting for review |
+| Events as cards in their colour theme, with search                 | Next                      |
+| Event screen: header, "Play all", playlist rows with "now playing" |                           |
+| Upload box                                                         |                           |
+| Legal links, Profile, "Delete my account and data"                 |                           |
+| Floating tab bar, back buttons, chips                              |                           |
+| The same language on the website                                   |                           |
+
+- Welcome hero: drawn with gradients for now. The owner will add a photo of their own at
+  `apps/mobile/assets/images/welcome/hero.jpg` (portrait, theirs to show publicly); then use
+  it with a bottom scrim.
+- Event cards will use the event's colour theme. First video's thumbnail, video count and
+  total length need an addition to `GET /events` (free deploy): ask before doing it. No event
+  types exist, so no filter chips. No "share" per video (videos are private).
+- Tabs stay four: Your videos, Events, Shared with me, Profile.
+- The website's landing still says "Original quality": check that wording against what is
+  now uploaded from an iPhone before a public launch (legal checklist, item 12).
+
 Notes for whoever continues:
 
 - Step 2 is tested in the simulator with Maestro (`apps/mobile/.maestro/sign-in.yaml`): wrong

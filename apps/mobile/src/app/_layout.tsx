@@ -54,7 +54,9 @@ function Screens() {
         <Stack.Screen name="events/[eventId]/play" options={{ title: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
-        <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+        <Stack.Screen name="welcome" options={{ headerShown: false }} />
+        {/* A bare header: only the way back to the welcome screen. */}
+        <Stack.Screen name="sign-in" options={{ title: '' }} />
       </Stack.Protected>
     </Stack>
   );

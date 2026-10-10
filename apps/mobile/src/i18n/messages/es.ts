@@ -12,6 +12,14 @@ export const es: Messages = {
     cancel: 'Cancelar',
     saving: 'Guardando…',
   },
+  welcome: {
+    slogan: 'Todos los conciertos que grabaste, en un solo lugar privado.',
+    support:
+      'Guarda tus videos de conciertos fuera del teléfono y míralos con las personas que invites. Nadie más los ve.',
+    getStarted: 'Comenzar',
+    haveAccount: '¿Ya tienes una cuenta?',
+    signIn: 'Inicia sesión',
+  },
   legal: {
     privacy: 'Política de privacidad',
     terms: 'Términos del servicio',
@@ -25,7 +33,7 @@ export const es: Messages = {
     yourVideos: 'Tus videos',
     events: 'Eventos',
     shared: 'Compartido conmigo',
-    account: 'Cuenta',
+    account: 'Perfil',
   },
   lists: {
     pullToRetry: 'Desliza hacia abajo para intentarlo de nuevo.',

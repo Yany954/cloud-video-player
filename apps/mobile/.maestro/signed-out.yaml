@@ -1,4 +1,4 @@
-# Leaves the app on the sign-in screen, whoever used the simulator last.
+# Leaves the app on the welcome screen (signed out), whoever used the simulator last.
 appId: com.cloudvideoplayer.app
 ---
 - runFlow: open-app.yaml
@@ -12,5 +12,6 @@ appId: com.cloudvideoplayer.app
       - tapOn:
           id: sign-out
 - extendedWaitUntil:
-    visible: Use the email address and password of your account.
+    visible:
+      id: get-started
     timeout: 25000

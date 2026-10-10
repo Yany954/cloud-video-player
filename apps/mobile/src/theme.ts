@@ -1,39 +1,36 @@
+import { DARK_COLORS, LIGHT_COLORS, RADIUS, type ColorTokens } from '@cvp/shared';
 import { useColorScheme } from 'react-native';
 
-// The website's colours (apps/web/src/app/globals.css), converted from OKLCH to sRGB.
-const light = {
-  background: '#F9FAFB',
-  foreground: '#0F1216',
-  card: '#FFFFFF',
-  primary: '#1957D2',
-  primaryForeground: '#FAFAFA',
-  muted: '#EFF0F3',
-  mutedForeground: '#636363',
-  destructive: '#CD0011',
-  border: '#DCDEE1',
-  input: '#83868C',
-};
+/**
+ * The shared colour tokens (packages/shared/src/design-tokens.ts), under the names the
+ * screens use. The same palette as the website.
+ */
+function named(tokens: ColorTokens) {
+  return {
+    background: tokens.background,
+    foreground: tokens.textPrimary,
+    card: tokens.surface,
+    muted: tokens.surfaceElevated,
+    mutedForeground: tokens.textSecondary,
+    primary: tokens.accent,
+    primaryForeground: tokens.accentForeground,
+    border: tokens.border,
+    input: tokens.inputBorder,
+    destructive: tokens.danger,
+    success: tokens.success,
+  };
+}
 
-const dark: typeof light = {
-  background: '#0B0D12',
-  foreground: '#F5F5F5',
-  card: '#13161C',
-  primary: '#6FA2FF',
-  primaryForeground: '#0B0D12',
-  muted: '#21242A',
-  mutedForeground: '#A4A4A4',
-  destructive: '#FD7273',
-  border: '#2B2E34',
-  input: '#606369',
-};
+const light = named(LIGHT_COLORS);
+const dark = named(DARK_COLORS);
 
 export type Colors = typeof light;
 
-/** Follows the phone's light or dark appearance. */
+/** Follows the phone's light or dark appearance (Settings > Display & Brightness). */
 export function useColors(): Colors {
   return useColorScheme() === 'dark' ? dark : light;
 }
 
-export const radius = { control: 10, card: 24 };
+export const radius = RADIUS;
 /** Apple and Google both ask for touch targets of at least 44 points. */
 export const MIN_TOUCH = 44;
